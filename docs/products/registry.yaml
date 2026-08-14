@@ -1,0 +1,303 @@
+# ==============================================================================
+# SaaS Product Hub — Product Portfolio Registry
+# ==============================================================================
+# Source of truth for all products, deployment models, database schemas, 
+# commercial statuses, and module dependencies in the platform.
+# Last Updated: 2026-08-14
+# ==============================================================================
+
+version: "1.0"
+platform: "SaaS Product Hub"
+repository: "Gutumrod/saas-product-hub"
+
+# ------------------------------------------------------------------------------
+# Release Waves
+# ------------------------------------------------------------------------------
+waves:
+  wave_1:
+    name: "First Hero Solution: Service Business Automation"
+    focus: "Booking + LINE OA AI + Tracking"
+    target: "Service SME businesses (Automotive, Salons, Clinics, Repair Shops)"
+    status: "active"
+  wave_2:
+    name: "Ecosystem & Developer Toolkit"
+    focus: "Headless Commerce, Multi-Tenant AI Starter, Stripe Billing"
+    target: "SaaS Builders, Tech SMEs, E-commerce Merchants"
+    status: "planned"
+  wave_3:
+    name: "Enterprise & High-Scale Automation"
+    focus: "Bulk ETL, Content Auto-Pilot, IT Ops Watchdog, Compliance"
+    target: "Enterprise & High-Volume Clients"
+    status: "backlog"
+
+# ------------------------------------------------------------------------------
+# Products Registry
+# ------------------------------------------------------------------------------
+products:
+  - key: "booking"
+    name: "Local Service Booking"
+    slug: "service-booking"
+    category: "Operations & Scheduling"
+    tagline: "ระบบจองคิว ช่าง และจัดการนัดหมายสำหรับธุรกิจบริการ"
+    description: "Multi-tenant booking platform with staff allocation, hold-gating, Stripe billing, and customer-facing booking portal."
+    deployment_model: "shared_runtime"
+    runtime_project: "Project B"
+    schema: "local_service"
+    commercial_status: "sellable"
+    wave: 1
+    path: "products/booking"
+    modules:
+      - "auth-supabase"
+      - "tenant-context"
+      - "payment"
+    acceptance:
+      architecture: true
+      operations: true
+      commercial: true
+      support: true
+
+  - key: "line_oa_ai"
+    name: "LINE OA AI Customer Service Bot"
+    slug: "line-oa-ai"
+    category: "Customer Communication & AI"
+    tagline: "บอท AI ตอบคำถาม รับจอง และปิดการขายบน LINE Official Account"
+    description: "Stateful conversational AI bot integrated with LINE Messaging API, supporting FAQ, booking intent, and human handoff."
+    deployment_model: "shared_runtime"
+    runtime_project: "Project B"
+    schema: "line_oa"
+    commercial_status: "beta"
+    wave: 1
+    path: "products/line-oa-ai"
+    modules:
+      - "line-oa-ai-module"
+      - "webhook-receiver"
+      - "ai-provider"
+    acceptance:
+      architecture: true
+      operations: true
+      commercial: true
+      support: false
+
+  - key: "tracking"
+    name: "Ticket & Service Tracking"
+    slug: "ticket-tracking"
+    category: "Customer Communication & Operations"
+    tagline: "ระบบออกบัตรคิวและติดตามสถานะงานบริการแบบเรียลไทม์"
+    description: "Real-time job tracking system providing transparent updates to customers from service intake to completion."
+    deployment_model: "shared_runtime"
+    runtime_project: "Project B"
+    schema: "tracking"
+    commercial_status: "beta"
+    wave: 1
+    path: "products/ticket-tracking-relay"
+    modules:
+      - "notification"
+      - "audit-log"
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: true
+      support: false
+
+  - key: "headless_commerce"
+    name: "Headless Commerce API"
+    slug: "headless-commerce"
+    category: "E-Commerce"
+    tagline: "API แคตตาล็อกสินค้า สต็อก และหมวดหมู่สำหรับร้านค้าออนไลน์"
+    description: "High-performance headless e-commerce catalog API with variant management and media storage."
+    deployment_model: "shared_runtime"
+    runtime_project: "Project B"
+    schema: "commerce"
+    commercial_status: "beta"
+    wave: 2
+    path: "products/headless-commerce"
+    modules:
+      - "product-catalog"
+      - "file-storage"
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "stripe_billing"
+    name: "Stripe Billing Backend"
+    slug: "stripe-billing"
+    category: "Billing & Monetization"
+    tagline: "ระบบจัดการ Subscription, Webhook และ Entitlement คิดเงินอัตโนมัติ"
+    description: "Turnkey billing engine handling subscriptions, webhook verifications, invoices, and entitlement syncing."
+    deployment_model: "platform_core"
+    runtime_project: "Project A / Control Plane"
+    schema: "billing_core"
+    commercial_status: "internal_core"
+    wave: 2
+    path: "products/stripe-billing"
+    modules:
+      - "payment"
+      - "subscription"
+      - "webhook-receiver"
+    acceptance:
+      architecture: true
+      operations: true
+      commercial: true
+      support: true
+
+  - key: "multi_tenant_ai"
+    name: "Multi-Tenant AI Starter Kit"
+    slug: "multi-tenant-ai-starter"
+    category: "Developer Starter Kit"
+    tagline: "Boilerplate สำหรับสร้างเว็บแอป AI รองรับหลาย Tenant และจำกัด Quota"
+    description: "Production-ready boilerplate for multi-tenant SaaS with rate limiting, tenant isolation, and AI integrations."
+    deployment_model: "source_product"
+    runtime_project: "External / Self-hosted"
+    commercial_status: "sellable"
+    wave: 2
+    path: "products/multi-tenant-ai"
+    modules:
+      - "tenant-context"
+      - "rate-limit"
+      - "ai-provider"
+    acceptance:
+      architecture: true
+      operations: true
+      commercial: true
+      support: false
+
+  - key: "feature_flag"
+    name: "Feature Flag & Config Platform"
+    slug: "feature-flags"
+    category: "Developer Tools"
+    tagline: "ระบบสลับเปิด/ปิดฟีเจอร์และจัดการ Runtime Config แยกตามร้าน"
+    description: "Lightweight feature toggle and dynamic configuration service with memory/redis store support."
+    deployment_model: "shared_runtime"
+    runtime_project: "Project B"
+    schema: "feature_flags"
+    commercial_status: "internal_test"
+    wave: 2
+    path: "products/feature-flag"
+    modules:
+      - "feature-flags"
+      - "config-runtime"
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "content_autopilot"
+    name: "Content Auto-Pilot"
+    slug: "content-autopilot"
+    category: "Marketing Automation"
+    tagline: "ระบบ AI สร้างคอนเทนต์และตั้งเวลาเผยแพร่อัตโนมัติ"
+    description: "AI-driven content generation and scheduling engine for multi-channel social media distribution."
+    deployment_model: "dedicated_runtime"
+    runtime_project: "Dedicated Worker"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/content-autopilot"
+    modules:
+      - "scheduler"
+      - "ai-workflow-engine"
+    acceptance:
+      architecture: false
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "it_ops_watchdog"
+    name: "Autonomous IT Ops Watchdog"
+    slug: "it-ops-watchdog"
+    category: "DevOps & Infrastructure"
+    tagline: "ระบบเฝ้าระวังเซิร์ฟเวอร์ ตรวจสอบสถานะ และแจ้งเตือนปัญหาอัตโนมัติ"
+    description: "Health monitoring and alerting service with customizable probes and multi-channel notifications."
+    deployment_model: "dedicated_runtime"
+    runtime_project: "Dedicated Worker"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/it-ops-watchdog"
+    modules:
+      - "health-check"
+      - "notification"
+    acceptance:
+      architecture: false
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "bulk_etl_sync"
+    name: "Enterprise Bulk ETL & Sync"
+    slug: "bulk-etl-sync"
+    category: "Data & Integration"
+    tagline: "ระบบประมวลผลและนำเข้าไฟล์ข้อมูลขนาดใหญ่ (Excel/CSV) สตรีมมิ่งความเร็วสูง"
+    description: "Streaming parser and ETL pipeline for high-volume tabular datasets."
+    deployment_model: "dedicated_runtime"
+    runtime_project: "Dedicated Worker"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/bulk-etl-sync"
+    modules:
+      - "import-export"
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "compliance_audit"
+    name: "Compliance & Audit Trail"
+    slug: "compliance-audit"
+    category: "Security & Governance"
+    tagline: "ระบบบันทึก Audit Log ป้องกันการแก้ไข และรายงานผลความปลอดภัย"
+    description: "Immutable audit event logging service with retention policies and security audit summaries."
+    deployment_model: "dedicated_runtime"
+    runtime_project: "Dedicated Worker"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/compliance-audit"
+    modules:
+      - "audit-log"
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "ai_resilience_gateway"
+    name: "AI Resilience Gateway"
+    slug: "ai-resilience-gateway"
+    category: "AI Infrastructure"
+    tagline: "Gateway สลับ AI Model สำรองอัตโนมัติ ป้องกันบริการสะดุด"
+    description: "Multi-model fallback proxy supporting OpenAI, Anthropic, and Gemini with automatic retry."
+    deployment_model: "external"
+    runtime_project: "Edge Proxy"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/ai-resilience-gateway"
+    modules:
+      - "ai-provider"
+      - "http-client"
+    acceptance:
+      architecture: false
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "short_url_analytics"
+    name: "Short URL Analytics"
+    slug: "short-url-analytics"
+    category: "Marketing & Analytics"
+    tagline: "ระบบย่อลิงก์ ติดตามยอดคลิก และวิเคราะห์พฤติกรรมผู้ใช้"
+    description: "High-speed URL redirection and click telemetry service."
+    deployment_model: "shared_runtime"
+    runtime_project: "Project B"
+    schema: "short_url"
+    commercial_status: "beta"
+    wave: 2
+    path: "products/short-url-analytics"
+    modules:
+      - "http-client"
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false

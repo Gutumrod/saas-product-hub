@@ -1,8 +1,8 @@
 # nested repos already tracked on their own — don't embed them here
-/bike-booking-saas-cf-poc/
-/booking-ticket-module/
-/local-service-booking-saas/
-/service-booking-saas/
+/apps/hub-web/
+/products/booking/
+/products/booking-ticket-module/
+/_archive/bike-booking-saas-cf-poc/
 
 # secrets
 .env
@@ -17,3 +17,4 @@ build/
 
 # local tool config
 .claude/
+.qwen/
