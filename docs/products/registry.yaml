@@ -50,10 +50,12 @@ products:
       - "auth-supabase"
       - "tenant-context"
       - "payment"
+    # commercial/operations gated: no production domain yet, Phase 2 (Hub CTA handoff)
+    # blocked on it — see vault/06-Agent-Logs/Service-Booking-SaaS 2026-08-14 handoff
     acceptance:
       architecture: true
-      operations: true
-      commercial: true
+      operations: false
+      commercial: false
       support: true
 
   - key: "line_oa_ai"
@@ -157,10 +159,13 @@ products:
       - "tenant-context"
       - "rate-limit"
       - "ai-provider"
+    # commercial gated: enterprise-features (CircuitBreaker/tracing) module is
+    # empty in modules-hub — tracing claim must be cut from the pitch until
+    # written, see products/multi-tenant-ai/BRIEF.md
     acceptance:
       architecture: true
       operations: true
-      commercial: true
+      commercial: false
       support: false
 
   - key: "feature_flag"
@@ -275,7 +280,8 @@ products:
     path: "products/ai-resilience-gateway"
     modules:
       - "ai-provider"
-      - "http-client"
+      - "rate-limit"
+      - "tenant-context"
     acceptance:
       architecture: false
       operations: false
@@ -294,8 +300,8 @@ products:
     commercial_status: "beta"
     wave: 2
     path: "products/short-url-analytics"
-    modules:
-      - "http-client"
+    # standalone FastAPI/Python service — doesn't use the modules-hub
+    # copied-module pattern the other products do, so no modules list here
     acceptance:
       architecture: true
       operations: false
