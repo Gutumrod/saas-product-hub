@@ -2,6 +2,18 @@
 /apps/hub-web/
 /products/booking/
 /products/booking-ticket-module/
+/products/ai-resilience-gateway/
+/products/bulk-etl-sync/
+/products/compliance-audit/
+/products/content-autopilot/
+/products/feature-flag/
+/products/headless-commerce/
+/products/it-ops-watchdog/
+/products/line-oa-ai/
+/products/multi-tenant-ai/
+/products/stripe-billing/
+/products/short-url-analytics/
+/products/ticket-tracking-relay/
 /_archive/bike-booking-saas-cf-poc/
 
 # secrets

@@ -1,4 +1,0 @@
-NOTIFICATION_WEBHOOK_URL=https://example.com/webhooks/notification
-NOTIFICATION_WEBHOOK_SECRET=optional-secret
-NOTIFY_TIMEOUT_MS=5000
-NOTIFY_MAX_ATTEMPTS=3
