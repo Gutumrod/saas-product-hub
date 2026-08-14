@@ -1,0 +1,59 @@
+You are implementing Stage 2/4 (CORE) of the Rate Limit module for the Module Hub monorepo. Implement ONLY core/ + memory adapter + entry point + build config + minimal smoke tests. Do NOT write MODULE.md, integration.example.ts, or the full test suite (those are later stages).
+
+WORKING DIRECTORY (write all files here):
+D:\AI-Workspace\projects\modules-hub\modules\rate-limit
+
+AUTHORITATIVE SPEC — read this file fully first:
+D:\AI-Workspace\projects\modules-hub\modules\rate-limit\DESIGN.md
+
+FORMAT REFERENCE — match structure/conventions of this sibling module:
+D:\AI-Workspace\projects\modules-hub\http-client-module\
+(see its core/ layout, package.json, tsconfig.json, vitest.config.ts, index.ts, core/index.ts, adapters/index.ts)
+
+SCOPE LOCK — v0.1 (from DESIGN.md):
+- checkRateLimit({ key, limit, windowMs }) -> { allowed, remaining, resetAt, retryAfterMs }
+- RateLimitStore interface + Memory adapter (fixed window)
+- RATE_LIMITED error + retryAfter
+- Config injected by host — core never reads env
+- Cloudflare Workers compatible: zero node:* imports, Web APIs only
+
+IMPLEMENT EXACTLY THESE FILES (paths relative to the working directory above):
+
+1. package.json — name "@module-hub/rate-limit", version "0.1.0", type "module", main "./index.ts", exports { ".": "./index.ts" }, scripts { test: "vitest run", typecheck: "tsc --noEmit" }, devDependencies { typescript ^5.6.3, vitest ^2.1.4 }. Match the http-client reference shape.
+
+2. tsconfig.json — target ES2022, module ES2022, moduleResolution Bundler, lib ["ES2022"], strict true, skipLibCheck true, noImplicitOverride true, noUnusedLocals true, noUnusedParameters true, include ["**/*.ts"]. (Match http-client reference; do NOT add DOM lib unless needed.)
+
+3. vitest.config.ts — minimal config using defineConfig from 'vitest/config'. Do NOT enable coverage thresholds (that is a later stage's concern). Keep it simple.
+
+4. core/types.ts — export ALL exact types from DESIGN.md section 3: CheckRateLimitInput, RateLimitResult, RateLimitConfig, StoreConsumeParams, StoreConsumeResult, RateLimitStore (interface with consume(params): Promise<StoreConsumeResult> and optional reset?(key?: string): Promise<void>), MemoryStoreOptions. Use the exact field names and JSDoc from DESIGN.md.
+
+5. core/error.ts — export RateLimitError class (extends Error) with readonly code: 'RATE_LIMITED', status: 429, retryable: true, key, limit, windowMs, resetAt, retryAfterMs, details: Record<string, unknown>. Constructor takes { key, limit, windowMs, resetAt, retryAfterMs, message? }. Default message: `Rate limit exceeded for key "<key>". Retry after <retryAfterMs>ms.` details = { key, limit, windowMs, remaining: 0, resetAt, retryAfterMs }. Also export RateLimitConfigError class (extends Error) with readonly code: 'RATE_LIMIT_INVALID_CONFIG', retryable: false. Also export the ErrorShape type per DESIGN.md section 7.2.
+
+6. core/config.ts — input validation helpers (fail fast). Validate per DESIGN.md section 8.1: key must be non-empty string (trim().length > 0), limit must be integer > 0, windowMs must be number > 0, cost must be integer >= 1 (default 1), now must be finite number > 0 if provided (default Date.now()). Throw RateLimitConfigError with code 'RATE_LIMIT_INVALID_CONFIG' on any failure. Also resolve defaults from RateLimitConfig (defaultLimit, defaultWindowMs, throwOnLimitExceeded default true).
+
+7. core/limiter.ts — export createRateLimiter(config?: RateLimitConfig): RateLimiter and checkRateLimit(input, store?, config?): Promise<RateLimitResult>. RateLimiter interface: { check(input): Promise<RateLimitResult>; checkOrThrow(input): Promise<RateLimitResult> }. Implement the fixed-window algorithm per DESIGN.md section 6: windowStart = Math.floor(now / windowMs) * windowMs, resetAt = windowStart + windowMs, remaining = max(0, limit - currentCount), retryAfterMs = 0 if allowed else max(0, resetAt - now). Validate inputs first (fail fast). Default store = createMemoryStore() if none injected. checkOrThrow throws RateLimitError when blocked (or when throwOnLimitExceeded is true). check() returns the result without throwing.
+
+8. adapters/memory-store.ts — export createMemoryStore(options?: MemoryStoreOptions): RateLimitStore. Implement MemoryRateLimitStore per DESIGN.md section 5: internal Map<string, WindowBucket> where WindowBucket = { windowStart, count, expiresAt }. consume(params) is atomic per key: compute currentWindowStart = Math.floor(now / windowMs) * windowMs; if no bucket OR now >= bucket.expiresAt OR bucket.windowStart !== currentWindowStart, initialize new bucket { windowStart: currentWindowStart, count: 0, expiresAt: currentWindowStart + windowMs }. If bucket.count + cost <= limit: increment count, return { currentCount, windowStart, resetAt: expiresAt, allowed: true }. Else: do NOT increment, return { currentCount, windowStart, resetAt: expiresAt, allowed: false }. Passive eviction: when Map size exceeds maxKeys (default 10000), do a fast linear sweep removing expired buckets (now >= expiresAt). NO setInterval / background loops. Implement optional reset?(key?) to clear a key or all keys. Include a clear doc comment warning that MemoryRateLimitStore is NOT suitable for distributed production (single-process only).
+
+9. adapters/index.ts — export { createMemoryStore } from './memory-store.js'; and re-export the RateLimitStore type.
+
+10. core/index.ts — re-export the public API: createRateLimiter, checkRateLimit, RateLimitError, RateLimitConfigError, createMemoryStore (or re-export from adapters), and all public types (CheckRateLimitInput, RateLimitResult, RateLimitConfig, RateLimitStore, MemoryStoreOptions, ErrorShape).
+
+11. index.ts (module root entry) — re-export the full public API from core/index.ts and adapters/index.ts, matching the http-client reference style.
+
+12. tests/ — write MINIMAL smoke tests (vitest) so `npm test` passes. This is NOT the full 12-case suite (that is Stage 3/4's job). Cover at least: first request allowed, remaining decrements, limit reached blocks, window reset clears counter, independent keys, invalid config throws RateLimitConfigError, and memory store concurrent consume. Put them under tests/ (e.g. tests/limiter.test.ts, tests/memory-store.test.ts, tests/config.test.ts). Keep them focused and passing.
+
+CONSTRAINTS:
+- Zero node:* imports anywhere. Web/ES standard APIs only (Map, Math, Date, Promise). Cloudflare Workers compatible.
+- Core MUST NOT read process.env / globalThis.process.env. All config injected by host.
+- Do NOT run scaffolders, git clean, or rm -rf.
+- Do NOT write MODULE.md, integration.example.ts, or the full test suite.
+- Use .js extension on relative import specifiers (ESM style, matching http-client reference).
+
+VERIFICATION (REQUIRED — do this yourself before finishing):
+1. Run `npm install` in the working directory.
+2. Run `npx tsc --noEmit` — must exit 0.
+3. Run `npm test` — must pass.
+Fix any errors until both pass.
+
+When done, report: the list of files you created, the result of `npx tsc --noEmit`, and the result of `npm test`.

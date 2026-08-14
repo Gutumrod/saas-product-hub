@@ -1,0 +1,38 @@
+You are implementing Stage 2 (Builder) of the File Storage module for the Module Hub project.
+
+## Working directory
+D:/AI-Workspace/projects/modules-hub/file-storage-module/
+
+## Read this first — it is the ONLY source of truth
+Read the file `D:/AI-Workspace/projects/modules-hub/file-storage-module/DESIGN.md` in full. It fully specifies the module contract, types, validation rules, path generation, error codes, adapter interface, and file structure. Implement the code EXACTLY per that design. Do not invent your own contract.
+
+## Your deliverable — write these files to these EXACT absolute paths
+1. `D:/AI-Workspace/projects/modules-hub/file-storage-module/core/types.ts`
+   - All shared types only, no logic: UploadRequest, UploadResult, DeleteResult, GetUrlResult, GetMetadataResult, ExistsResult, FileMetadata, FileStorageConfig, StorageError, StorageErrorCode, StorageAdapter, PutOptions, PutResult, HeadResult. Match §3, §4, §6, §7 exactly.
+2. `D:/AI-Workspace/projects/modules-hub/file-storage-module/core/validate.ts`
+   - `validateUpload(request, config)` implementing the validation pipeline in §5.1. Returns `{ ok: true }` or `{ ok: false, error: StorageError }`. Checks in order: empty file (EMPTY_FILE), max size (FILE_TOO_LARGE), MIME allowlist (INVALID_MIME), filename present/sanitization (INVALID_FILENAME), dangerous reserved names (INVALID_FILENAME), spoofed-extension check (INVALID_MIME), directory/path safety (INVALID_PATH). Include the small built-in extension→MIME map from §5.1.
+3. `D:/AI-Workspace/projects/modules-hub/file-storage-module/core/path.ts`
+   - `generateKey(request, config)` implementing §5.2: `{keyPrefix?}/{directory?}/{year}/{month}/{uuid}.{ext}`. Also export `sanitizePathSegment()`. Use Web Crypto `crypto.randomUUID()` for the v4 UUID (NO node:crypto). Extension is sanitized+lowercased; omit `.ext` if no extension. Never use the user filename as a path segment. Apply sanitization rules from §5.2 (reject `.`/`..`, separators, NUL, control chars, hidden segments; normalize to `/`; final key never starts with `/` and never contains `..`).
+4. `D:/AI-Workspace/projects/modules-hub/file-storage-module/core/storage.ts`
+   - `createFileStorage(config)` returning a `FileStorageClient` implementing the 5 public methods (upload/delete/getUrl/getMetadata/exists) per §2. Orchestrates validate → generate key → adapter call → map result. Throws `StorageError` CONFIG_INVALID at construction for malformed config. Never throws for validation/provider failures (returns structured results). Never reads process.env/env/globalThis. Maps adapter throws to StorageError codes (UPLOAD_FAILED, DELETE_FAILED, NOT_FOUND, PROVIDER_ERROR). Enforces public/private visibility per §5.4. Does not mutate the request input.
+5. `D:/AI-Workspace/projects/modules-hub/file-storage-module/core/index.ts`
+   - Public barrel: re-export `createFileStorage`, `FileStorageClient`, and all public types.
+6. `D:/AI-Workspace/projects/modules-hub/file-storage-module/adapters/r2.ts`
+   - Cloudflare R2 `StorageAdapter` implementation. `put` rejects keys containing `..` (defense-in-depth). `delete` idempotent. `head` throws NOT_FOUND-mapped error when absent. `getSignedUrl` throws if unsupported (core maps to PRIVATE_ACCESS). No env reads. Use the R2 binding passed in via config.
+7. `D:/AI-Workspace/projects/modules-hub/file-storage-module/package.json`
+   - Copy the standard from `D:/AI-Workspace/projects/modules-hub/config-runtime-module/package.json` conventions: `"type": "module"`, scripts `typecheck: tsc --noEmit` and `test: vitest run`, devDeps `typescript: 5.6.3` and `vitest: 2.1.4`. Use the exact package.json content specified in DESIGN.md §11 (name file-storage-module, version 0.1.0, private true, description as given).
+8. `D:/AI-Workspace/projects/modules-hub/file-storage-module/tsconfig.json`
+   - Copy from config-runtime-module: target ES2022, module ES2022, moduleResolution Bundler, lib [ES2022, DOM], strict, esModuleInterop, skipLibCheck, declaration, outDir dist. Include `["core", "adapters"]` (do NOT include tests or integration.example.ts — those are later stages and don't exist yet).
+
+## Constraints
+- Follow DESIGN.md exactly — do not invent your own contract.
+- TypeScript, strict mode.
+- Use Web Crypto API only if crypto needed (crypto.randomUUID()). NO node:crypto / node:* imports — must run on Cloudflare Workers.
+- No business-specific logic.
+- Module never reads env/process.env/globalThis — Host injects config.
+- Do NOT write tests (that's a later stage). Do NOT write MODULE.md or integration.example.ts (another stage).
+- Do NOT run any scaffolder, `git clean`, `rm -rf`, or anything that could delete/overwrite existing files in this folder. DESIGN.md must survive. Do not delete or modify DESIGN.md.
+- Do not create a tests/ directory or any test files.
+
+## When done
+Write all 8 files to the exact absolute paths above. Then run `npm install` and `npm run typecheck` in the working directory to confirm the code compiles. Report what you built and the typecheck result. If typecheck fails, fix the errors until it passes.

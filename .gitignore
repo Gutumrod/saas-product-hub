@@ -1,0 +1,19 @@
+# nested repos already tracked on their own — don't embed them here
+/bike-booking-saas-cf-poc/
+/booking-ticket-module/
+/local-service-booking-saas/
+/service-booking-saas/
+
+# secrets
+.env
+.env.*
+service-booking-fullstack.env
+
+# deps / build
+node_modules/
+dist/
+build/
+.next/
+
+# local tool config
+.claude/

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Short URL Analytics</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Local link tracker</p>
+          <h1>Short URL Analytics</h1>
+        </div>
+        <a class="docs-link" href="/docs">API Docs</a>
+      </section>
+
+      <section class="panel">
+        <form id="shorten-form" class="shorten-form">
+          <label for="url-input">Long URL</label>
+          <div class="form-row">
+            <input
+              id="url-input"
+              name="url"
+              type="url"
+              placeholder="https://example.com/long/path"
+              required
+            />
+            <input
+              id="custom-code-input"
+              name="custom_code"
+              type="text"
+              placeholder="custom-code"
+              pattern="[A-Za-z0-9_-]{3,64}"
+              title="Use 3-64 letters, numbers, dashes, or underscores"
+            />
+            <button type="submit">Shorten URL</button>
+          </div>
+        </form>
+
+        <div id="result" class="result hidden">
+          <span id="result-link"></span>
+          <button id="copy-button" type="button">Copy Link</button>
+        </div>
+        <p id="message" class="message"></p>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <h2>Links</h2>
+          <button id="refresh-button" type="button">Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Short Code</th>
+                <th>Original URL</th>
+                <th>Clicks</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="links-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="analytics-panel" class="panel analytics hidden">
+        <div class="section-heading">
+          <h2 id="analytics-title">Analytics</h2>
+          <button id="close-analytics" type="button">Close</button>
+        </div>
+        <div class="metrics">
+          <div>
+            <span class="metric-label">Total Clicks</span>
+            <strong id="total-clicks">0</strong>
+          </div>
+          <div>
+            <span class="metric-label">Last Click</span>
+            <strong id="last-click">Never</strong>
+          </div>
+        </div>
+        <h3>Referrers</h3>
+        <ul id="referrer-list" class="stat-list"></ul>
+        <h3>Recent Clicks</h3>
+        <ul id="recent-clicks" class="stat-list"></ul>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

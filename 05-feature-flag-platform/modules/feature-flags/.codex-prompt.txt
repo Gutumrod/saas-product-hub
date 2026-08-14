@@ -1,0 +1,58 @@
+You are the Stage 2 Builder (CORE) for the Feature Flags module in the Module Hub monorepo. Implement the `core/` and `adapters/memory/` TypeScript source from the DESIGN.md contract. This is a build-only task.
+
+## Working directory (use this as your root for ALL file creation)
+D:\AI-Workspace\projects\modules-hub\modules\feature-flags
+
+## MUST read FIRST — the single source of truth
+Read this file in full before writing any code:
+  D:\AI-Workspace\projects\modules-hub\modules\feature-flags\DESIGN.md
+
+Follow its contract EXACTLY: public API signatures (section 2), exact core types (section 3), store contract (section 4), memory adapter design (section 5), default fallback & evaluation policy (section 6), targeting & segmentation (section 7), caching & runtime mutability (section 8), structured errors (section 9), config contract (section 10), security (section 11), file structure (section 12), package.json + tsconfig.json (section 15).
+
+Also read this common-rules brief for architectural conventions:
+  D:\AI-Workspace\projects\modules-hub\modules\briefs\00-common-rules.md
+
+Reference sibling module style (barrel exports, strict TS, single pipeline):
+  D:\AI-Workspace\projects\modules-hub\http-client-module\  (core/ layout, package.json, tsconfig.json, vitest.config.ts, index.ts)
+
+## What to BUILD (Stage 2 scope — core implementation + scaffolding + minimal smoke tests)
+
+Create EXACTLY these files under the working directory (create dirs as needed):
+
+1. package.json — name "@module-hub/feature-flags", version "0.1.0", "private": true, "type": "module", "main": "./index.ts", exports { ".": "./index.ts" }, scripts { "test": "vitest run", "typecheck": "tsc --noEmit" }, devDependencies typescript ^5.6.3 and vitest ^2.1.4 (match DESIGN.md section 15, add "private": true like the sibling modules).
+2. tsconfig.json — copy the EXACT compilerOptions from DESIGN.md section 15 (target ES2022, module ES2022, moduleResolution Bundler, lib ["ES2022","DOM"], strict, skipLibCheck, noImplicitOverride, noUnusedLocals, noUnusedParameters), include ["**/*.ts"].
+3. vitest.config.ts — a minimal vitest config (no coverage gate needed for Stage 2; keep it simple, e.g. just `import { defineConfig } from 'vitest/config'; export default defineConfig({ test: {} });`).
+4. index.ts (root entry) — re-export the public API from ./core and ./adapters (createFeatureFlagClient, FeatureFlagClient, createMemoryFlagStore, MemoryFeatureFlagStore, FeatureFlagError, FeatureFlagErrorCode, and all public types).
+5. core/types.ts — ALL exact types from DESIGN.md section 3: FeatureFlagContext, FeatureFlagQuery, FeatureFlagResult, FlagTargetingRule, StoredFlag, FeatureFlagStore, SanitizedFlagEvaluationInfo, FeatureFlagLoggingHooks, FeatureFlagConfig.
+6. core/error.ts — the FeatureFlagError class (section 9) with readonly code/key/cause and the FeatureFlagErrorCode union ('FLAG_KEY_INVALID' | 'FLAG_PROVIDER_ERROR' | 'FLAG_VALUE_INVALID').
+7. core/targeting.ts — simple exact-matching targeting evaluation (section 7): given StoredFlag.rules and FeatureFlagContext, find the first rule where ALL specified fields (tenantId, userId, environment) exactly equal the corresponding context properties. Return the matched rule or null.
+8. core/evaluator.ts — the single evaluation pipeline (sections 2.1, 6): validate key (FLAG_KEY_INVALID -> error_fallback), call store.getFlag (catch throw -> FLAG_PROVIDER_ERROR -> error_fallback, null -> default_fallback), targeting evaluation (matched rule -> store, else StoredFlag.enabled -> store), FLAG_VALUE_INVALID for malformed/non-boolean flag values -> error_fallback. Fallback precedence: query.defaultValue (if boolean) -> config.defaultFallback -> false. Sanitized reasons only (no secrets). Trigger onError/onEvaluation hooks wrapped in try/catch so a throwing hook never breaks flow.
+9. core/client.ts — createFeatureFlagClient(config?: FeatureFlagConfig): FeatureFlagClient (section 2). isEnabled(query) MUST internally call getFlag(query) and return result.enabled — single pipeline, no bypass. Default store is an empty memory store. Core NEVER reads process.env / env / globalThis env. Config injected from host only.
+10. core/index.ts — barrel re-exporting everything public from the core module.
+11. adapters/memory-store.ts — createMemoryFlagStore(initialFlags?: Record<string, StoredFlag | boolean>): MemoryFeatureFlagStore (section 5). Backed by a Map<string, StoredFlag>. setFlag(key, flag) auto-wraps plain boolean into { key, enabled: boolean }. Exposes setFlag/removeFlag/clear. getFlag(key, context) returns the StoredFlag or null. MUST include a clear non-production declaration comment stating it is NOT a distributed production flag store (single-instance, in-memory, for tests/local dev/contract validation only).
+12. adapters/index.ts — barrel re-exporting createMemoryFlagStore and MemoryFeatureFlagStore.
+13. tests/smoke.test.ts — MINIMAL smoke tests ONLY (the full 13-case suite is Stage 4 Qwen's job). Cover at least: flag true, flag false, missing flag default fallback, provider failure -> error_fallback, and memory runtime update visible immediately. Use vitest. Keep it small.
+
+DO NOT create: MODULE.md (Stage 3/Claude owns docs), examples/integration.example.ts (later stage), the full test suite, .codex-prompt.txt, .codex-result.json, or any relay evidence. Do NOT delete, overwrite, or modify the existing DESIGN.md.
+
+## Constraints
+- Core MUST have zero node:* imports and zero process.env / env / globalThis env reads. Cloudflare Workers compatible — Web APIs only.
+- All public types & functions exported from core/index.ts and adapters/index.ts per DESIGN.md section 2.
+- isEnabled() MUST delegate to getFlag() — single pipeline, no secondary evaluation paths.
+- Deterministic fallback: query.defaultValue -> config.defaultFallback -> false.
+- No entitlement/permission logic. No secret storage in flag values. Sanitized reasons only.
+- Strict TypeScript. The code MUST typecheck cleanly with the project's tsconfig (tsc --noEmit, exit 0).
+
+## SETUP (REQUIRED)
+1. Run `npm install` in the working directory first (this creates node_modules so typecheck and tests can run).
+2. Then run `npx tsc --noEmit` — must exit 0.
+3. Then run `npm test` — must pass (the minimal smoke tests).
+
+## CRITICAL — verify your own work before finishing
+After writing all files, run `npm install`, then `npx tsc --noEmit` and confirm it exits 0, then `npm test` and confirm it passes. If typecheck or tests fail, fix the code until both pass. Report the real exit codes in your final answer.
+
+The deliverable source files MUST be written to the working directory:
+D:\AI-Workspace\projects\modules-hub\modules\feature-flags\  (absolute path — always write files here, never to a relative or scratch location)
+
+## Final report format
+Report back: (1) the complete list of files you wrote (absolute paths), (2) the real typecheck exit code you observed, (3) the real npm test result you observed, (4) a one-line confirmation that DESIGN.md was not modified. Do NOT invent a pass — actually run tsc and npm test and report what they returned.

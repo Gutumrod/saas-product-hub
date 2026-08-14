@@ -1,0 +1,130 @@
+You are a senior TypeScript QA engineer. Write a complete, REAL test suite for the Product Catalog module. Do NOT modify any production code under core/ or adapters/ — write tests only. Do NOT run scaffolders, git clean, or rm -rf.
+
+## Context
+
+Module root (absolute): D:/AI-Workspace/projects/modules-hub/modules/product-catalog
+
+The module is an embedded TypeScript (ESM, `"type": "module"`, vitest 2.1.4) package. All public exports come from index.ts at the module root:
+  - createProductCatalogService(config) -> ProductCatalogService
+  - createCsvProductRepository(options) -> ProductRepository
+  - createLocalMediaStorage(options) -> MediaStorage
+  - ProductCatalogError (class with .code, .details?, .cause?)
+  - types: CatalogContext, Product, Variant, Brand, Category, ProductImage, ProductQuery, PaginatedResult, ProductStatus, AttributeValue, CustomAttributeMap, CreateProductInput, UpdateProductInput, UploadProductImageInput, BrandQuery, CategoryQuery, StructuredLogger, LogEntry, AuditSink, AuditEvent, MediaStorage, ProductRepository, etc.
+
+Import in tests as:
+  import { createProductCatalogService, createCsvProductRepository, createLocalMediaStorage, ProductCatalogError } from '../index.js';
+  import type { CatalogContext, CustomAttributeMap, ProductQuery, PaginatedResult, Product } from '../index.js';
+
+Note: all imports use explicit `.js` extensions (ESM). Do not import from sub-files — import from index.js only.
+
+## Test environment / config
+
+tsconfig has strict + noUnusedLocals + noUnusedParameters. vitest.config.ts already exists with coverage config (lines 90, functions 90, branches 85, statements 90) but coverage.enabled is false. There is NO test:coverage script in package.json (only test, test:contract, typecheck). Do NOT add scripts to package.json. Do NOT edit vitest.config.ts.
+
+## Core API contract (verified from source)
+
+### CatalogContext
+{ tenantId: string; catalogId: string; actor?: { id: string; type: 'user'|'system'|'api'|'import' } }
+
+### ProductCatalogService methods (all take ctx first)
+- createProduct(ctx, input) -> Product
+- getProductById(ctx, id) -> Product (throws PRODUCT_NOT_FOUND if missing)
+- getProductBySku(ctx, sku) -> Product (normalizes sku via validateSku; throws PRODUCT_NOT_FOUND if missing)
+- getProductBySlug(ctx, slug) -> Product (slugifies input; throws PRODUCT_NOT_FOUND if missing)
+- updateProduct(ctx, id, input) -> Product
+- archiveProduct(ctx, id) -> Product (sets status='archived', archivedAt=now)
+- restoreProduct(ctx, id) -> Product (clears archivedAt; status = isActive ? 'active' : 'inactive')
+- deleteProduct(ctx, id) -> void (hard delete, cascades variants + images in CSV adapter)
+- listProducts(ctx, query?) -> PaginatedResult<Product>
+- searchProducts(ctx, query) -> PaginatedResult<Product>
+- createVariant(ctx, input) -> Variant ; getVariantById; updateVariant; deleteVariant; listVariantsByProductId(ctx, productId) -> Variant[]
+- createBrand / getBrandById / updateBrand / deleteBrand / listBrands(ctx, query?) -> PaginatedResult<Brand>
+- createCategory / getCategoryById / updateCategory / deleteCategory / listCategories(ctx, query?) -> Category[]  (NO pagination — returns array)
+- uploadProductImage(ctx, input) -> ProductImage
+- deleteProductImage(ctx, imageId) -> void
+- setPrimaryProductImage(ctx, productId, imageId) -> ProductImage
+- reorderProductImages(ctx, productId, imageIdsInOrder[]) -> ProductImage[]
+- listProductImages(ctx, productId) -> ProductImage[]
+
+### CreateProductInput
+{ sku: string; name: string; slug?; description?; shortDescription?; status?: ProductStatus; brandId?; categoryId?; price: number; compareAtPrice?; costPrice?; currency?; stockQuantity?; trackInventory?; isActive?; isFeatured?; attributes?: CustomAttributeMap; metadata? }
+Defaults: status='draft', currency='THB' (config.defaults.currency ?? 'THB'), stockQuantity=0, trackInventory=true, isActive=true, isFeatured=false.
+
+### AttributeValue discriminated union
+| { type:'string', value:string }
+| { type:'number', value:number }
+| { type:'boolean', value:boolean }
+| { type:'date', value:string }  // ISO8601
+| { type:'enum', value:string, options:string[] }   // value must be in options
+| { type:'multi_enum', value:string[], options:string[] } // every value must be in options
+
+### SKU validation
+validateSku trims, uppercases, replaces invalid chars with '-', collapses dashes, trims leading/trailing dashes. Result must match /^[A-Z0-9_-]{3,64}$/. Invalid -> INVALID_PRODUCT_DATA. SKU 'HELMET-ADV-001' normalizes to itself. ' helmet adv 001 ' -> 'HELMET-ADV-001'.
+
+### Slug
+slugify NFKC-normalizes, lowercases, replaces non-letter/number runs with '-', trims dashes; empty -> 'item'. Thai preserved: 'หมวกกันน็อค ADV' -> 'หมวกกันน็อค-adv'. generateUniqueSlug appends -1, -2 on collision.
+
+### PaginatedResult<Product>
+{ items, page, limit, total, totalPages, hasNext, hasPrev }
+
+### Error codes (12): PRODUCT_NOT_FOUND, DUPLICATE_SKU, INVALID_PRODUCT_DATA, INVALID_VARIANT, INVALID_CATEGORY, STORAGE_ERROR, MEDIA_UPLOAD_FAILED, MEDIA_DELETE_FAILED, CSV_LOCKED, CSV_CORRUPTED, PROVIDER_UNAVAILABLE, CONFIGURATION_ERROR.
+
+### Config
+createProductCatalogService({ dataRepository, mediaStorage, logger?, auditSink?, defaults?: { currency?, pageSize?, maxPageSize? } }). Missing dataRepository or mediaStorage throws CONFIGURATION_ERROR. default pageSize=20, maxPageSize=100. Query limit above maxPageSize is clamped down; page below 1 clamped to 1.
+
+### CSV adapter
+createCsvProductRepository({ dataDirectory: string; lockTimeoutMs?: number }). Creates 5 CSV files on construction. Atomic write (tmp -> fsync -> rename -> .bak). File lock via <file>.lock ('wx' flag, poll 50ms up to lockTimeoutMs=3000, else CSV_LOCKED). UTF-8, RFC4180 quoting. CSV_CORRUPTED on header mismatch, column count mismatch, malformed quote, unclosed quote, corrupted numeric/boolean/JSON field. Tenant isolation by tenantId+catalogId (sameScope). listProducts/searchProducts filter by tenant+catalog.
+
+### Local media adapter
+createLocalMediaStorage({ baseUploadDir: string; publicBaseUrl: string; maxFileSizeByte?: number }). default maxFileSizeByte = 5*1024*1024.
+upload(input): UploadMediaInput = { tenantId, catalogId, productId, fileName, mimeType, content: Uint8Array|ArrayBuffer, metadata? }. Rejects > maxFileSizeByte -> INVALID_PRODUCT_DATA. Magic-byte detection: JPEG 0xFFD8FF, PNG 8-byte sig, WEBP RIFF....WEBP. detectedMime !== declared mimeType -> MEDIA_UPLOAD_FAILED. Any MIME not in allowlist (image/jpeg, image/png, image/webp) -> MEDIA_UPLOAD_FAILED (from detectMimeType throw). Returns MediaStorageOutput { storageProvider:'local', storageKey, publicUrl, fileSize, mimeType, metadata:{originalFileName} }. Storage key layout: uploads/products/{productId}/{uuid}.{ext}.
+delete(storageKey) idempotent. exists(storageKey). getPublicUrl(storageKey) = publicBaseUrl + '/' + key. getMetadata, move, copy.
+Path traversal: storageKey with NUL byte or resolving outside baseUploadDir -> STORAGE_ERROR 'Path traversal detected'. sanitizeFileName strips control chars, path separators, '..', leading/trailing dashes.
+
+### Test image buffers (magic bytes) — use real bytes so detectMimeType succeeds
+const PNG_1X1 = new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a, 0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52, 0x00,0x00,0x00,0x01]);
+const JPEG_BYTES = new Uint8Array([0xFF,0xD8,0xFF,0xE0,0x00,0x10,0x4A,0x46,0x49,0x46]);
+const WEBP_BYTES = new Uint8Array([0x52,0x49,0x46,0x46, 0x24,0x00,0x00,0x00, 0x57,0x45,0x42,0x50, 0x56,0x50,0x38]);
+
+## Test file structure — write these EXACT absolute paths
+
+Write 8 test files (all under D:/AI-Workspace/projects/modules-hub/modules/product-catalog/tests/):
+
+1. tests/unit/validators.test.ts
+   - validateSku / normalizeSku / isValidSku: trims/uppercases, collapses dashes, rejects too short (<3), too long (>64), invalid chars, empty. Use the exported funcs from ../index.js (normalizeSku, validateSku are NOT exported from index.ts — only validateCustomAttributes, validateCreateProductInput, validateUpdateProductInput, validateSku, normalizeSku, slugify, generateUniqueSlug, isValidSku, assertSafePath, sanitizeFileName, assertNoCircularCategory are exported from core/index.ts but NOT from module index.ts). IMPORTANT: import these from '../../core/index.js' since they are NOT re-exported by module index.ts. Verify against source: core/index.ts exports validateCustomAttributes, validateCreateCategoryInput, validateUpdateCategoryInput, validateCreateProductInput, validateUpdateProductInput, normalizeSku, validateSku, generateUniqueSlug, slugify, isValidSku, assertSafePath, sanitizeFileName, assertNoCircularCategory, ProductCatalogError. So unit tests for validators import from '../../core/index.js'. But createProductCatalogService, createCsvProductRepository, createLocalMediaStorage, ProductCatalogError come from module '../index.js'. For consistency use '../../core/index.js' ONLY for the pure validator/util exports that are not on the module entry point, and '../index.js' for the service/adapters/error class. Double-check the full export surface with a quick grep of index.ts files before writing.
+
+2. tests/unit/domain-errors.test.ts
+   - ProductCatalogError: constructor sets name='ProductCatalogError', code, details, cause; instanceof Error.
+
+3. tests/unit/slug.test.ts
+   - slugify: Thai, English, spaces->dashes, leading/trailing trim, empty->'item', NFKC. generateUniqueSlug: collision -> -1, -2.
+
+4. tests/contract/product-repository.contract.test.ts
+   - The shared ProductRepositoryContract suite exercised through the REAL CsvProductRepository (the same suite every future data adapter must pass). Cover: create product, get by id, get by sku, update product, archive product, restore product, duplicate SKU rejected, pagination works, filter works, search works, tenant isolation. Use a real temp CSV dir per test (mkdtemp), construct createCsvProductRepository, and call repo methods directly with a CatalogContext. Test pagination: create ~5 products, query with limit/page, assert total/totalPages/hasNext. Filter: by status, brandId, categoryId, minPrice/maxPrice, inStock. Search: match on name/sku/description/brand/category, case-insensitive. Tenant isolation: create product in tenant A, get with tenant B ctx returns null.
+
+5. tests/integration/csv-adapter.test.ts
+   - CSV read/write round trip through createCsvProductRepository: create product, re-read from disk (fresh repo instance on same dir) returns it; create variant; create brand; create category; product image record. UTF-8/Thai round trip (name 'หมวกกันน็อค', description with Thai). Atomic write produces .bak and .tmp cleanup: after create, assert no *.tmp.* files remain and a .bak exists after a second write. Header/schema validation on a manually corrupted file -> CSV_CORRUPTED. Duplicate SKU at repo level -> DUPLICATE_SKU. CSV_LOCKED: manually create <file>.lock file and attempt a mutate with a short lockTimeoutMs, expect CSV_LOCKED. Corrupted numeric field -> CSV_CORRUPTED. Corrupted boolean -> CSV_CORRUPTED. Corrupted JSON attributes field -> CSV_CORRUPTED. Cascade delete: delete product removes its variants and images.
+
+6. tests/integration/media-adapter.test.ts
+   - upload PNG/JPEG/WEBP success: storageKey layout uploads/products/{productId}/{uuid}.{ext}, publicUrl = publicBaseUrl + '/' + key, fileSize matches, mimeType detected correctly, metadata.originalFileName is sanitized. exists true. getMetadata. delete makes exists false; delete is idempotent (deleting twice no throw). move and copy work. Filename sanitization: fileName with '../evil' or 'a/b\\c' stored sanitized in metadata. Path traversal protection: upload a key... actually upload takes content+fileName, storageKey generated internally. To test path traversal call resolveStorageKey indirectly via getMetadata/delete/exists with a traversal key like '../../outside.png' or a NUL byte key — these should throw STORAGE_ERROR 'Path traversal detected'. getPublicUrl strips leading slashes/backslashes.
+
+7. tests/failure/service-failure.test.ts
+   - Provider down: inject a mock dataRepository that throws a non-ProductCatalogError (e.g. new Error('boom')) from createProduct; assert service.createProduct rejects with PRODUCT_NOT_FOUND? NO — it maps to PROVIDER_UNAVAILABLE (mapDomainError fallback). Actually: service wraps repo calls in run(); if repo throws non-ProductCatalogError, mapDomainError -> PROVIDER_UNAVAILABLE. If repo throws ProductCatalogError, it propagates. So: mock repo throws generic Error -> expect code PROVIDER_UNAVAILABLE. Mock repo throws ProductCatalogError(DUPLICATE_SKU) -> propagates as DUPLICATE_SKU.
+   - Upload fail: mock mediaStorage whose upload throws -> service.uploadProductImage rejects MEDIA_UPLOAD_FAILED.
+   - Delete fail: mock mediaStorage whose delete throws -> service.deleteProductImage rejects MEDIA_DELETE_FAILED.
+   - Permission denied: hard to simulate portably on Windows; instead test that a read-only scenario maps to STORAGE_ERROR by mocking fs or by a mock repo throwing EACCES-like — but we can't modify production. Instead use a mock ProductRepository throwing an error with .code='EACCES' from createProduct; service maps non-ProductCatalogError to PROVIDER_UNAVAILABLE (fallback), NOT STORAGE_ERROR (that's the adapter's job). So for permission denied at ADAPTER level, use the CSV adapter against a path that can't be written — but Windows permission semantics are unreliable. Instead: directly test the adapter's mapFsError behavior is internal. Simplest honest approach: use a mock repo that throws, assert service surfaces a ProductCatalogError (PROVIDER_UNAVAILABLE), documenting that low-level fs errors are the adapter's concern. Also test duplicate SKU, invalid image (bad magic bytes -> MEDIA_UPLOAD_FAILED; oversized -> INVALID_PRODUCT_DATA; unsupported mimeType at service level -> INVALID_PRODUCT_DATA), timeout (mock mediaStorage whose upload never resolves within a Promise.race timeout -> assert upload rejects MEDIA_UPLOAD_FAILED or the test times out — better: mock upload to reject after a delay and assert MEDIA_UPLOAD_FAILED).
+   - Invalid image via service: uploadProductImage with mimeType 'image/gif' -> INVALID_PRODUCT_DATA (service checks IMAGE_MIME_TYPES). uploadProductImage with correct mimeType 'image/png' but buffer of random bytes (no PNG magic) -> MEDIA_UPLOAD_FAILED (mediaStorage.detectMimeType throws).
+   - CONFIGURATION_ERROR: createProductCatalogService({}) without repo/storage throws.
+
+8. tests/failure/media-failure.test.ts
+   - LocalMediaStorage direct: upload oversized (maxFileSizeByte small, e.g. 4, content 5 bytes) -> INVALID_PRODUCT_DATA. MIME mismatch (declared image/png but content is JPEG bytes) -> MEDIA_UPLOAD_FAILED. Unsupported MIME (declared image/gif, content random) -> MEDIA_UPLOAD_FAILED. Path traversal via delete/exists/getMetadata with '../' key -> STORAGE_ERROR. NUL byte key -> STORAGE_ERROR. delete on missing key -> no throw. move source missing -> STORAGE_ERROR.
+
+Use real temp dirs via `import { mkdtemp, rm, readFile, writeFile, stat, mkdir } from 'node:fs/promises'` and `import os from 'node:os'` and `import path from 'node:path'`. Each test should create its own temp dir under os.tmpdir() and clean up in finally. Write helper to build a service+repo+media wired to a temp dir, and a default CatalogContext.
+
+## HARD REQUIREMENTS
+
+- Every file must pass `npx tsc --noEmit` with strict + noUnusedLocals + noUnusedParameters. No unused imports, no unused variables. Use `import type` for type-only imports.
+- Real assertions with real execution — no skip, no todo, no empty tests, no `.only`. Every `it()` must have a body that actually exercises the code path and asserts an outcome.
+- Do NOT modify anything under core/ or adapters/, do NOT touch package.json, tsconfig.json, or vitest.config.ts. Do NOT touch the existing tests/smoke.test.ts.
+- Prefer asserting on error code via `await expect(...).rejects.toMatchObject({ code: 'X' })`.
+- After writing all files, run: `npx tsc --noEmit` (must exit 0), then `npx vitest run` (all tests pass). Report the exact pass/fail counts and the list of test files. If any test genuinely fails due to a production bug, DO NOT fix production code — report the failure precisely (file, test name, expected vs actual) so it can be triaged.

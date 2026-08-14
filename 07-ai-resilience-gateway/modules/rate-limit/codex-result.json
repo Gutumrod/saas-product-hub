@@ -1,0 +1,25 @@
+คุณฟรี เสร็จแล้วครับ Stage 2/4 CORE ตาม scope ที่ล็อกไว้
+
+สร้างไฟล์:
+- `package.json`
+- `tsconfig.json`
+- `vitest.config.ts`
+- `index.ts`
+- `core/types.ts`
+- `core/error.ts`
+- `core/config.ts`
+- `core/limiter.ts`
+- `core/index.ts`
+- `adapters/memory-store.ts`
+- `adapters/index.ts`
+- `tests/limiter.test.ts`
+- `tests/config.test.ts`
+- `tests/memory-store.test.ts`
+
+`npm install` สร้าง `package-lock.json` เพิ่มตามปกติ และมี audit warning 5 รายการ ผมไม่ได้รัน `npm audit fix` เพราะอาจเปลี่ยน dependency เกิน scope
+
+Verification:
+- `npx tsc --noEmit` ผ่าน exit 0
+- `npm test` ผ่าน: 3 test files, 6 tests passed
+
+ไม่ได้สร้าง `MODULE.md`, `integration.example.ts`, หรือ full test suite ตามที่กำหนดไว้ครับ

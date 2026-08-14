@@ -1,0 +1,70 @@
+You are writing the complete vitest test suite for the Feature Flags TypeScript module. Work ONLY inside the workspace directory. Do NOT modify any file under core/ or adapters/ — those are production code under test. Do NOT run scaffolders, git clean, or rm -rf.
+
+WORKSPACE (absolute): D:\AI-Workspace\projects\modules-hub\modules\feature-flags
+
+## Public API (from index.ts — import from '../index.js' in tests)
+
+```ts
+createFeatureFlagClient(config?: FeatureFlagConfig): FeatureFlagClient
+createMemoryFlagStore(initialFlags?: Record<string, StoredFlag | boolean>): MemoryFeatureFlagStore
+class FeatureFlagError extends Error { code; key?; cause? }
+
+interface FeatureFlagClient {
+  isEnabled(query: FeatureFlagQuery): Promise<boolean>;
+  getFlag(query: FeatureFlagQuery): Promise<FeatureFlagResult>;
+}
+
+type FeatureFlagQuery = { key: string; context?: FeatureFlagContext; defaultValue?: boolean };
+type FeatureFlagContext = { tenantId?: string; userId?: string; environment?: string; attributes?: Record<string, string|number|boolean> };
+type FeatureFlagResult = { key: string; enabled: boolean; source: 'store'|'default_fallback'|'error_fallback'; reason: string };
+type StoredFlag = { key: string; enabled: boolean; rules?: FlagTargetingRule[]; metadata?: Record<string, unknown> };
+type FlagTargetingRule = { tenantId?: string; userId?: string; environment?: string; enabled: boolean };
+interface FeatureFlagStore { getFlag(key: string, context?: FeatureFlagContext): Promise<StoredFlag | null>; }
+interface MemoryFeatureFlagStore extends FeatureFlagStore { setFlag(key, flag: StoredFlag|boolean): void; removeFlag(key): void; clear(): void; }
+type FeatureFlagConfig = { store?: FeatureFlagStore; defaultFallback?: boolean; hooks?: FeatureFlagLoggingHooks };
+type FeatureFlagLoggingHooks = { onEvaluation?: (info: SanitizedFlagEvaluationInfo) => void; onError?: (error: FeatureFlagError, query: FeatureFlagQuery) => void };
+type FeatureFlagErrorCode = 'FLAG_KEY_INVALID' | 'FLAG_PROVIDER_ERROR' | 'FLAG_VALUE_INVALID';
+```
+
+## Evaluation semantics (ground truth)
+
+1. Invalid key (empty/non-string) -> FLAG_KEY_INVALID -> onError hook -> result { source:'error_fallback', reason:'Invalid flag key' }.
+2. Store returns null (missing) -> { source:'default_fallback', reason:'Flag not found in store' }.
+3. Store throws -> wrapped FLAG_PROVIDER_ERROR -> onError hook -> { source:'error_fallback', reason:'Provider error: storage lookup failed' }.
+4. Stored flag with non-boolean enabled or malformed structure -> FLAG_VALUE_INVALID -> onError hook -> { source:'error_fallback', reason:'Invalid flag value' }.
+5. Valid stored flag: find first matching targeting rule (exact match on tenantId/userId/environment, AND semantics, omitted fields are wildcards). If matched -> enabled = rule.enabled, source:'store', reason:'Matched targeting rule'. Else -> enabled = storedFlag.enabled, source:'store', reason:'Evaluated flag default state'.
+6. Fallback value precedence: query.defaultValue (if boolean) -> config.defaultFallback (if boolean) -> false.
+7. onEvaluation hook fires in finally on every completed path (including fallbacks/errors). onError fires on invalid key, provider error, invalid value.
+8. Hook exceptions are swallowed and never affect the result.
+9. isEnabled() routes through getFlag() and returns result.enabled.
+10. No caching: store.setFlag() updates are immediately visible on the next query.
+11. Independent contexts: parallel queries with different tenant/user contexts evaluate independently.
+
+## Required test files (create these exact absolute paths)
+
+Write these 5 test files. Use vitest (import { describe, it, expect, vi, beforeEach } from 'vitest'). Use `import { ... } from '../index.js'` for public API and `import { ... } from '../core/...js'` for internal unit tests. Match the style of the reference suite at D:\AI-Workspace\projects\modules-hub\http-client-module\tests\http.test.ts (describe/it/expect, vi.fn() for hooks, real assertions, no skip/todo/empty tests).
+
+1. D:\AI-Workspace\projects\modules-hub\modules\feature-flags\tests\unit\client.test.ts
+   Cover: flag true, flag false, missing flag, default true, default false, provider failure, independent contexts, isEnabled routes through getFlag, onEvaluation hook fires, hook exceptions swallowed, defaultFallback config, empty store default.
+
+2. D:\AI-Workspace\projects\modules-hub\modules\feature-flags\tests\unit\evaluator.test.ts
+   Cover: evaluateFeatureFlag directly — valid key returns store result, missing flag default_fallback, provider error error_fallback + onError, invalid value error_fallback + onError, invalid key error_fallback + onError, fallback precedence (defaultValue > defaultFallback > false), onEvaluation fires on all paths.
+
+3. D:\AI-Workspace\projects\modules-hub\modules\feature-flags\tests\unit\targeting.test.ts
+   Cover: tenant context (matching + non-matching), user context, environment context (dev/prod), multi-field AND rule, first-match-wins, no rules -> flag default, no context -> flag default.
+
+4. D:\AI-Workspace\projects\modules-hub\modules\feature-flags\tests\unit\error.test.ts
+   Cover: invalid value (non-boolean enabled, malformed structure) triggers FLAG_VALUE_INVALID fallback + onError; invalid key (empty, whitespace, non-string) triggers FLAG_KEY_INVALID fallback + onError; FeatureFlagError class shape (code, key, cause, name).
+
+5. D:\AI-Workspace\projects\modules-hub\modules\feature-flags\tests\adapters\memory-store.test.ts
+   Cover: memory update visible at runtime (setFlag false->true), setFlag boolean auto-wrap, setFlag StoredFlag, removeFlag, clear, initial flags, getFlag returns null for missing, getFlag returns stored flag.
+
+Also keep the existing smoke test at tests/smoke.test.ts (do not delete it).
+
+## Constraints
+- Do NOT edit core/ or adapters/ production code.
+- Do NOT delete tests/smoke.test.ts.
+- Every test must be a real assertion. No it.skip, it.todo, or empty test bodies.
+- Write all 5 files to the exact absolute paths above.
+- After writing, run `npx tsc --noEmit` in the workspace and fix any type errors in your test files (never in core/).
+- Then run `npm test` and report the exact pass/fail counts.

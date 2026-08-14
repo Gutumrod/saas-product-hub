@@ -1,0 +1,38 @@
+คุณฟรี เสร็จแล้วครับ Implement Stage 2 MVP Phase 0 + Phase 1 แล้ว และรันจริงผ่านทั้งคู่
+
+Typecheck: `npm run typecheck` exit code `0`  
+Test: `npm test` exit code `0`  
+เพิ่มเติม: เช็กแล้ว `core/` ไม่มี `node:` imports
+
+ไฟล์ที่เขียน:
+
+- `package.json`
+- `package-lock.json` จาก `npm install`
+- `tsconfig.json`
+- `vitest.config.ts`
+- `index.ts`
+- `core/types.ts`
+- `core/errors.ts`
+- `core/service.ts`
+- `core/index.ts`
+- `core/validators/attribute.validator.ts`
+- `core/validators/sku.validator.ts`
+- `core/validators/product.validator.ts`
+- `core/validators/category.validator.ts`
+- `core/utils/slug.ts`
+- `core/utils/sku.ts`
+- `core/utils/sanitize.ts`
+- `core/repositories/product.repository.ts`
+- `core/storage/media.storage.ts`
+- `core/audit/audit.interface.ts`
+- `core/audit/logger.interface.ts`
+- `adapters/data/csv/file-lock.ts`
+- `adapters/data/csv/csv-parser.ts`
+- `adapters/data/csv/csv-product.repository.ts`
+- `adapters/data/index.ts`
+- `adapters/media/local/local-media.storage.ts`
+- `adapters/media/index.ts`
+- `adapters/index.ts`
+- `tests/smoke.test.ts`
+
+ไม่ได้แก้ `BRIEF.md` / `DESIGN.md` และไม่ได้สร้าง `MODULE.md` หรือ `tests/contract` ตามข้อจำกัดครับ. `npm install` มี audit warnings จาก dependency chain แต่ไม่ได้รัน fix เพราะจะเปลี่ยน dependency นอก scope ที่ล็อกไว้.

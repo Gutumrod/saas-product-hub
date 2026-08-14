@@ -1,0 +1,125 @@
+You are implementing Stage 2 (Builder / CORE) of the Product Catalog module for the Module Hub project. Scope is strictly MVP Phase 0 + Phase 1.
+
+## Working directory
+D:/AI-Workspace/projects/modules-hub/modules/product-catalog/
+
+## Read this first — it is the ONLY source of truth
+Read the file `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/DESIGN.md` in full. It fully specifies the module contract: exact public API signatures (§2), exact core types & domain models (§3), ProductRepository + MediaStorage interfaces (§4), custom attributes system (§5), category hierarchy & circular-parent protection (§6), SKU & slug rules (§7), search/filter/pagination (§8), CSV data adapter design (§9), local image adapter design (§10), structured error model with all 12 codes (§11), host configuration contract (§12), audit & structured logging (§13), multi-tenant CatalogContext (§14), file structure (§15), and package.json/tsconfig.json (§18). Implement the code EXACTLY per that design. Do not invent your own contract.
+
+Also read `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/BRIEF.md` for the domain rules (SKU, slug, no hard-delete default, no base64 image arrays, custom attribute types, category hierarchy, error model, structured logging, config injection, multi-tenant, Cloudflare Workers compatible).
+
+## Match the sibling module standard
+Look at `D:/AI-Workspace/projects/modules-hub/http-client-module/` for the module standard: package.json, tsconfig.json, vitest.config.ts, index.ts entry point, core/index.ts barrel, adapters/index.ts barrel. Match the structure and conventions exactly. TypeScript, ES2022, strict mode, moduleResolution Bundler, lib [ES2022, DOM]. ZERO `node:*` imports in core — Web APIs only (Cloudflare Workers compatible). The CSV and Local adapters MAY use Node built-ins (fs, path, crypto) since they are host-side adapters, but core/ must be pure Web API.
+
+## Your deliverable — write these files to these EXACT absolute paths
+
+### Root config files
+1. `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/package.json`
+   - name `@module-hub/product-catalog`, version 0.1.0, private true, `"type": "module"`, main `./index.ts`, exports `{ ".": "./index.ts" }`. Scripts: `test: vitest run`, `test:contract: vitest run tests/contract`, `typecheck: tsc --noEmit`. devDependencies: `@types/node` ^20.11.0, `typescript` ^5.6.3, `vitest` ^2.1.4, `@vitest/coverage-v8` ^2.1.4.
+
+2. `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/tsconfig.json`
+   - target ES2022, module ES2022, moduleResolution Bundler, lib [ES2022, DOM], strict, skipLibCheck, noImplicitOverride, noUnusedLocals, noUnusedParameters. `"include": ["**/*.ts"]`.
+
+3. `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/vitest.config.ts`
+   - Match the http-client reference: `import { defineConfig } from 'vitest/config'; export default defineConfig({ test: { coverage: { enabled: false, include: ['core/**/*.ts'], thresholds: { lines: 90, functions: 90, branches: 85, statements: 90 } } } });`
+
+4. `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/index.ts`
+   - Entry point exporting the public API: `createProductCatalogService`, `createCsvProductRepository`, `createLocalMediaStorage`, `ProductCatalogError`, and all public types (Product, Variant, Brand, Category, ProductImage, CatalogContext, ProductStatus, AttributeValue, CustomAttributeMap, all Input DTOs, ProductQuery, PaginatedResult, ProductRepository, MediaStorage, ProductCatalogConfig, StructuredLogger, AuditSink, ProductCatalogErrorCode, etc.).
+
+### core/ (Phase 0 — pure domain, NO provider SDK imports, NO node:* imports)
+5. `core/types.ts` — All domain model types exactly per DESIGN §3 and §8: CatalogContext, ProductStatus, AttributeValue, CustomAttributeMap, Product, Variant, Brand, Category, ProductImage, CreateProductInput, UpdateProductInput, CreateVariantInput, UpdateVariantInput, CreateBrandInput, UpdateBrandInput, CreateCategoryInput, UpdateCategoryInput, UploadProductImageInput, SortField, SortOrder, ProductQuery, PaginatedResult, BrandQuery, CategoryQuery. Also the repository/media interfaces per §4: ProductRepository, UploadMediaInput, MediaStorageOutput, MediaMetadata, MediaStorage. Also config/logging/audit types per §12 and §13: ProductCatalogConfig, LogLevel, LogEntry, StructuredLogger, AuditEventType, AuditEvent, AuditSink.
+
+6. `core/errors.ts` — `ProductCatalogErrorCode` union (all 12 codes) and `ProductCatalogError` class exactly per §11.1.
+
+7. `core/validators/attribute.validator.ts` — `validateCustomAttributes(attributes: CustomAttributeMap): void` exactly per §5.1 blueprint. Throws INVALID_PRODUCT_DATA with explicit failing key.
+
+8. `core/validators/sku.validator.ts` — SKU normalization (uppercase, trim, clean non-alphanumeric) and validation `/^[A-Z0-9_-]{3,64}$/`. Throws INVALID_PRODUCT_DATA on invalid.
+
+9. `core/validators/product.validator.ts` — Validates CreateProductInput/UpdateProductInput: required fields, price >= 0, currency ISO 4217, status in allowed set, attributes validated via attribute.validator, metadata is plain object.
+
+10. `core/validators/category.validator.ts` — Validates CreateCategoryInput/UpdateCategoryInput: name required, sortOrder number, isActive boolean.
+
+11. `core/utils/slug.ts` — `slugify(name: string): string` (lowercase, trim, replace non-alphanumeric runs with `-`, handle Thai/international text safely) and `generateUniqueSlug(base: string, exists: (slug: string) => Promise<boolean>): Promise<string>` with collision fallback `-1`, `-2`, etc.
+
+12. `core/utils/sku.ts` — `normalizeSku(sku: string): string` (uppercase, trim, clean) and `isValidSku(sku: string): boolean`.
+
+13. `core/utils/sanitize.ts` — `sanitizeFileName(fileName: string): string` (strip `..`, `/`, `\`, null bytes, control chars) and `assertSafePath(baseDir: string, target: string): string` (path traversal protection — resolve and verify prefix).
+
+14. `core/repositories/product.repository.ts` — Re-export the `ProductRepository` interface (from types.ts).
+
+15. `core/storage/media.storage.ts` — Re-export the `MediaStorage` interface and related types (from types.ts).
+
+16. `core/audit/audit.interface.ts` — Re-export `AuditSink`, `AuditEvent`, `AuditEventType`.
+
+17. `core/audit/logger.interface.ts` — Re-export `StructuredLogger`, `LogEntry`, `LogLevel`.
+
+18. `core/service.ts` — `ProductCatalogService` interface (exact signatures per §2) AND `createProductCatalogService(config: ProductCatalogConfig): ProductCatalogService` factory. This is the heart of the module. It must:
+    - Enforce SKU uniqueness (DUPLICATE_SKU), slug uniqueness + auto-generation + collision protection, category circular-parent protection (assertNoCircularCategory per §6.1), attribute validation, product validation.
+    - Default status 'draft', currency 'THB', pageSize 20, maxPageSize 100.
+    - archiveProduct sets status 'archived' + archivedAt; restoreProduct clears archivedAt; deleteProduct is the separate admin hard-delete.
+    - updateProduct does NOT regenerate slug unless `updateSlug: true`.
+    - searchProducts matches name/sku/brand name/category name/description; listProducts honors filters (categoryId, brandId, status, minPrice, maxPrice, inStock, isFeatured, attributes) and pagination.
+    - uploadProductImage: validate MIME + size, call mediaStorage.upload, create ProductImage record, handle isPrimary (clear others), set product.primaryImageId.
+    - deleteProductImage: delete media file + record, clear primaryImageId if needed.
+    - setPrimaryProductImage / reorderProductImages / listProductImages.
+    - Emit structured log entries (LogEntry) via injected logger and audit events via injected auditSink. Never log credentials.
+    - Map repository/media provider errors to domain errors — never leak raw provider exceptions.
+    - Core NEVER reads process.env/env/globalThis.
+
+19. `core/index.ts` — Barrel re-exporting everything public from core (types, errors, service factory, validators, utils, interfaces).
+
+### adapters/data/csv/ (Phase 1 — CSV data store)
+20. `adapters/data/csv/file-lock.ts` — Advisory file lock: acquire lock file (`<file>.lock`) with retry up to `lockTimeoutMs` (default 3000ms), throw CSV_LOCKED on timeout; release on done. Use Node fs.
+
+21. `adapters/data/csv/csv-parser.ts` — CSV parse + serialize with proper UTF-8/Thai handling: text fields with commas/newlines/quotes enclosed in double quotes with `""` escaping. Header validation, schema validation, safe recovery (throw CSV_CORRUPTED on malformed).
+
+22. `adapters/data/csv/csv-product.repository.ts` — `CsvProductRepository` implementing `ProductRepository` and `createCsvProductRepository(options: CsvProductRepositoryOptions): ProductRepository` factory. Manages 5 CSV files (products.csv, variants.csv, brands.csv, categories.csv, product_images.csv) per §9.2 schemas. Enforces:
+    - Atomic write: write to `.tmp.${uuid}`, fsync, rename over target.
+    - Backup `.bak` before overwrite.
+    - File locking (CSV_LOCKED).
+    - UTF-8/Thai encoding.
+    - Header/schema validation, duplicate-SKU validation (CSV_CORRUPTED / DUPLICATE_SKU).
+    - Multi-tenant isolation: every query/mutation filters by ctx.tenantId + ctx.catalogId. Cross-tenant lookup returns null.
+    - Map raw fs errors to domain errors (ENOENT -> PRODUCT_NOT_FOUND/STORAGE_ERROR, EACCES/ENOSPC -> STORAGE_ERROR, lock timeout -> CSV_LOCKED, parse failure -> CSV_CORRUPTED). Never leak raw exceptions.
+    - `CsvProductRepositoryOptions` = { dataDirectory: string; lockTimeoutMs?: number }.
+
+23. `adapters/data/index.ts` — Barrel exporting `createCsvProductRepository` and `CsvProductRepositoryOptions`.
+
+### adapters/media/local/ (Phase 1 — local image store)
+24. `adapters/media/local/local-media.storage.ts` — `LocalMediaStorage` implementing `MediaStorage` and `createLocalMediaStorage(options: LocalMediaStorageOptions): MediaStorage` factory. Per §10:
+    - Path layout `{baseUploadDir}/uploads/products/{product_id}/{uuid}.{ext}`.
+    - Path traversal protection (assertSafePath), filename sanitization, crypto.randomUUID target filename.
+    - File size limit `maxFileSizeByte` (default 5MB) -> INVALID_PRODUCT_DATA "File size exceeds limit".
+    - Magic-byte MIME validation (JPEG FF D8 FF, PNG 89 50 4E 47 0D 0A 1A 0A, WEBP RIFF...WEBP) -> MEDIA_UPLOAD_FAILED "Unsupported or corrupted image file".
+    - upload/delete/exists/getPublicUrl/getMetadata/move/copy. Map fs errors to STORAGE_ERROR / MEDIA_UPLOAD_FAILED / MEDIA_DELETE_FAILED. Never leak raw exceptions.
+    - `LocalMediaStorageOptions` = { baseUploadDir: string; publicBaseUrl: string; maxFileSizeByte?: number }.
+
+25. `adapters/media/index.ts` — Barrel exporting `createLocalMediaStorage` and `LocalMediaStorageOptions`.
+
+### adapters/index.ts
+26. `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/adapters/index.ts` — Barrel re-exporting data + media adapters.
+
+### Minimal smoke tests (so `npm test` runs)
+27. `D:/AI-Workspace/projects/modules-hub/modules/product-catalog/tests/smoke.test.ts` — A minimal vitest smoke test that exercises: createProduct via CsvProductRepository + service (in a temp dir), duplicate SKU rejection, category circular-parent rejection, attribute validation, slug generation, and LocalMediaStorage upload/exists/delete (in a temp dir). Keep it small but real — it must actually run and pass. Use Node's fs to create temp dirs under the OS temp dir. Do NOT write the full contract test suite (that is Stage 4's job).
+
+## Constraints
+- Follow DESIGN.md exactly — do not invent your own contract.
+- core/ must have ZERO provider SDK imports and ZERO node:* imports (Web APIs only). Adapters may use Node built-ins.
+- NO hard delete as default — archive is default; deleteProduct is the separate admin action.
+- NO base64 image arrays in product record — use ProductImage entity.
+- Custom attributes: string/number/boolean/date/enum/multi_enum with runtime validation.
+- Category hierarchy with circular-parent protection.
+- SKU unique, trim/case-normalize, validate before save, no silent duplicates.
+- Slug unique, auto-generate, collision protection, immutable on name change unless updateSlug.
+- Search: name/sku/brand/category/description. Pagination from the start.
+- Map provider errors to domain errors, never leak.
+- Structured logging (timestamp/level/module/operation/product_id/provider/duration_ms/result/error_code). Never log credentials.
+- Config injected by host — core never reads env directly.
+- Multi-tenant readiness: CatalogContext { catalog_id, tenant_id, actor_id }.
+- Cloudflare Workers compatible in core: zero node:* imports, Web APIs only.
+- Do NOT write MODULE.md, integration.example.ts, or the full test suite — those are later stages.
+- Do NOT run any scaffolder, `git clean`, `rm -rf`, or anything that could delete/overwrite existing files in this folder. BRIEF.md and DESIGN.md must survive. Do not delete or modify them.
+- Do not create a tests/contract directory or full contract suite.
+
+## When done
+Write all files to the exact absolute paths above. Then, in the working directory, run `npm install` and `npm run typecheck` (tsc --noEmit) and `npm test` (vitest run). Report: (1) the full list of files you wrote, (2) the real typecheck exit code, (3) the real test exit code. If typecheck or tests fail, fix the errors until both exit 0. Do NOT report success unless you actually ran both and they passed.

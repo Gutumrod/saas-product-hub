@@ -1,0 +1,19 @@
+คุณฟรี ทำ Stage 2 Builder เสร็จแล้วตาม `DESIGN.md`
+
+สร้าง/เขียนไฟล์ครบ 8 ไฟล์:
+- `core/types.ts`
+- `core/validate.ts`
+- `core/path.ts`
+- `core/storage.ts`
+- `core/index.ts`
+- `adapters/r2.ts`
+- `package.json`
+- `tsconfig.json`
+
+ผลตรวจ:
+- `npm install` สำเร็จ และสร้าง `package-lock.json` ตามปกติ
+- `npm run typecheck` ผ่าน
+- ไม่ได้สร้าง `tests/`, `MODULE.md`, หรือ `integration.example.ts`
+- ไม่พบ `node:*`, `process.env`, `globalThis`, หรือ env reads ในไฟล์ที่ implement
+- `npm audit` รายงาน dev dependency vulnerabilities 5 รายการ แต่ผมไม่ได้แก้ด้วย `audit fix --force` เพราะจะชนกับเวอร์ชันที่ `DESIGN.md` lock ไว้
+
