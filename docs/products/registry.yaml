@@ -3,7 +3,7 @@
 # ==============================================================================
 # Source of truth for all products, deployment models, database schemas, 
 # commercial statuses, and module dependencies in the platform.
-# Last Updated: 2026-08-15
+# Last Updated: 2026-08-16
 # ==============================================================================
 
 version: "1.0"
@@ -157,9 +157,10 @@ products:
       - "tenant-context"
       - "rate-limit"
       - "ai-provider"
-    # commercial gated: enterprise-features (CircuitBreaker/tracing) module is
-    # empty in modules-hub — tracing claim must be cut from the pitch until
-    # written, see products/multi-tenant-ai/BRIEF.md
+      - "enterprise-features"
+    # enterprise-features (CircuitBreaker/Tracer) completed 2026-08-14 (v0.3.0)
+    # and copied into this product 2026-08-16. Commercial readiness is still an
+    # open human decision — see products/multi-tenant-ai/BRIEF.md
     acceptance:
       architecture: true
       operations: true
