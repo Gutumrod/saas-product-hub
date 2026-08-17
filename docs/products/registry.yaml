@@ -287,6 +287,26 @@ products:
       commercial: false
       support: false
 
+  - key: "booking_ticket_module"
+    name: "Booking Claim & Case Management Module"
+    slug: "booking-ticket-module"
+    category: "Operations & Scheduling"
+    tagline: "โมดูลรับเรื่อง ค้นประวัติ และจัดการเคสแบบ standalone พร้อม theme ปรับได้"
+    description: "Local-first React case-management template (intake, ticket detail, history/retention) with a host-configurable theme system and Thai/English i18n. No backend yet — repository/adapter boundary designed for a future Supabase/REST swap."
+    deployment_model: "source_product"
+    runtime_project: "External / Self-hosted"
+    commercial_status: "prototype"
+    wave: 1
+    path: "products/booking-ticket-module"
+    # standalone React module — repository/adapter pattern designed to swap the
+    # localStorage default for Supabase/REST later, but not wired to modules-hub
+    # or Project B yet, so no modules list here (same pattern as short_url_analytics)
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
   - key: "short_url_analytics"
     name: "Short URL Analytics"
     slug: "short-url-analytics"
