@@ -12,6 +12,14 @@ this roadmap and its cited evidence win until the registry is reconciled.
 
 **Evidence baseline:** `D:\AI-Workspace\runtime\hermes-native\workspace\audit-2026-08-18\FULL-PORTFOLIO-AUDIT-2026-08-18.md`, its Hermes/AGY source reports, and repository state checked on 2026-08-18. Any implementation must re-check live services, credentials, remote migration history, and test environments before a production claim.
 
+**2026-08-19 addition:** `docs/platform/DEEP-VERIFICATION-2026-08-18-CONSOLIDATED.md` — a
+code-level (not documentation-level) verification of `booking`, `headless_commerce`,
+`multi_tenant_ai`, and `line_oa_ai`, run independently twice (an outside reviewer + Hermes in two
+self-checking rounds) and cross-checked directly against source by Claude where the two disagreed.
+Triggered by an owner decision to buy a production domain only once a product is genuinely ready
+for real revenue, not just reference-complete. See §0 and the A1/A2 corrections below for what it
+changed.
+
 ---
 
 ## 0. Mandatory gates
@@ -21,6 +29,16 @@ development, standalone products, or module hardening.
 
 1. **Rotate exposed Supabase service-role/API credentials for the two affected projects** — owner-only action in Supabase Dashboard. `gyleqrjdzwwlqierdwcy` and `coyelzlgukvpgguqpjdi` are project references, not secret values; never place credentials in this roadmap, git, or chat. This blocks public production deployment that would use the affected credentials.
 2. **Complete `docs/platform/SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 0** — hard gate *before Project B accepts a second product schema*. It requires booking migration-history reconciliation, E3.3 live RLS/security verification, disposition of booking's outstanding work, and a reviewed baseline commit. It does not permit `db push`, migration repair, or dashboard SQL.
+3. **Domain-purchase gate (added 2026-08-19).** The owner will buy a production domain only once a
+   product is genuinely revenue-ready, not just reference-complete. Deep code verification (see
+   `DEEP-VERIFICATION-2026-08-18-CONSOLIDATED.md`) found four concrete blockers, ranked:
+   1. `headless_commerce`: Stripe webhook never verifies signature — forgeable payment events.
+   2. `booking`: quota/staff/top-up limits are sold in `PRICING_SPEC.md` but enforced nowhere in code.
+   3. `multi_tenant_ai`: webhook middleware mount order breaks real signature verification, and a
+      verified event is never applied to subscription state (`handleBillingEvent` unwired).
+   4. `headless_commerce`: malformed webhook JSON throws an unhandled 500 (separate bug from #1,
+      same file).
+   No domain purchase until items 1–3 are closed for whichever product launches first.
 
 ### Project B routing truth
 
@@ -46,18 +64,36 @@ engineering default; customer demand or an owner decision may override it.
 | Product | Gap to close | Effort |
 |---|---|---|
 | `booking_ticket_module` | Closest to done — 61/61 tests, E2E configured. Needs a real backend adapter (currently localStorage-only by design) before it is more than a demo template. | Small–medium |
-| `line_oa_ai` | Needs a real LINE OA sandbox test before claiming end-to-end proof. Project B admission is a separate Phase 0 + owner-confirmation gate. | Small |
+| `line_oa_ai` | Needs a real LINE OA sandbox test for the *product* surface (onboarding, per-shop config, billing) before claiming end-to-end proof — still true after 2026-08-19 deep verification. **New evidence:** the module's core AI-response path has 1–3 days of real production traffic via a live KMO LINE OA (owner-run internal pilot); this de-risks the AI core specifically but does not close the product-packaging gap. `RedisSessionStore` is documented but not implemented (only `MemorySessionStore` exists). Project B admission is a separate Phase 0 + owner-confirmation gate. | Small |
 | `short_url_analytics` | `pytest` is environment-blocked (`pydantic_core` missing). Repair the isolated test environment and re-verify before any readiness claim; it remains standalone unless the owner approves a Project B migration. | Small |
 | `tracking` | Functional MVP but no auth, no real DB (JSON file), and no tests — the largest gap of the five for anything beyond a demo. | Medium |
-| `booking` | Most mature (25 migrations, real Stripe/auth/tenant code), but requires Phase 0 baseline/security evidence plus live Stripe configuration and a production domain. | Medium, mostly non-code |
+| `booking` | Most mature (26 migrations, real Stripe/auth/tenant code, DB-level hold/collision protection, real LINE HMAC). **2026-08-19 deep verification:** quota/staff/top-up limits from `PRICING_SPEC.md` (Basic 100 bookings/5 staff, Pro 500/10) are enforced **nowhere in code** — this, not just Phase 0/Stripe/domain, is now the primary blocker to selling on the approved plan tiers. | Medium, mostly non-code + one real feature (quota enforcement) |
 
 ### A2. Build application layers for wave_2 products (currently modules-only)
 
 Wave 2 remains ahead of Wave 3 under the existing release-wave decision. The order
 below is by existing scaffolding, not proof of market demand or commercial readiness:
 
-1. **`multi_tenant_ai`** — six copied modules (`tenant-context`, `ai-provider`, `enterprise-features`, `auth-supabase`, `payment`, `subscription`). Closest to a host-app assembly task, but still lacks a runnable starter app.
-2. **`headless_commerce`** — four modules (`product-catalog`, `file-storage`, `import-export`, `payment`); needs a real API, schema, and deploy configuration. Its possible Project B admission is conditional and cannot start before Phase 0 and its product admission review.
+1. **`multi_tenant_ai`** — Reference server built (2026-08-18) at
+   `products/multi-tenant-ai/server/` wiring all 6 modules together (Express, no
+   build step, mirrors `line-oa-ai/server`'s shape — this is example/reference code
+   for the starter-kit buyer, not a hosted app, so it's not equivalent to an A1
+   product). Typecheck clean, 9/9 tests pass. **Correction (2026-08-19):** the
+   "done" framing was premature — deep verification found the webhook route is
+   functionally broken in this server (`express.json()` mounted before the route's
+   `express.raw()` consumes the body first) and `handleBillingEvent` is never
+   called, so a verified webhook event still doesn't update subscription state. Fine
+   to sell as reference/source material as-is with that caveat disclosed; not fine
+   to represent as a working billing example until both are fixed. See
+   `DEEP-VERIFICATION-2026-08-18-CONSOLIDATED.md` §3.
+2. **`headless_commerce`** — four modules (`product-catalog`, `file-storage`, `import-export`, `payment`); reference server built 2026-08-18
+   (PR [`headless-commerce#1`](https://github.com/Gutumrod/headless-commerce/pull/1)), typecheck clean, 10/10 tests pass.
+   **Correction (2026-08-19):** deep verification found the Stripe webhook never verifies its
+   signature (forgeable events — CRITICAL, this session's own QA pass undersold it as an
+   "acceptable documented limitation," which was wrong) and malformed webhook JSON throws an
+   unhandled 500. Do not deploy this server publicly until both are fixed. Its possible Project B
+   admission is still conditional and cannot start before Phase 0 and its product admission
+   review, independent of these bugs. See `DEEP-VERIFICATION-2026-08-18-CONSOLIDATED.md` §2.
 3. **`stripe_billing`** — scope depends on whether it is a sellable product or shared internal infrastructure. Do not create its application plan until the owner chooses.
 4. **`feature_flag`** — two modules and no app. Its possible Project B admission is conditional and needs Phase 0 plus a quota/access review.
 
@@ -83,9 +119,10 @@ consumer integration, dependency/license/security review, and an explicit releas
 artifact. Prioritise these gaps:
 
 1. **`enterprise-features`** — tests were not run because audit constraints prohibited install. Install and run in an isolated local workspace; do not assume the outcome or duration.
-2. **`subscription`** — only 3 tests for a P1 money-handling module. Expand success, failure, webhook/idempotency, entitlement, and cancellation coverage before a trusted billing claim.
+2. ~~**`subscription`** — only 3 tests~~ — **Fixed (2026-08-18).** `handleBillingEvent` had no idempotency at all (no `eventId` field, replaying a webhook event just reapplied the transition — a real correctness gap, not just a test gap). Added `eventId`/`lastProcessedEventId` with a short-circuit check; expanded tests 3→12 (error paths, `changePlan`, all 5 billing event types, one test proving the idempotency fix). Recopied into `stripe-billing` and `multi-tenant-ai`, verified independently in both (12/12).
 3. **`http-client`, `event-bus`, `auth`** — used by zero portfolio products. Add each to at least one real product integration before calling it battle-tested; `auth` is also the newest module.
 4. **`notification` and `ai-workflow-engine`** — document that email/LINE/Telegram notification providers are approved stubs and that AI workflow tests exercised a rule-based fallback warning. Neither proves a live provider/AI integration.
+5. **`webhook-receiver`'s Stripe provider was a stub, fixed (2026-08-18)** — `providers/stripe/index.ts` unconditionally returned `WEBHOOK_UNKNOWN_PROVIDER` despite the module being marked "✅ Completed" in `REGISTRY.md` — no code path in the platform actually verified a Stripe webhook signature. Implemented the real HMAC-SHA256 algorithm (multi-signature support, timestamp-tolerance replay check); 136/136 tests pass. Recopied into `stripe-billing` (had it already) and `multi-tenant-ai` (added fresh — didn't have this module before). **`github` and `line` providers are still stubs** — not touched, out of scope, same caveat applies to them as applied to Stripe before this fix.
 
 ---
 
@@ -96,6 +133,13 @@ artifact. Prioritise these gaps:
 - `short_url_analytics`: stay standalone or deliberately migrate to Project B.
 - Standalone module pricing and packaging.
 - Whether to run Track A1 and A2 in parallel. This roadmap defaults to finishing A1 first; it is a priority choice, not a technical fact.
+- **(Added 2026-08-19)** Approved pricing for `line_oa_ai`, `multi_tenant_ai`, and
+  `headless_commerce` — none of the three has an owner-approved price yet; `REVENUE-STRATEGY.md`
+  is an untracked draft only, and its `booking` numbers conflict with the already-approved
+  `PRICING_SPEC.md` (invents a "Business ฿2,490/mo" tier that doesn't exist there).
+- **(Added 2026-08-19)** Whether to build booking quota/staff/top-up enforcement before or in
+  parallel with the remaining Phase 0/Stripe/domain work — it is now a co-equal blocker, not a
+  follow-on.
 
 ---
 
@@ -108,6 +152,34 @@ These are mechanical fact corrections, not commercial decisions:
 - `apps/hub-web/README.md`: corrected stale MySQL/TiDB + Manus OAuth claims to the real Postgres/Supabase + Supabase Auth stack.
 - `apps/hub-web/todo.md`: checked off Phases 2–7 from verified files; Phase 7 relies on prior `HANDOFF.md` build/test evidence because `pnpm` was unavailable in the audit shell.
 - Roadmap and registry corrections are in local commit `fe20468` (`2026-08-18 09:55 +07:00`). At this check, `master` is one commit ahead of locally tracked `origin/master`; four root `BRIEF-*.md` files remain untracked and are not part of that commit.
+
+**2026-08-18, later same day — Track A2 progress + Track B fixes:**
+- `multi_tenant_ai` reference server built and pushed (`multi-tenant-ai@ef821f6`).
+- `modules-hub`'s `subscription` idempotency fix and `webhook-receiver`'s real Stripe
+  verifier: committed at `modules-hub@6d95d3c`, **not yet pushed** — `modules-hub`'s
+  `main` has branch protection (PR + 2 required status checks), direct push is
+  rejected by GitHub itself. A PR needs to be opened from a feature branch before
+  this reaches `origin`. Recopies into `stripe-billing@714a238` and
+  `multi-tenant-ai@ef821f6` (same commit as the server) are already pushed and don't
+  depend on the modules-hub PR landing first — they're independent copies, per
+  copy-and-own convention.
+- `headless-commerce` and `feature_flag` do not have `subscription` or
+  `webhook-receiver` copied in, so neither fix applies to them.
+
+**2026-08-19 — deep code verification checkpoint (domain-purchase gate):** owner asked whether
+the portfolio is genuinely ready to buy a production domain and take real revenue, not just
+reference-complete. Full evidence in `DEEP-VERIFICATION-2026-08-18-CONSOLIDATED.md`, run
+independently by an outside reviewer and by Hermes (two self-checking rounds), with the one
+disagreement between them (headless-commerce malformed-JSON status code) resolved by Claude
+reading the source directly. Verdict: **no product is ready yet.** Four concrete blockers found
+(headless-commerce webhook signature + malformed-JSON handling, booking quota enforcement,
+multi-tenant-ai webhook middleware ordering + unwired subscription update) — see §0 gate 3 above
+for the ranked list. `booking` remains closest. New fact: `line_oa_ai`'s core AI-response path has
+real production traffic via a live KMO LINE OA pilot (1–3 days as of this date), which de-risks
+the AI core specifically without closing the standalone-product packaging gap. This session also
+corrected two of its own overstatements: the "multi_tenant_ai done" framing above, and the
+headless-commerce PR/QA description that called the missing webhook verification an "acceptable
+documented limitation" — it is a CRITICAL blocker.
 
 ---
 
