@@ -1,9 +1,11 @@
 # ==============================================================================
 # SaaS Product Hub — Product Portfolio Registry
 # ==============================================================================
-# Source of truth for all products, deployment models, database schemas, 
-# commercial statuses, and module dependencies in the platform.
-# Last Updated: 2026-08-16
+# Product catalog and declared target configuration. Once the owner declares it,
+# docs/platform/ROADMAP.md is the source of truth for development sequencing,
+# verified current readiness, and routing decisions. A target deployment value below
+# is not proof that an app exists, has been admitted to that runtime, or is live.
+# Last Updated: 2026-08-18
 # ==============================================================================
 
 version: "1.0"
@@ -46,10 +48,9 @@ products:
     commercial_status: "sellable"
     wave: 1
     path: "products/booking"
-    modules:
-      - "auth-supabase"
-      - "tenant-context"
-      - "payment"
+    # modules: list removed 2026-08-18 — products/booking/ has no modules/ folder at
+    # all; auth/tenant/billing were built inline instead of copied from modules-hub
+    # (confirmed via full portfolio audit, Hermes+AGY, cross-checked against disk)
     # commercial/operations gated: no production domain yet, Phase 2 (Hub CTA handoff)
     # blocked on it — see vault/06-Agent-Logs/Service-Booking-SaaS 2026-08-14 handoff
     acceptance:
@@ -72,12 +73,13 @@ products:
     path: "products/line-oa-ai"
     modules:
       - "line-oa-ai-module"
-      - "webhook-receiver"
-      - "ai-provider"
+    # webhook-receiver/ai-provider removed 2026-08-17: never actually copied into
+    # products/line-oa-ai/modules/, listing was aspirational, not real (confirmed by
+    # both this session's investigation and Hermes's independent cross-check)
     acceptance:
       architecture: true
       operations: true
-      commercial: true
+      commercial: false
       support: false
 
   - key: "tracking"
@@ -114,6 +116,10 @@ products:
     modules:
       - "product-catalog"
       - "file-storage"
+      - "import-export"
+      - "payment"
+    # list corrected 2026-08-18: import-export/payment were copied on disk but never
+    # listed here (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: true
       operations: false
@@ -136,6 +142,9 @@ products:
       - "payment"
       - "subscription"
       - "webhook-receiver"
+      - "audit-log"
+    # list corrected 2026-08-18: audit-log was copied on disk but never listed here
+    # (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: true
       operations: true
@@ -155,12 +164,18 @@ products:
     path: "products/multi-tenant-ai"
     modules:
       - "tenant-context"
-      - "rate-limit"
       - "ai-provider"
       - "enterprise-features"
+      - "auth-supabase"
+      - "payment"
+      - "subscription"
     # enterprise-features (CircuitBreaker/Tracer) completed 2026-08-14 (v0.3.0)
     # and copied into this product 2026-08-16. Commercial readiness is still an
     # open human decision — see products/multi-tenant-ai/BRIEF.md
+    # list corrected 2026-08-18: "rate-limit" was listed but never actually copied;
+    # auth-supabase/payment/subscription ARE copied on disk but were never listed
+    # (full portfolio audit, Hermes+AGY) — this product has more modules in place
+    # than the doc previously showed, still no app layer wired up though
     acceptance:
       architecture: true
       operations: true
@@ -202,6 +217,10 @@ products:
     modules:
       - "scheduler"
       - "ai-workflow-engine"
+      - "ai-provider"
+      - "notification"
+    # list corrected 2026-08-18: ai-provider/notification were copied on disk but
+    # never listed here (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: false
       operations: false
@@ -222,6 +241,10 @@ products:
     modules:
       - "health-check"
       - "notification"
+      - "ai-workflow-engine"
+      - "job-retry"
+    # list corrected 2026-08-18: ai-workflow-engine/job-retry were copied on disk but
+    # never listed here (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: false
       operations: false
@@ -241,6 +264,11 @@ products:
     path: "products/bulk-etl-sync"
     modules:
       - "import-export"
+      - "audit-log"
+      - "health-check"
+      - "job-retry"
+    # list corrected 2026-08-18: audit-log/health-check/job-retry were copied on disk
+    # but never listed here (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: true
       operations: false
@@ -260,6 +288,11 @@ products:
     path: "products/compliance-audit"
     modules:
       - "audit-log"
+      - "auth-supabase"
+      - "notification"
+      - "webhook-receiver"
+    # list corrected 2026-08-18: auth-supabase/notification/webhook-receiver were
+    # copied on disk but never listed here (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: true
       operations: false
