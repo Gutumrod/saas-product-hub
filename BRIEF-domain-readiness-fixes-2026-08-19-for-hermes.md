@@ -265,6 +265,90 @@ of truth ที่อนุมัติแล้ว, live REST/browser negative 
 
 ---
 
+## Stage 4 — สถานะล่าสุด (อัปเดต 2026-08-19 ค่ำ, หลัง AGY investigation + Codex verification)
+
+**Investigation เสร็จแล้ว (read-only, hard stop ทั้งหมดถูกเคารพ — ยืนยันจาก `git status`/`git log` จริง):**
+
+- Migration drift ยืนยันจริง: remote 26 rows, local 27 files, **ไม่มี timestamp คู่ไหนตรงกันเลยสักตัว**
+- E3.3 column-exposure fix ยัง live จริง (เช็คตรงกับ `shops` grants + `shop_public_profile` view ผ่าน query จริง) —
+  residual gap มีแค่: ไม่มี automated RLS regression suite (เป็น test-coverage gap ไม่ใช่ known vulnerability)
+- 2 migration ใหม่ (`tickets`, `quota_staff_topup_enforcement`) ยังไม่ apply ขึ้น remote จริง — ปลอดภัยที่จะ push
+  commit `ed06fa2`/`2472e12` เพราะไม่กระทบ DB จริง
+
+**⚠️ Codex แก้จุดผิดของ AGY ได้ — ผมตรวจซ้ำเองอิสระแล้ว ยืนยันว่า Codex ถูก:**
+
+AGY สรุปว่า local `20260807064655_phase_a_data_integrity_and_authorization.sql` ตรงกับ remote v1
+(`20260807101942`) — Codex พิสูจน์ด้วย MD5 ว่าจริงๆ ตรงกับ remote **v2** (`20260807104205`) ต่างหาก ผมยิง query ตรง
+ไปที่ Project B เอง (Management API, `SUPABASE_ACCESS_TOKEN_KEEPALIVE`) ดึง SQL จริงของทั้ง v1/v2 มา diff กับไฟล์
+local ตรงๆ (`diff -u`, ไม่ใช่แค่เทียบ MD5 ที่รายงานมา) — **ยืนยัน 0 diff กับ v2 จริง** สุ่มตรวจอีก 1 คู่ที่ไม่มีข้อขัดแย้ง
+(`20260805000000_local_service_initial_schema.sql` vs remote `20260807051615`) ก็ตรงเป๊ะเช่นกัน — เชื่อถือ
+methodology ของ Codex ได้
+
+**สรุป:** remote v1 (`20260807101942`, phase_a เวอร์ชันเก่า) เป็นเนื้อหาที่ **local ไม่มีเก็บไว้เลย** ไม่ใช่แค่
+duplicate ที่ไม่มีความหมาย — ต้อง reconstruct เป็นไฟล์ local ใหม่จริงๆ ตามที่ Codex เสนอ (Option A)
+
+### ✅ อนุมัติแล้ว — Codex ทำต่อได้เลยไม่ต้องขอ confirm ก่อนเริ่ม
+
+**Option A (reconstruct + rename) — อนุมัติเป็นแนวทาง:**
+1. สร้างไฟล์ local ใหม่จาก remote v1 (`20260807101942`) SQL เป๊ะ — ตั้งชื่อ timestamp ให้อยู่ก่อนไฟล์ phase_a เดิม
+   ตามลำดับเวลาจริง (v1 มาก่อน v2)
+2. เปลี่ยนชื่อไฟล์ local `20260807064655_phase_a...` ให้ตรง remote v2 timestamp (`20260807104205`)
+3. เปลี่ยนชื่ออีก 24 ไฟล์ local ที่เหลือให้ตรง remote version timestamp ตามตารางที่ AGY ทำไว้ใน
+   `STAGE4_INVESTIGATION.md` (คู่พวกนี้ไม่มีข้อโต้แย้ง — สุ่มตรวจแล้ว 1 คู่ตรง)
+4. เหลือ `tickets` + `quota_staff_topup_enforcement` เป็น pending migration เท่านั้น
+
+**ขอบเขต:** rename/สร้างไฟล์ local ล้วนๆ (git operation) — **ยังห้าม `supabase db push`, `migration repair`, หรือ
+แตะ production DB ใดๆ อยู่** ข้อนี้ยังต้อง confirm แยกอีกรอบเหมือนเดิม ไม่เปลี่ยน
+
+**หลักฐานที่ต้องส่งก่อนขอ confirm ขั้นต่อไป (`db push`):**
+1. **Diff evidence ครบทั้ง 25 คู่** (ไม่ใช่แค่ MD5 สรุป) — ไฟล์ local เทียบ SQL จริงจาก remote `statements` ทีละคู่
+   ผมสุ่มตรวจเองได้แค่ 2 คู่ ที่เหลือ 23 คู่ยังไม่เห็นของจริง ต้องส่งมาให้ดูครบก่อน
+2. `supabase db push --dry-run` (หรือเทียบเท่า) แสดงว่าหลัง rename แล้ว pending migration เหลือแค่ tickets+quota
+   จริง ไม่มีอะไรอื่นหลุดมา
+
+**STOP — reconstruct/rename ทำได้เลย (git-only, อนุมัติแล้ว) แต่ `db push` จริงยังห้ามเด็ดขาด จนกว่าจะเห็นหลักฐาน
+ครบ 25 คู่ + dry-run แล้วอนุมัติแยกอีกรอบ** เหตุผล: Project B จะเป็นฐานข้อมูลลูกค้าจริงเร็วๆ นี้ ต้องรอบคอบสูงสุด
+
+---
+
+## Stage 4 — decision บน 4 material diff (อัปเดต 2026-08-19 ดึก, หลัง Codex diff ครบ 26 คู่)
+
+Codex รัน diff ครบ 26 คู่จริง (ไม่ crash แค่ถูก timeout หลังเขียนผลเสร็จ — 40/40 iterations): 18 IDENTICAL, 3
+comment-only (ปลอดภัย), **4 material diff ที่ต้องตัดสินใจก่อน rename** — Codex หยุดถูกต้องตาม hard stop รอ
+decision ไม่ใช่ error
+
+**ตรวจเพิ่มเอง 1 จุดก่อนตัดสินใจ:** เปิด
+[20260810000300_phase_e4_4_fix_sync_subscription_state_rename_out_param_v2.sql](products/booking/supabase/migrations/20260810000300_phase_e4_4_fix_sync_subscription_state_rename_out_param_v2.sql:1)
+ดู — คอมเมนต์หัวไฟล์บอกตรงๆ ว่าไฟล์นี้เคยถูก reconstruct จาก remote ผ่าน `pg_get_functiondef` มาแล้วครั้งหนึ่ง (แก้
+ตรง dashboard เมื่อ 2026-08-10) แต่ `pg_get_functiondef` ดึงมาได้แค่ function body ไม่ดึง REVOKE/GRANT ที่แนบมาด้วย
+— **นี่คือ precedent ที่มีอยู่แล้วในเรพอนี้เองว่า "remote = ความจริง" เป็นวิธีที่ทีมใช้อยู่แล้ว** ไม่ใช่แนวทางใหม่
+
+### ✅ อนุมัติแล้ว — ทางเลือก A (ยึด remote เป็นความจริง) ทั้ง 4 จุด ทำได้เลยไม่ต้องขอ confirm ก่อนเริ่ม
+
+เหตุผล: เป้าหมายของ Option A คือทำ bookkeeping ให้ตรงกับสิ่งที่ deploy จริง เพื่อให้ `db push` ครั้งต่อไปปลอดภัย ไม่ใช่
+การตัดสินใจว่า schema "ควรจะเป็น" อะไร — local ต้องสะท้อน remote ของจริงเสมอสำหรับ reconciliation รอบนี้
+
+รายละเอียดต่อจุด (ไม่ใช่ copy remote ดื้อๆ ทุกจุด):
+
+1. **seed_demo_shop** — reconstruct เป็น `SELECT 1` ตาม remote เป๊ะ
+2. **ambiguous_column** — reconstruct signature/column name ให้ตรง remote เป๊ะ (`matched_shop_id` ผิด ต้องใช้ชื่อ
+   column ตาม remote จริง)
+3. **rename_out_param_v2** — reconstruct function body ตรง remote **+ เพิ่ม REVOKE/GRANT statements ที่ remote มี
+   แต่ backfill รอบก่อนพลาดไป** (แก้ของเก่าให้ครบไปในตัวครั้งนี้)
+4. **platform_admin_authorization** — ใช้ TEXT ตาม remote (เทียบเท่า VARCHAR ทางเทคนิค ไม่มีความเสี่ยงจริง)
+
+**นอกขอบเขต Stage 4 — เปิดเป็นคำถามแยกต่างหาก ไม่ใช่ตัดสินใจตอนนี้:** `seed_demo_shop` เนื้อหาจริงใน local (seed
+demo shop + schedules + holiday) ไม่เคยถูก apply บน remote เลย — ถ้ายังต้องการ demo shop จริงบน remote ต้องเขียน
+migration ใหม่ (timestamp วันนี้) แยกต่างหาก ไม่ใช่แก้ไฟล์เก่าที่กำลัง reconcile นี้
+
+**หมายเหตุ dispatcher:** งานนี้ status "ready" รอ retry อัตโนมัติอยู่ — **ให้ block/cancel รอบเดิมก่อน** เพราะไม่มี
+decision ให้มันตอน retry รอบก่อน จะวนเจอจุดเดิมซ้ำ ให้ dispatch รอบใหม่แทนที่อ้างอิง decision ในหัวข้อนี้
+
+**STOP — reconstruct ทั้ง 26 คู่ตามตัดสินใจนี้ทำได้เลย (git-only) แต่ `db push` จริงยังห้ามเด็ดขาดเหมือนเดิม จนกว่าจะ
+เห็นไฟล์ที่ reconstruct ครบ + dry-run แล้วอนุมัติแยกอีกรอบ**
+
+---
+
 ## หลัง Stage ไหนเสร็จและ confirm แล้ว
 
 อัปเดต `docs/platform/ROADMAP.md` §0 ข้อ 3 (ตัดรายการที่ปิดแล้วออก หรือทำ strikethrough พร้อมวันที่/หลักฐาน) ตาม
