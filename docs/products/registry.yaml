@@ -5,7 +5,7 @@
 # docs/platform/ROADMAP.md is the source of truth for development sequencing,
 # verified current readiness, and routing decisions. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
-# Last Updated: 2026-08-18
+# Last Updated: 2026-08-20
 # ==============================================================================
 
 version: "1.0"
@@ -361,6 +361,26 @@ products:
     # copied-module pattern the other products do, so no modules list here
     acceptance:
       architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "pawspace"
+    name: "PawSpace — Pet Hotel & Daycare OS"
+    slug: "pawspace"
+    category: "Vertical SaaS — Pet Hospitality"
+    tagline: "Pet Hotel OS จัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE โดยร้านเป็นเจ้าของข้อมูลเอง"
+    description: "Room-matrix booking with DB-level collision constraints, LINE Flex Message daily care reports, and Google Sheets sync so the shop retains data ownership. Scoped to pet hotel/daycare only (not clinic or grooming) for V1."
+    deployment_model: "source_product"
+    runtime_project: "External / Self-hosted"
+    commercial_status: "prototype"
+    wave: 1
+    path: "products/PawSpace"
+    # registered 2026-08-20: docs-only (PRD, architecture, roadmap, business model in
+    # docs/) — no code, no app layer, nothing wired to modules-hub or Project B yet.
+    # no modules list — none copied/built.
+    acceptance:
+      architecture: false
       operations: false
       commercial: false
       support: false
