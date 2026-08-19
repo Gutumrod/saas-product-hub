@@ -87,14 +87,19 @@ products:
     slug: "ticket-tracking"
     category: "Customer Communication & Operations"
     tagline: "ระบบออกบัตรคิวและติดตามสถานะงานบริการแบบเรียลไทม์"
-    description: "MVP issue-reporting and ticket-tracking app (Express + local JSON file storage). Not yet wired to Project B or any module-hub module — corrected 2026-08-15, previous entry claimed shared_runtime/notification/audit-log that never existed in the codebase."
+    description: "MVP issue-reporting and ticket-tracking app (Express + local JSON file storage). Not wired to Project B — standalone. Corrected 2026-08-15 (previous entry claimed shared_runtime/notification/audit-log that never existed in the codebase); handler dashboard auth + ticket-tracker module wired 2026-08-19."
     deployment_model: "source_product"
     runtime_project: "External / Self-hosted"
     commercial_status: "prototype"
     wave: 1
     path: "products/ticket-tracking-relay"
-    # planned, not yet wired: notification (status-change alerts), audit-log (handler action trail),
-    # auth (data/login-agnostic, modules-hub/modules/auth) — no auth at all today, anyone can edit any ticket
+    modules:
+      - "auth"
+      - "ticket-tracker"
+    # Not related to products/booking's own ticket/claim system (separate, Supabase-RLS-backed,
+    # built inline 2026-08-18) — checked before building ticket-tracker, no overlap: see
+    # modules-hub/modules/ticket-tracker/DESIGN.md § 1. planned, not yet wired: notification
+    # (status-change alerts), audit-log (handler action trail).
     acceptance:
       architecture: true
       operations: false
