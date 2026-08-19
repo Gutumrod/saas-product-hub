@@ -52,8 +52,32 @@ Rollout order: `booking-consumer` first (pilot, proves the `next-intl` setup) �
 `ticket-tracking-relay` (small, nearly done already) → finish `hub-web` (medium) →
 `booking-admin` (large, most surface area).
 
-## What's authorized right now
+## Status: all 4 phases shipped (2026-08-20)
 
-Design is approved. **Implementation of Phase 1 (`booking-consumer` pilot) requires a separate
-explicit go-ahead** before any code/dependency change — same confirm-before-execute discipline as
-the rest of this portfolio's work this session.
+- Phase 1 `booking-consumer` — `booking@0981581`
+- Phase 2 `ticket-tracking-relay` — `ticket-tracking-relay@af01178`
+- Phase 3 `hub-web` — `hub-web@ce3014d` + `hub-web@6f190d9`
+- Phase 4 `booking-admin` — `booking@b171e42`
+
+## Known follow-ups (deferred, not forgotten)
+
+Found during Phase 4 review, deliberately left untranslated per the owner's call to stop rather
+than keep expanding scope — noted here so they aren't lost:
+
+- **`products/booking/apps/booking-admin/src/app/dashboard/tickets/page.tsx` — "Retention Cleanup"
+  admin modal** (manual closed-ticket purge, lines ~546-698 as of `b171e42`): entire modal markup
+  (title, description, cutoff-date picker, preview list, two-step delete confirmation) is still
+  Thai-only. Internal ops tool, not customer-facing — low priority, but real P1/P2 gap against the
+  bilingual policy. Fix pattern is already scoped: add `tickets.retentionModal*` keys mirroring the
+  `retentionCheckFailed`/`retentionDone` keys that already exist in the same `tickets` namespace,
+  reuse `STATUS_LABELS.Closed` (from `useTicketLabels()`) for the bolded "Closed" status name
+  instead of a hardcoded gloss.
+- **`products/booking/apps/booking-admin/src/app/dashboard/tickets/[id]/page.tsx:699,730`** —
+  computes a "base" resolution message by stripping both possible language suffixes off a
+  translated string (`t('resolutionSaved').replace(' สำเร็จแล้ว', '').replace(' successfully', '')`)
+  instead of having a dedicated key for the unsuffixed phrase. Works correctly today in both
+  languages, but breaks silently if the wording of `resolutionSaved` ever changes — fragile, not
+  broken.
+
+Neither blocks the bilingual-policy rule from being considered met for `booking-admin` — they're
+tracked cleanup, not open requirements.
