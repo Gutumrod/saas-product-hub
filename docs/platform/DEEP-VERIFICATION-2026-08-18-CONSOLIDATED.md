@@ -1,5 +1,12 @@
 # Deep Code Verification — Consolidated (2026-08-18 → 2026-08-19 checkpoint)
 
+> **Update (2026-08-19 evening):** the four blockers this document identifies are now fixed and
+> committed (local only, not pushed) — `booking@ed06fa2`, `headless-commerce@79c1d7c`,
+> `multi-tenant-ai@92139cf`. This document is left as-is below as the point-in-time evidence that
+> justified the fix work; see `docs/platform/ROADMAP.md` §0 gate 3 for current status and
+> `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\2026-08-19-domain-readiness-fixes-execution.md`
+> for the fix narrative.
+
 **Purpose:** Answer one question with evidence, not documentation claims: is any product in this
 portfolio genuinely ready for the owner to buy a production domain and open it for real paying
 customers? "Ready to open the domain" was defined by the owner as "ready to receive real revenue."
