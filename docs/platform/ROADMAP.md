@@ -27,8 +27,17 @@ changed.
 These gates apply only to the stated scope. They do not block unrelated local
 development, standalone products, or module hardening.
 
-1. **Rotate exposed Supabase service-role/API credentials for the two affected projects** — owner-only action in Supabase Dashboard. `gyleqrjdzwwlqierdwcy` and `coyelzlgukvpgguqpjdi` are project references, not secret values; never place credentials in this roadmap, git, or chat. This blocks public production deployment that would use the affected credentials.
-2. **Complete `docs/platform/SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 0** — hard gate *before Project B accepts a second product schema*. It requires booking migration-history reconciliation, E3.3 live RLS/security verification, disposition of booking's outstanding work, and a reviewed baseline commit. It does not permit `db push`, migration repair, or dashboard SQL.
+1. **Rotate exposed Supabase service-role/API credentials for the two affected projects** — owner-only action in Supabase Dashboard. `gyleqrjdzwwlqierdwcy` and `coyelzlgukvpgguqpjdi` are project references, not secret values; never place credentials in this roadmap, git, or chat.
+   **2026-08-20 — API-key half closed.** Both projects migrated off the legacy JWT-based `anon`/`service_role` keys to the new `sb_publishable_.../sb_secret_...` format (wired into `products/booking`'s 3 env files and `apps/hub-web/.env`), then the legacy keys were disabled at the platform level via the Management API (`PUT /v1/projects/{ref}/api-keys/legacy?enabled=false`) — verified dead on both projects (`401 Legacy API keys are disabled`) and the new keys verified live (`200`). The BOOKING2-scoped Management API PAT (separate credential, account-level) was also rotated and the old one confirmed dead.
+   **DB password half — still open, deliberately deferred.** `coyelzlgukvpgguqpjdi`'s Postgres password (the `DATABASE_URL` used by `apps/hub-web`) is the other half of what leaked in the original `key.txt` incident and has NOT been rotated — a reset was attempted but the new value entered matched the old one byte-for-byte, so the actual password is unchanged. Owner decision 2026-08-20: leave it as-is until closer to real commercial launch, same deferral pattern as this gate's original credential-rotation decision. This still fully blocks public production deployment using this credential — direct DB access bypasses RLS entirely, worse exposure than the API keys that were just closed.
+2. **Complete `docs/platform/SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 0** — hard gate *before Project B accepts a second product schema*. It requires booking migration-history reconciliation, E3.3 live RLS/security verification, disposition of booking's outstanding work, and a reviewed baseline commit.
+   **CLOSED 2026-08-20.** All 5 exit-evidence items verified live against the deployed
+   project (not self-reported) — see `products/booking/docs/platform/PHASE_0_BASELINE_SNAPSHOT_2026-08-20.md`.
+   Migration history: 28/28 local matches remote (2 pending migrations pushed this session,
+   owner-confirmed). E3.3 RLS fix live-tested with 3 real anon REST calls, all passed. No
+   uncommitted platform-admin work outstanding. Project B is now clear to admit its second
+   product schema per the admission order recorded below (`line_oa_ai` → `headless_commerce`
+   → `pawspace`), subject to each product's own admission review under §3 of the shared-runtime plan.
 3. **Domain-purchase gate (added 2026-08-19, all 4 code blockers closed 2026-08-19 — see below).**
    The owner will buy a production domain only once a product is genuinely revenue-ready, not just
    reference-complete. Deep code verification (see `DEEP-VERIFICATION-2026-08-18-CONSOLIDATED.md`)
@@ -65,11 +74,21 @@ development, standalone products, or module hardening.
 | Product | Verified current state | Routing decision for development |
 |---|---|---|
 | `booking` | Existing Project B baseline | Phase 0 governs its baseline/security work; public launch also needs Stripe, domain, and live migration evidence. |
-| `line_oa_ai` | Express app exists; no Project B admission evidence | First candidate only after Phase 0 and explicit owner confirmation, per the shared-runtime plan. |
+| `line_oa_ai` | Express app exists; no Project B admission evidence | **Cleared to start 2026-08-20** — Phase 0 closed and owner explicitly confirmed it as first candidate (admission order: `line_oa_ai` → `headless_commerce` → `pawspace`). Still needs its own Phase 3 admission review (schema, RLS, webhook idempotency, quota) before code lands. |
 | `headless_commerce` | Four copied modules; no app/schema/deploy config | Conditional Project B candidate. Build only after its storage, catalog-growth, payment, and admission review. |
 | `feature_flag` | Two copied modules; no app/schema/service | Conditional Project B candidate. Require quota and developer-access review before admission. |
 | `short_url_analytics` | FastAPI + local SQLite; no Project B integration | Standalone product today. Moving it to Project B is a new owner decision, not an existing gate. |
 | `content_autopilot` | Four copied modules; no app | Registry says dedicated runtime, while the shared-runtime plan calls it a possible second candidate. Routing is unresolved; do not treat either as approved until the owner decides. |
+
+**Owner decision 2026-08-20 — Project B admission order locked (booking already in):**
+
+1. `line_oa_ai` — matches `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 3's own pre-selected first candidate; closest to revenue (real KMO pilot traffic).
+2. `headless_commerce` — code-ready (webhook fix on `feat/reference-server`, not yet merged to `master` — needs that merge plus the admission policy's storage/payment estimate).
+3. `pawspace` — not in the shared-runtime plan's original 10-product scope (registered after that plan was written); added deliberately because its PRD/architecture is unusually rigorous (concurrency, idempotency, RLS boundaries already fully specified) even though zero business-logic code exists yet — see `products/PawSpace/registry.yaml` entry. Needs its own fresh admission review before Phase 3+ treatment, same policy as any other product.
+
+Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `short_url_analytics` are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
+
+**Hard dependency:** §0 gate 2 (Phase 0) blocked steps 1-3 until it closed — **closed 2026-08-20** (see above). `line_oa_ai` admission (Phase 3 of the shared-runtime plan) can now start.
 
 ---
 
@@ -86,8 +105,8 @@ engineering default; customer demand or an owner decision may override it.
 | `booking_ticket_module` | Closest to done — 61/61 tests, E2E configured. Needs a real backend adapter (currently localStorage-only by design) before it is more than a demo template. | Small–medium |
 | `line_oa_ai` | Needs a real LINE OA sandbox test for the *product* surface (onboarding, per-shop config, billing) before claiming end-to-end proof — still true after 2026-08-19 deep verification. **New evidence:** the module's core AI-response path has 1–3 days of real production traffic via a live KMO LINE OA (owner-run internal pilot); this de-risks the AI core specifically but does not close the product-packaging gap. `RedisSessionStore` is documented but not implemented (only `MemorySessionStore` exists). Project B admission is a separate Phase 0 + owner-confirmation gate. | Small |
 | `short_url_analytics` | `pytest` is environment-blocked (`pydantic_core` missing). Repair the isolated test environment and re-verify before any readiness claim; it remains standalone unless the owner approves a Project B migration. | Small |
-| `tracking` | Functional MVP but no auth, no real DB (JSON file), and no tests — the largest gap of the five for anything beyond a demo. | Medium |
-| `booking` | Most mature (26 migrations, real Stripe/auth/tenant code, DB-level hold/collision protection, real LINE HMAC). **2026-08-19 deep verification found quota/staff/top-up limits from `PRICING_SPEC.md` enforced nowhere in code — fixed same day** (`booking@ed06fa2`, migration `20260819000000_quota_staff_topup_enforcement.sql`, QA PASS=6/FAIL=0 in dev DB). Remaining gap: Phase 0 baseline (§0 gate 2) is a separate, still-open item — see `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §5. | Small remaining — mostly Phase 0, not new features |
+| `tracking` | **Corrected 2026-08-20** (live code check, not doc-trust): real auth now exists (salted password hash, `HttpOnly` session cookie) — the "no auth" claim above was stale. Still no real DB (`fs.readFileSync`/`writeFileSync` on `tickets.json`/`users.json`) and in-memory sessions (`Map`) — single always-on Node process only, cannot deploy to Vercel serverless as-is. No tests. | Medium |
+| `booking` | Most mature (28 migrations, real Stripe/auth/tenant code, DB-level hold/collision protection, real LINE HMAC). **2026-08-19 deep verification found quota/staff/top-up limits from `PRICING_SPEC.md` enforced nowhere in code — fixed same day** (`booking@ed06fa2`, migration `20260819000000_quota_staff_topup_enforcement.sql`, QA PASS=6/FAIL=0 in dev DB). Phase 0 baseline (§0 gate 2) **closed 2026-08-20** — see `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §5 and `products/booking/docs/platform/PHASE_0_BASELINE_SNAPSHOT_2026-08-20.md`. | Done |
 
 ### A2. Build application layers for wave_2 products (currently modules-only)
 
@@ -156,8 +175,8 @@ artifact. Prioritise these gaps:
   `PRICING_SPEC.md` (invents a "Business ฿2,490/mo" tier that doesn't exist there).
 - ~~**(Added 2026-08-19)** Whether to build booking quota/staff/top-up enforcement before or in
   parallel with the remaining Phase 0/Stripe/domain work.~~ **Resolved 2026-08-19** — built same day
-  (`booking@ed06fa2`), see §0 gate 3 above. Phase 0 itself is still open (separate item, not gated on
-  this).
+  (`booking@ed06fa2`), see §0 gate 3 above. ~~Phase 0 itself is still open~~ **Closed 2026-08-20**,
+  see §0 gate 2 above.
 
 ---
 

@@ -376,9 +376,19 @@ products:
     commercial_status: "prototype"
     wave: 1
     path: "products/PawSpace"
-    # registered 2026-08-20: docs-only (PRD, architecture, roadmap, business model in
-    # docs/) — no code, no app layer, nothing wired to modules-hub or Project B yet.
-    # no modules list — none copied/built.
+    # corrected 2026-08-20: registry previously said "docs-only, no code" - wrong, verified
+    # against disk. Real Next.js + Supabase scaffold exists (app/, lib/supabase.ts,
+    # supabase/migrations/20260220000000_initial_schema.sql, package.json wired to
+    # @supabase/supabase-js). PRD.md/SYSTEM_ARCHITECTURE.md are unusually rigorous
+    # (deterministic lock ordering, dual idempotency, Asia/Bangkok timezone handling,
+    # proof-of-control Google Sheets binding) - graded "READY FOR DEEP IMPLEMENTATION" by
+    # BRIEF-final-production-readiness-audit-2026-08-20.md. No RPC/RLS/business-logic code
+    # written yet (only the initial schema migration) - spec-complete, implementation
+    # not started. Owner decision 2026-08-20: 4th product selected for Shared SaaS
+    # Runtime (Project B) admission, after booking/line_oa_ai/headless_commerce - not in
+    # SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md's original 10-product scope list (added later),
+    # needs its own admission review before Phase 3+.
+    # no modules list — none copied/built (standalone Next.js app, not modules-hub pattern).
     acceptance:
       architecture: false
       operations: false
