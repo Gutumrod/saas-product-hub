@@ -74,21 +74,36 @@ development, standalone products, or module hardening.
 | Product | Verified current state | Routing decision for development |
 |---|---|---|
 | `booking` | Existing Project B baseline | Phase 0 governs its baseline/security work; public launch also needs Stripe, domain, and live migration evidence. |
-| `line_oa_ai` | Express app exists; no Project B admission evidence | **Cleared to start 2026-08-20** — Phase 0 closed and owner explicitly confirmed it as first candidate (admission order: `line_oa_ai` → `headless_commerce` → `pawspace`). Still needs its own Phase 3 admission review (schema, RLS, webhook idempotency, quota) before code lands. |
+| `line_oa_ai` | Express app exists; no Project B admission evidence | Cleared to start (Phase 0 closed 2026-08-20). **Order changed 2026-08-21 — now 2nd** (see below). Still needs its own Phase 3 admission review (schema, RLS, webhook idempotency, quota) before code lands. |
 | `headless_commerce` | Four copied modules; no app/schema/deploy config | Conditional Project B candidate. Build only after its storage, catalog-growth, payment, and admission review. |
 | `feature_flag` | Two copied modules; no app/schema/service | Conditional Project B candidate. Require quota and developer-access review before admission. |
 | `short_url_analytics` | FastAPI + local SQLite; no Project B integration | Standalone product today. Moving it to Project B is a new owner decision, not an existing gate. |
 | `content_autopilot` | Four copied modules; no app | Registry says dedicated runtime, while the shared-runtime plan calls it a possible second candidate. Routing is unresolved; do not treat either as approved until the owner decides. |
 
-**Owner decision 2026-08-20 — Project B admission order locked (booking already in):**
+**Owner decision 2026-08-20 — Project B admission order locked (booking already in), superseded 2026-08-21 (see below):**
 
-1. `line_oa_ai` — matches `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 3's own pre-selected first candidate; closest to revenue (real KMO pilot traffic).
+1. ~~`line_oa_ai`~~ — matches `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 3's own pre-selected first candidate; closest to revenue (real KMO pilot traffic).
 2. `headless_commerce` — code-ready (webhook fix on `feat/reference-server`, not yet merged to `master` — needs that merge plus the admission policy's storage/payment estimate).
-3. `pawspace` — not in the shared-runtime plan's original 10-product scope (registered after that plan was written); added deliberately because its PRD/architecture is unusually rigorous (concurrency, idempotency, RLS boundaries already fully specified) even though zero business-logic code exists yet — see `products/PawSpace/registry.yaml` entry. Needs its own fresh admission review before Phase 3+ treatment, same policy as any other product.
+3. ~~`pawspace`~~ — not in the shared-runtime plan's original 10-product scope (registered after that plan was written); added deliberately because its PRD/architecture is unusually rigorous (concurrency, idempotency, RLS boundaries already fully specified) even though zero business-logic code exists yet — see `products/PawSpace/registry.yaml` entry. Needs its own fresh admission review before Phase 3+ treatment, same policy as any other product.
+
+**Owner decision 2026-08-21 — `pawspace` moved ahead of `line_oa_ai`. New order: `pawspace` → `line_oa_ai` → `headless_commerce`.** No code work had landed on either product's Project B admission yet, so this is a pure reordering — no rework caused.
+
+Reason, recorded 2026-08-21: `pawspace` "ดูมีแววกว่า" (owner's read: stronger upside) — consistent with the
+2026-08-20 finding above that its PRD/architecture is the most rigorous spec in the portfolio, even
+pre-code. `line_oa_ai` dropped a slot because the owner is "ยังไม่มีความมั่นใจ" (not confident yet) in
+its real-world answer quality — KMO's live LINE OA answers customers inconsistently ("ตอบได้บ้าง ไม่ได้บ้าง").
+Investigated 2026-08-20/21 by reading the live `line-webhook`/`ai-providers.ts` source directly (not
+guessing): 4 concrete, evidence-ranked hypotheses (primary model `gemma4:31b-cloud` may not reliably
+follow the dense multi-part system prompt; sparse `shop_faqs`/`products` data triggers the deliberate
+anti-hallucination refusal; `line_ai_rollout`/`customers.paused_until` can silence replies entirely
+for some customers; no timeout on the AI provider calls) — handed off as
+`CODEX_TASK_line_ai_reliability_review.md` in the KMO repo (`kmorackbarcustom/kmorackbarcustom.github.io@136e3c6`)
+for the KMO repo owner to verify against real data before any fix lands. Project B admission for
+`line_oa_ai` waits on that review closing the confidence gap, not just on the Phase 3 schema work.
 
 Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `short_url_analytics` are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
 
-**Hard dependency:** §0 gate 2 (Phase 0) blocked steps 1-3 until it closed — **closed 2026-08-20** (see above). `line_oa_ai` admission (Phase 3 of the shared-runtime plan) can now start.
+**Hard dependency:** §0 gate 2 (Phase 0) blocked admission until it closed — **closed 2026-08-20** (see above). `pawspace` admission (Phase 3 of the shared-runtime plan) can now start first.
 
 ---
 
