@@ -84,9 +84,9 @@ development, standalone products, or module hardening.
 
 1. ~~`line_oa_ai`~~ — matches `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 3's own pre-selected first candidate; closest to revenue (real KMO pilot traffic).
 2. `headless_commerce` — code-ready (webhook fix on `feat/reference-server`, not yet merged to `master` — needs that merge plus the admission policy's storage/payment estimate).
-3. ~~`pawspace`~~ — not in the shared-runtime plan's original 10-product scope (registered after that plan was written); added deliberately because its PRD/architecture is unusually rigorous (concurrency, idempotency, RLS boundaries already fully specified) even though zero business-logic code exists yet — see `products/PawSpace/registry.yaml` entry. Needs its own fresh admission review before Phase 3+ treatment, same policy as any other product.
+3. ~~`pawspace`~~ — not in the shared-runtime plan's original 10-product scope (registered after that plan was written); added deliberately because its PRD/architecture is unusually rigorous (concurrency, idempotency, RLS boundaries already fully specified). **This "zero business-logic code" framing is now stale — corrected 2026-08-22 below.** Needs its own fresh admission review before Phase 3+ treatment, same policy as any other product.
 
-**Owner decision 2026-08-21 — `pawspace` moved ahead of `line_oa_ai`. New order: `pawspace` → `line_oa_ai` → `headless_commerce`.** No code work had landed on either product's Project B admission yet, so this is a pure reordering — no rework caused.
+**Owner decision 2026-08-21 — `pawspace` moved ahead of `line_oa_ai`. New order: `pawspace` → `line_oa_ai` → `headless_commerce`.** At decision time no code work had landed on either product's Project B admission — a pure reordering, no rework caused. **Reality changed fast after this decision:** by 2026-08-22, `pawspace` has Phase 1–10 implemented, independently reviewed, and committed to its own `master` (schema/RLS/RPC hardening, auth+tenant, booking backend, LINE LIFF identity claim, Daily Report LINE delivery, Google Sheets sync, public visitor camera access, Owner/Manager dashboard + Starter/Pro/Enterprise/Founding-Member entitlement representation, live staff Operations UI, and a real Playwright browser/HTTP E2E harness — 8/8 passing). A visual design pass and a Phase 11 customer self-service booking flow (LINE LIFF, request-first: customer submits, staff confirms/declines) are implemented and reviewer-gate-passed but not yet committed. No payment/billing collection exists anywhere by design. No real pilot shop has run the operational loop yet. See `products/PawSpace/registry.yaml`'s pawspace entry for the full, current correction. This makes the "pawspace admission review" referenced above much closer to actionable than it was at decision time — the admission review can now evaluate real shipped code, not just a spec.
 
 Reason, recorded 2026-08-21: `pawspace` "ดูมีแววกว่า" (owner's read: stronger upside) — consistent with the
 2026-08-20 finding above that its PRD/architecture is the most rigorous spec in the portfolio, even
@@ -100,6 +100,18 @@ for some customers; no timeout on the AI provider calls) — handed off as
 `CODEX_TASK_line_ai_reliability_review.md` in the KMO repo (`kmorackbarcustom/kmorackbarcustom.github.io@136e3c6`)
 for the KMO repo owner to verify against real data before any fix lands. Project B admission for
 `line_oa_ai` waits on that review closing the confidence gap, not just on the Phase 3 schema work.
+
+**Owner decision 2026-08-21 — goes further than the confidence-gap fix above: `line_oa_ai` is removed
+from the near-term "sell first" shortlist entirely, not just deprioritized.** Owner's own read: the
+KMO live bot can't decide much on its own and doesn't cover the range of real inbound customer
+messages — tolerable so far only because KMO is the owner's own shop and he personally catches what
+it misses, which is not evidence it can serve a third-party customer unsupervised. Owner is building
+a replacement, `products/LINE OA AI Sales & Service Engine/` (started 2026-08-21, see its own
+`docs/04-PRD.md` — agentic goal execution, Green/Yellow/Red action-approval gates, dual transactional
+adapters for order+booking), intentionally kept **docs-only, zero code**, until the plan is solid. That
+product's own PRD marks itself "Draft — NOT approved for pilot." No timeline committed. Until it clears
+its own Pilot Acceptance Gate, the portfolio has no sellable LINE OA AI product — this is a real gap in
+the near-term revenue plan, not a same-tier swap.
 
 Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `short_url_analytics` are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
 
@@ -117,9 +129,9 @@ engineering default; customer demand or an owner decision may override it.
 
 | Product | Gap to close | Effort |
 |---|---|---|
-| `booking_ticket_module` | Closest to done — 61/61 tests, E2E configured. Needs a real backend adapter (currently localStorage-only by design) before it is more than a demo template. | Small–medium |
+| `booking_ticket_module` | Closest to done — 61/61 tests, E2E configured (re-verified 2026-08-21: `npm test` really runs 12 files/61 tests, 5 real Playwright E2E specs). Needs a real backend adapter (currently localStorage-only by design) before it is more than a demo template. **Owner decision 2026-08-21, superseded same day:** first proposed bundling this into `booking` as an after-sales case-management add-on — retracted after discovering `booking` already has its own native, more capable ticket system (`apps/booking-admin/src/lib/ticket-service.ts` + `ticket-domain.ts`, real Supabase/RLS-backed, migration `20260818000000_local_service_tickets.sql`), making the bundle redundant. **Current status: no clear sell path** — dropped from the near-term "sell first" shortlist entirely (final shortlist: `booking`, `pawspace`). Standalone template-market sale remains theoretically possible but weak (no distribution channel); revisit only if a concrete buyer/channel appears. | Small–medium |
 | `line_oa_ai` | Needs a real LINE OA sandbox test for the *product* surface (onboarding, per-shop config, billing) before claiming end-to-end proof — still true after 2026-08-19 deep verification. **New evidence:** the module's core AI-response path has 1–3 days of real production traffic via a live KMO LINE OA (owner-run internal pilot); this de-risks the AI core specifically but does not close the product-packaging gap. `RedisSessionStore` is documented but not implemented (only `MemorySessionStore` exists). Project B admission is a separate Phase 0 + owner-confirmation gate. | Small |
-| `short_url_analytics` | `pytest` is environment-blocked (`pydantic_core` missing). Repair the isolated test environment and re-verify before any readiness claim; it remains standalone unless the owner approves a Project B migration. | Small |
+| `short_url_analytics` | **Corrected 2026-08-22** (ground-truth code scan, not doc-trust): the `pydantic_core`-missing blocker does not reproduce — `pytest -q` runs clean, 6/6 passed. No known code gap remains; it remains standalone unless the owner approves a Project B migration. | Done |
 | `tracking` | **Corrected 2026-08-20** (live code check, not doc-trust): real auth now exists (salted password hash, `HttpOnly` session cookie) — the "no auth" claim above was stale. Still no real DB (`fs.readFileSync`/`writeFileSync` on `tickets.json`/`users.json`) and in-memory sessions (`Map`) — single always-on Node process only, cannot deploy to Vercel serverless as-is. No tests. | Medium |
 | `booking` | Most mature (28 migrations, real Stripe/auth/tenant code, DB-level hold/collision protection, real LINE HMAC). **2026-08-19 deep verification found quota/staff/top-up limits from `PRICING_SPEC.md` enforced nowhere in code — fixed same day** (`booking@ed06fa2`, migration `20260819000000_quota_staff_topup_enforcement.sql`, QA PASS=6/FAIL=0 in dev DB). Phase 0 baseline (§0 gate 2) **closed 2026-08-20** — see `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §5 and `products/booking/docs/platform/PHASE_0_BASELINE_SNAPSHOT_2026-08-20.md`. | Done |
 
@@ -179,7 +191,7 @@ artifact. Prioritise these gaps:
 
 ## Owner decisions still required
 
-- `stripe_billing`: sellable product or shared internal infrastructure.
+- ~~`stripe_billing`: sellable product or shared internal infrastructure.~~ **Resolved 2026-08-22** — owner chose backlog: leave the 4 proven modules (291/291 tests pass) as-is, don't build an app/reference-server layer for it now. Other products keep copying from it as needed under the normal copy-and-own pattern; no dedicated sell/internal-service plan for now.
 - `content_autopilot`: dedicated runtime or a conditional Project B candidate.
 - `short_url_analytics`: stay standalone or deliberately migrate to Project B.
 - Standalone module pricing and packaging.

@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # SaaS Product Hub — Product Portfolio Registry
 # ==============================================================================
 # Product catalog and declared target configuration. Once the owner declares it,
@@ -123,8 +123,12 @@ products:
       - "file-storage"
       - "import-export"
       - "payment"
+      - "webhook-receiver"
     # list corrected 2026-08-18: import-export/payment were copied on disk but never
     # listed here (full portfolio audit, Hermes+AGY)
+    # webhook-receiver added 2026-08-22: copied in 2026-08-19 (commit 79c1d7c) to fix the
+    # Stripe signature-verification bug, but never added to this list until now (ground-truth
+    # code scan, Claude)
     acceptance:
       architecture: true
       operations: false
@@ -136,7 +140,7 @@ products:
     slug: "stripe-billing"
     category: "Billing & Monetization"
     tagline: "ระบบจัดการ Subscription, Webhook และ Entitlement คิดเงินอัตโนมัติ"
-    description: "Turnkey billing engine handling subscriptions, webhook verifications, invoices, and entitlement syncing."
+    description: "Four proven modules (payment, subscription, webhook-receiver, audit-log; 291/291 tests pass) for a billing engine — subscriptions, webhook verification, invoices, entitlement syncing. Not yet wired into a running service; no app/server layer exists."
     deployment_model: "platform_core"
     runtime_project: "Project A / Control Plane"
     schema: "billing_core"
@@ -152,9 +156,16 @@ products:
     # (full portfolio audit, Hermes+AGY)
     acceptance:
       architecture: true
-      operations: true
-      commercial: true
-      support: true
+      operations: false
+      commercial: false
+      support: false
+    # acceptance corrected 2026-08-22 (ground-truth code scan, Claude): operations/commercial/
+    # support were all "true" with zero app/server layer wiring the 4 modules together — nothing
+    # exists to operate, sell, or support. This product was also excluded from the one deep
+    # code-verification pass (2026-08-18) that validated other products' acceptance claims, so
+    # these flags were never actually checked against reality. description corrected to stop
+    # calling it "turnkey" for the same reason. Scope (sellable product vs internal infra) is
+    # still an open owner decision — see "Owner decisions still required" below.
 
   - key: "multi_tenant_ai"
     name: "Multi-Tenant AI Starter Kit"
@@ -174,6 +185,7 @@ products:
       - "auth-supabase"
       - "payment"
       - "subscription"
+      - "webhook-receiver"
     # enterprise-features (CircuitBreaker/Tracer) completed 2026-08-14 (v0.3.0)
     # and copied into this product 2026-08-16. Commercial readiness is still an
     # open human decision — see products/multi-tenant-ai/BRIEF.md
@@ -181,6 +193,9 @@ products:
     # auth-supabase/payment/subscription ARE copied on disk but were never listed
     # (full portfolio audit, Hermes+AGY) — this product has more modules in place
     # than the doc previously showed, still no app layer wired up though
+    # webhook-receiver added 2026-08-22: copied in 2026-08-18 (commit ef821f6), wired live
+    # in server/src/routes/payment-demo.ts, but never added to this list until now
+    # (ground-truth code scan, Claude)
     acceptance:
       architecture: true
       operations: true
@@ -192,13 +207,16 @@ products:
     slug: "feature-flags"
     category: "Developer Tools"
     tagline: "ระบบสลับเปิด/ปิดฟีเจอร์และจัดการ Runtime Config แยกตามร้าน"
-    description: "Lightweight feature toggle and dynamic configuration service with memory/redis store support."
+    description: "Lightweight feature toggle and dynamic configuration service. Memory store is implemented; redis/distributed store is documented as future host-supplied work only, not built."
     deployment_model: "shared_runtime"
     runtime_project: "Project B"
     schema: "feature_flags"
     commercial_status: "internal_test"
     wave: 2
     path: "products/feature-flag"
+    # description corrected 2026-08-22: "memory/redis store support" overstated readiness —
+    # only MemoryStore adapter exists in code, redis is a documented future option for a
+    # host to implement, not shipped (ground-truth code scan, Claude)
     modules:
       - "feature-flags"
       - "config-runtime"
@@ -370,27 +388,92 @@ products:
     slug: "pawspace"
     category: "Vertical SaaS — Pet Hospitality"
     tagline: "Pet Hotel OS จัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE โดยร้านเป็นเจ้าของข้อมูลเอง"
-    description: "Room-matrix booking with DB-level collision constraints, LINE Flex Message daily care reports, and Google Sheets sync so the shop retains data ownership. Scoped to pet hotel/daycare only (not clinic or grooming) for V1."
+    description: "Room-matrix booking with DB-level collision constraints, LINE Flex Message daily care reports, and Google Sheets sync so the shop retains data ownership. Scoped to pet hotel/daycare only (not clinic or grooming) for V1. Owner/Manager dashboard with Starter/Pro/Enterprise commercial-tier representation (no payment collection). Public visitor camera access and customer self-service booking via LINE LIFF also shipped."
     deployment_model: "source_product"
     runtime_project: "External / Self-hosted"
-    commercial_status: "prototype"
+    commercial_status: "beta"
     wave: 1
     path: "products/PawSpace"
-    # corrected 2026-08-20: registry previously said "docs-only, no code" - wrong, verified
-    # against disk. Real Next.js + Supabase scaffold exists (app/, lib/supabase.ts,
-    # supabase/migrations/20260220000000_initial_schema.sql, package.json wired to
-    # @supabase/supabase-js). PRD.md/SYSTEM_ARCHITECTURE.md are unusually rigorous
-    # (deterministic lock ordering, dual idempotency, Asia/Bangkok timezone handling,
-    # proof-of-control Google Sheets binding) - graded "READY FOR DEEP IMPLEMENTATION" by
-    # BRIEF-final-production-readiness-audit-2026-08-20.md. No RPC/RLS/business-logic code
-    # written yet (only the initial schema migration) - spec-complete, implementation
-    # not started. Owner decision 2026-08-20: 4th product selected for Shared SaaS
-    # Runtime (Project B) admission, after booking/line_oa_ai/headless_commerce - not in
-    # SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md's original 10-product scope list (added later),
-    # needs its own admission review before Phase 3+.
+    # corrected 2026-08-22: this entry said "No RPC/RLS/business-logic code written yet
+    # ... implementation not started" - wrong, stale since before Phase 1 began (ground-truth
+    # code + test-run scan, Claude). Real state as of this correction: Phase 1-10 implemented,
+    # independently reviewer-verified, and committed to `master` (schema/RLS/RPC hardening,
+    # auth+tenant, booking backend, LINE LIFF identity claim, Daily Report LINE delivery,
+    # Google Sheets sync, public visitor camera access, Owner/Manager dashboard +
+    # Starter/Pro/Enterprise/Founding-Member entitlement representation, live staff
+    # Operations UI replacing the old mock/preview, and a Playwright+Chromium browser/HTTP
+    # E2E harness - 8/8 passing against a real Next.js server + local Supabase). A visual
+    # design pass (Apple-inspired pastel language) and a Phase 11 customer self-service
+    # booking flow via LINE LIFF (request-first: customer submits, staff confirms/declines)
+    # are implemented and reviewer-passed but not yet committed. No payment/billing
+    # collection exists anywhere in the product by design (Phase 9/11 both explicitly
+    # scoped it out) - do not read `commercial_status: beta` as revenue-generating.
+    # No real pilot shop has run the operational loop yet - PHASE10_PILOT_RUNBOOK.md's own
+    # pending item is "perform one manual end-to-end stay using the store's real staff
+    # accounts" before opening; that's why `acceptance.operations` stays false below.
+    # Owner decision 2026-08-20/21: selected for Shared SaaS Runtime (Project B) admission,
+    # moved ahead of line_oa_ai on 2026-08-21 - reasoning cited pre-code spec rigor and did
+    # not have this implementation state available at decision time; worth a fresh look now.
     # no modules list — none copied/built (standalone Next.js app, not modules-hub pattern).
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "rentmatrix"
+    name: "RentMatrix — Heavy Equipment Rental OS"
+    slug: "rentmatrix"
+    category: "Vertical SaaS — Equipment Rental"
+    tagline: "ระบบควบคุมทรัพย์สิน สัญญาเช่า งานตรวจรับ-ส่ง และร่างบิลสำหรับธุรกิจให้เช่าเครื่องจักรและอุปกรณ์ก่อสร้าง"
+    description: "Pre-implementation Pilot MVP contract for tenant-safe asset rental operations, offline-capable field inspection, movement-ledger reconciliation, and reviewable draft billing. Documentation, executable schema baseline and phased execution plan exist; no runnable app, migrations applied to a project, pilot evidence or commercial validation exists yet."
+    deployment_model: "source_product"
+    runtime_project: "TBD - admission/deployment validation required"
+    commercial_status: "prototype"
+    wave: 1
+    path: "products/RentMatrix"
+    # Registered 2026-08-22 from docs-only intake. Runtime/project admission and platform
+    # sequencing remain separate decisions; registry presence is not implementation evidence.
     acceptance:
       architecture: false
       operations: false
       commercial: false
       support: false
+  - key: "omnidesk"
+    name: "OmniDesk"
+    slug: "omnidesk"
+    category: "Customer Communication & Social Commerce"
+    tagline: "Unified inbox for Facebook Page and LINE OA with team coordination and customer/order context"
+    description: "Pre-implementation V1 contract for a Facebook Page + LINE OA unified inbox. Docs and execution plan exist; no runnable app, channel integration, operations, pilot, or commercial evidence exists yet."
+    deployment_model: "source_product"
+    runtime_project: "TBD - admission/deployment validation required"
+    commercial_status: "prototype"
+    wave: 2
+    path: "products/OmniDesk"
+    # Registered 2026-08-22 after docs-only intake. Architecture is sufficient for Phase 0
+    # scaffold validation, but runtime/operations/commercial/support remain unproven.
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "doccraft"
+    name: "DocCraft"
+    slug: "doccraft"
+    category: "Business Documents & Productivity"
+    tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
+    description: "Browser-first document studio for quotations, invoices, receipts, work orders, and conditional tax invoices. V1 is local-first, no-login, and uses native browser printing rather than an application PDF engine."
+    deployment_model: "source_product"
+    runtime_project: "External / Self-hosted"
+    commercial_status: "prototype"
+    wave: 1
+    path: "products/DocCraft"
+    # V1 has no backend dependency. Cloud sync/auth/billing are explicitly post-MVP.
+    # Runtime/tooling locked in products/DocCraft/docs/SYSTEM_ARCHITECTURE.md.
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
