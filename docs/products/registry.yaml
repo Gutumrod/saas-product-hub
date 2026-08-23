@@ -463,7 +463,7 @@ products:
     slug: "doccraft"
     category: "Business Documents & Productivity"
     tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
-    description: "Browser-first document studio for quotations, invoices, receipts, work orders, and conditional tax invoices. V1 is local-first, no-login, and uses native browser printing rather than an application PDF engine."
+    description: "Browser-first document studio for quotations, invoices, receipts, work orders, and conditional tax invoices. V1 is local-first, no-login, and uses native browser printing rather than an application PDF engine. Phase 1 (domain calculation) and Phase 2 (editor + modular blocks) are implemented and independently reviewer-verified (Gate 2 PASS: 57/57 unit tests, typecheck, lint, prod build, Playwright E2E 9/9)."
     deployment_model: "source_product"
     runtime_project: "External / Self-hosted"
     commercial_status: "prototype"
@@ -471,6 +471,15 @@ products:
     path: "products/DocCraft"
     # V1 has no backend dependency. Cloud sync/auth/billing are explicitly post-MVP.
     # Runtime/tooling locked in products/DocCraft/docs/SYSTEM_ARCHITECTURE.md.
+    # description corrected 2026-08-23 (ground-truth code scan, Claude Mac): registry previously
+    # only described the intended V1 shape with no implementation-status signal. Verified against
+    # source: src/domain (calculation/tax/document) and src/ui/editor (DocCraftEditor + 7 section
+    # components + live preview) exist with real logic, not stubs; docs/PHASE2_IMPLEMENTATION_EVIDENCE.md
+    # records an independent reviewer rejecting the first PASS claim and requiring remediation before
+    # the final verdict. Still missing before an end-to-end usable loop: Phase 3 print/PDF fidelity
+    # and Phase 4 persistence (both explicitly out of Phase 2 scope, confirmed via scope-drift scan
+    # in the same evidence doc). Selected into the owner's locked active-development scope
+    # (alongside booking, pawspace) on 2026-08-23 — see docs/platform/ROADMAP.md "Active scope".
     acceptance:
       architecture: true
       operations: false

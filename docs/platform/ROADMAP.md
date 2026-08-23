@@ -119,6 +119,41 @@ Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then
 
 ---
 
+## Active scope — locked 2026-08-23
+
+Owner locked the current hands-on-keyboard working set to three products, decided in a Mac
+session after independently verifying each candidate against source (not doc-trust — same
+discipline as the rest of this roadmap):
+
+1. **`booking`** — already Done per A1 below; work continues on its remaining production-launch
+   items (Stripe webhook production endpoint, domain, deferred DB-password rotation).
+2. **`pawspace`** — already Phase 1–10 shipped per its registry entry; work continues toward a
+   real pilot shop running the operational loop end to end.
+3. **`doccraft`** — newly added to active scope this session. Ground-truth code scan (Claude Mac,
+   2026-08-23) found Phase 1 (domain calculation) and Phase 2 (editor + modular blocks)
+   implemented with real logic (not stubs) in `src/domain/` and `src/ui/editor/`, independently
+   reviewer-verified as **Gate 2 PASS** (`docs/PHASE2_IMPLEMENTATION_EVIDENCE.md`: 57/57 unit
+   tests, typecheck, lint, prod build, Playwright E2E 9/9, no later-phase scope drift detected).
+   Selected over two other pre-implementation candidates reviewed the same session:
+   - `rentmatrix` — only Phase 0 (scaffold) exists: a reviewed DB schema (16 tables/16 RLS/19
+     policies) plus empty `.gitkeep` placeholders in `lib/auth`, `lib/billing`, `lib/domain`. Its
+     own Phase 0 evidence doc states plainly "No auth UI, tenant workflow, asset/contract feature,
+     business RPC, offline workflow or billing feature was added." Not runnable yet — stays
+     deprioritized until Phase 1 lands.
+   - `omnidesk` — zero code confirmed on disk (no `package.json`, no `app/`, no `src/`); docs-only,
+     matching its own PRD's self-reported evidence state. Stays deprioritized until implementation
+     starts.
+
+   `doccraft` is additive, not a Project B admission — it needs no backend/auth/multi-tenant/billing
+   for V1 by product design (browser-only, no-login), so it does not compete with or depend on the
+   `pawspace` → `line_oa_ai` → `headless_commerce` Project B admission order above.
+
+Everything else in the portfolio (wave_2/wave_3 products, deferred Project B candidates,
+`rentmatrix`, `omnidesk`, `booking_ticket_module`, etc.) remains out of active scope until the
+owner revisits this lock.
+
+---
+
 ## Track A — Products (sell the finished app, not just the module pile)
 
 Ordered by verified delivery distance, not by `commercial_status`: finish runnable
