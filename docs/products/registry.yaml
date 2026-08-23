@@ -51,8 +51,11 @@ products:
     # modules: list removed 2026-08-18 — products/booking/ has no modules/ folder at
     # all; auth/tenant/billing were built inline instead of copied from modules-hub
     # (confirmed via full portfolio audit, Hermes+AGY, cross-checked against disk)
-    # commercial/operations gated: no production domain yet, Phase 2 (Hub CTA handoff)
-    # blocked on it — see vault/06-Agent-Logs/Service-Booking-SaaS 2026-08-14 handoff
+    # domain acquired 2026-08-23: wstera.com (Cloudflare Registrar). Not yet live — Cloudflare
+    # Workers deploy via @opennextjs/cloudflare scaffolded (products/booking@e99615d) but not
+    # deployed, custom domain not attached yet. commercial/operations still gated until live;
+    # Phase 2 (Hub CTA handoff) blocked until then — see vault/06-Agent-Logs/Service-Booking-SaaS
+    # 2026-08-14 handoff (its "no domain yet" framing is now superseded by this note)
     acceptance:
       architecture: true
       operations: false
