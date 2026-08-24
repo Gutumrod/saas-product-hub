@@ -105,7 +105,7 @@ for the KMO repo owner to verify against real data before any fix lands. Project
 from the near-term "sell first" shortlist entirely, not just deprioritized.** Owner's own read: the
 KMO live bot can't decide much on its own and doesn't cover the range of real inbound customer
 messages — tolerable so far only because KMO is the owner's own shop and he personally catches what
-it misses, which is not evidence it can serve a third-party customer unsupervised. Owner is building
+it misses, which is not evidence it can serve a third-party customer unsupervised.
 The replacement, `products/LINE OA AI Sales & Service Engine/`, is now a separate nested repo at
 `Gutumrod/line-oa-ai-sales-service-engine` (created 2026-08-24). Ground-truth verification on
 2026-08-24 confirms Phase 1 code exists and its automated gate passes: **25/25 tests + typecheck +
