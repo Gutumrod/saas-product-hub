@@ -73,7 +73,7 @@ development, standalone products, or module hardening.
 
 | Product | Verified current state | Routing decision for development |
 |---|---|---|
-| `booking` | Existing Project B baseline; domain acquired 2026-08-23 (`wstera.com`, Cloudflare Registrar) — Cloudflare Workers deploy scaffolded (`@opennextjs/cloudflare`) but not yet deployed or attached to the domain | Phase 0 governs its baseline/security work; public launch also needs Stripe, a live deploy on the new domain, and live migration evidence. |
+| `booking` | Existing Project B baseline; will deploy under `booking.wstera.com` (subdomain — the root `wstera.com` is the SaaS Product Hub's own domain, see `apps/hub-web`, corrected 2026-08-24 after being misrecorded 2026-08-24 as booking's own domain) — Cloudflare Workers deploy scaffolded (`@opennextjs/cloudflare`, Worker names `wstera-consumer`/`wstera-admin` — brand-name naming, not a claim on the root domain) but not yet deployed or attached to the subdomain | Phase 0 governs its baseline/security work; public launch also needs Stripe, a live deploy on the subdomain, and live migration evidence. |
 | `line_oa_ai` | Express app exists; no Project B admission evidence | Cleared to start (Phase 0 closed 2026-08-20). **Order changed 2026-08-21 — now 2nd** (see below). Still needs its own Phase 3 admission review (schema, RLS, webhook idempotency, quota) before code lands. |
 | `headless_commerce` | Four copied modules; no app/schema/deploy config | Conditional Project B candidate. Build only after its storage, catalog-growth, payment, and admission review. |
 | `feature_flag` | Two copied modules; no app/schema/service | Conditional Project B candidate. Require quota and developer-access review before admission. |
