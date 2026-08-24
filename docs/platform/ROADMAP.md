@@ -106,12 +106,14 @@ from the near-term "sell first" shortlist entirely, not just deprioritized.** Ow
 KMO live bot can't decide much on its own and doesn't cover the range of real inbound customer
 messages — tolerable so far only because KMO is the owner's own shop and he personally catches what
 it misses, which is not evidence it can serve a third-party customer unsupervised. Owner is building
-a replacement, `products/LINE OA AI Sales & Service Engine/` (started 2026-08-21, see its own
-`docs/04-PRD.md` — agentic goal execution, Green/Yellow/Red action-approval gates, dual transactional
-adapters for order+booking), intentionally kept **docs-only, zero code**, until the plan is solid. That
-product's own PRD marks itself "Draft — NOT approved for pilot." No timeline committed. Until it clears
-its own Pilot Acceptance Gate, the portfolio has no sellable LINE OA AI product — this is a real gap in
-the near-term revenue plan, not a same-tier swap.
+The replacement, `products/LINE OA AI Sales & Service Engine/`, is now a separate nested repo at
+`Gutumrod/line-oa-ai-sales-service-engine` (created 2026-08-24). Ground-truth verification on
+2026-08-24 confirms Phase 1 code exists and its automated gate passes: **25/25 tests + typecheck +
+build PASS**. Its real LINE OA sandbox round-trip is still NOT RUN/pending external LINE setup, and
+its own contracts explicitly block Phase 2 (Transaction Engine: ORDER + BOOKING) until that evidence
+passes. The PRD remains "Draft for Owner Review — NOT approved for pilot"; no Pilot/Commercial SaaS
+claim is authorized. The portfolio therefore has a real replacement codebase, but still no sellable
+LINE OA AI product until the evidence gates close.
 
 Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `short_url_analytics` are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
 

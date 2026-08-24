@@ -5,7 +5,7 @@
 # docs/platform/ROADMAP.md is the source of truth for development sequencing,
 # verified current readiness, and routing decisions. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
-# Last Updated: 2026-08-20
+# Last Updated: 2026-08-24
 # ==============================================================================
 
 version: "1.0"
@@ -67,21 +67,41 @@ products:
     slug: "line-oa-ai"
     category: "Customer Communication & AI"
     tagline: "บอท AI ตอบคำถาม รับจอง และปิดการขายบน LINE Official Account"
-    description: "Stateful conversational AI bot integrated with LINE Messaging API, supporting FAQ, booking intent, and human handoff."
+    description: "Legacy LINE OA AI product retained for operational evidence and compatibility. Its core AI-response path has real KMO usage, but it is no longer the portfolio's near-term commercial LINE product."
     deployment_model: "shared_runtime"
     runtime_project: "Project B"
     schema: "line_oa"
-    commercial_status: "beta"
+    commercial_status: "prototype"
     wave: 1
     path: "products/line-oa-ai"
     modules:
       - "line-oa-ai-module"
+    # Removed from the near-term sell-first shortlist by owner decision 2026-08-21.
     # webhook-receiver/ai-provider removed 2026-08-17: never actually copied into
     # products/line-oa-ai/modules/, listing was aspirational, not real (confirmed by
     # both this session's investigation and Hermes's independent cross-check)
     acceptance:
       architecture: true
       operations: true
+      commercial: false
+      support: false
+
+  - key: "line_oa_ai_sales_service_engine"
+    name: "LINE OA AI Sales & Service Engine"
+    slug: "line-oa-ai-sales-service-engine"
+    category: "Customer Communication & AI"
+    tagline: "AI Customer Operations บน LINE OA ที่ช่วยแอดมิน คุยกับลูกค้า และเดิน workflow ภายใต้ policy ที่ตรวจสอบได้"
+    description: "Replacement multi-tenant SaaS product. Phase 1 automated code gate is verified at 25/25 tests with typecheck/build passing; the required real LINE OA sandbox round-trip is still pending, so Phase 2 and pilot/commercial claims remain blocked."
+    deployment_model: "source_product"
+    runtime_project: "TBD - SaaS deployment/admission validation required"
+    commercial_status: "prototype"
+    wave: 1
+    path: "products/LINE OA AI Sales & Service Engine"
+    # Separate nested repository created 2026-08-24: Gutumrod/line-oa-ai-sales-service-engine.
+    # Target product form is multi-tenant SaaS; registry presence is not deployment or pilot evidence.
+    acceptance:
+      architecture: true
+      operations: false
       commercial: false
       support: false
 
