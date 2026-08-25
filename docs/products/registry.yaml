@@ -489,6 +489,30 @@ products:
       commercial: false
       support: false
 
+  - key: "money_leak_buddy"
+    name: "Money Leak Buddy"
+    slug: "money-leak-buddy"
+    category: "Personal Finance & Consumer AI"
+    tagline: "AI เพื่อนปากดีใน LINE ที่ช่วยจับเงินรั่วจากใบเสร็จ บิล และสลิป"
+    description: "Consumer-facing LINE bot: user sends a receipt/bill/slip photo or PDF, system OCR-extracts with field-level confidence, checks personal/household memory, and replies with a leak analysis in a polite-or-snarky persona. Distinct from line_oa_ai / line_oa_ai_sales_service_engine, which serve businesses (B2B customer service on LINE OA) — this is B2C personal finance. Docs-only intake, same as rentmatrix/omnidesk were: no runnable app, no OCR/LLM wiring, no LINE webhook, no pilot evidence yet."
+    deployment_model: "source_product"
+    runtime_project: "TBD - admission/deployment validation required"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/money-leak-buddy"
+    # Registered 2026-08-25 from docs-only intake (5 locked spec docs: user flow, confidence
+    # logic, memory model, persona rules, data schema — moved in from a sibling project folder,
+    # renamed from Thai "LINE-เพื่อนรัก-ปากดี" to an English slug for portfolio consistency,
+    # git-initialized and pushed to Gutumrod/money-leak-buddy). Spec is unusually detailed for a
+    # docs-only entry (numeric confidence thresholds, full DB schema, RLS/ownership contract) but
+    # that is documentation rigor, not implementation evidence — acceptance flags below reflect
+    # zero code written.
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
   - key: "doccraft"
     name: "DocCraft"
     slug: "doccraft"
