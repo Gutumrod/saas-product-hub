@@ -7,7 +7,7 @@
 
 ## 1. สถานะ apps/hub-web ตอนนี้
 
-**Production เดียวคือ Cloudflare Workers:** `https://hub-web.titazmth.workers.dev` — deploy สำเร็จ ทดสอบ live ครบ (`/`, SPA routes, tRPC health check, DB query จริง) ยังไม่ได้ผูกโดเมน `wstera.com` (พรุ่งนี้)
+**Production เดียวคือ Cloudflare Workers:** `https://wstera.com` — custom domain ผูกสำเร็จ 2026-08-25 (`wrangler.jsonc` route + redeploy, zone active อยู่แล้วในบัญชี Cloudflare) ทดสอบ live ครบ (`/`, SPA routes, tRPC health check, DB query จริง) URL ชั่วคราวเดิม `hub-web.titazmth.workers.dev` ปิดอัตโนมัติแล้ว (ปกติของ Cloudflare เมื่อมี custom domain)
 
 **Vercel ถอดออกแล้ว 2026-08-25:** `api/index.ts`, `vercel.json` ลบออกจาก repo แล้ว (commit `45fb7b7`) ตัว Vercel project เอง (`service-booking-saas`) ยังไม่ได้ลบ — ต้องเข้า vercel.com ลบเองที่ Settings → Delete Project (API คืน 403 บน plan Hobby)
 
@@ -33,8 +33,8 @@
 - `docs/products/registry.yaml` — เพิ่ม note ระดับ platform อธิบายว่า Hub เองไม่ได้อยู่ใน registry (เป็นหน้าร้าน ไม่ใช่สินค้า) และ wstera.com เป็นโดเมนของ Hub
 - `apps/hub-web/README.md`, `docs/cloudflare-workers-deployment.md`, `todo.md`, `CLOUDFLARE-MIGRATION-BRIEF.md` — sync กับสถานะจริงหมดแล้ว (ดูหัวข้อ 1)
 
-## 4. ยังไม่ได้ทำ (รอวันพรุ่งนี้ตามที่เจ้าของบอกไว้)
+## 4. ยังไม่ได้ทำ
 
-1. ผูก `wstera.com` เป็น custom domain ของ Worker `hub-web`
+1. ~~ผูก `wstera.com` เป็น custom domain ของ Worker `hub-web`~~ **เสร็จ 2026-08-25**
 2. เพิ่มสินค้าจริงผ่าน `/admin/products` + `/admin/customers` — รอ booking มี URL สมัครจริงก่อน ไม่งั้นปุ่ม CTA จะว่างอยู่ดี
 3. ลบ Vercel project เองที่ dashboard (ไม่เร่งด่วน โค้ดถอดออกแล้ว)
