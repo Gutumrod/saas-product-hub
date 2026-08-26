@@ -1,9 +1,15 @@
 # Project Context: Hub Identity, Entitlement & Billing Platform
 
-**Last Updated:** 2026-08-25
+**Last Updated:** 2026-08-25 (superseded for Phase 1 — see note below)
 **Current Phase:** Pre-implementation — PRD drafted, awaiting owner approval
 **Progress:** 0% (planning only)
 **Next Session:** รอเจ้าของอนุมัติ PRD.md แล้วเริ่ม Phase 1 (billing engine wiring)
+
+**2026-08-27 — Phase 1 superseded:** owner approved a concrete, locked implementation plan for
+exactly this phase — see `docs/platform/BILLING_CORE_PLAN.md`. That document is now the canonical
+spec for wiring `stripe-billing`'s modules (sourced from `modules-hub`, not this stale copy) into a
+real service (`services/billing-core/`, Hono on Cloudflare Workers). Phases 2+ here (Hub-wide
+organizations/entitlement-sync/bundle checkout) remain unapproved/undecided and are unaffected.
 
 ---
 
