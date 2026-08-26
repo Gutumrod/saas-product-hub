@@ -77,7 +77,7 @@ development, standalone products, or module hardening.
 | `line_oa_ai` | Express app exists; no Project B admission evidence | Cleared to start (Phase 0 closed 2026-08-20). **Order changed 2026-08-21 — now 2nd** (see below). Still needs its own Phase 3 admission review (schema, RLS, webhook idempotency, quota) before code lands. |
 | `headless_commerce` | Four copied modules; no app/schema/deploy config | Conditional Project B candidate. Build only after its storage, catalog-growth, payment, and admission review. |
 | `feature_flag` | Two copied modules; no app/schema/service | Conditional Project B candidate. Require quota and developer-access review before admission. |
-| `short_url_analytics` | FastAPI + local SQLite; no Project B integration | Standalone product today. Moving it to Project B is a new owner decision, not an existing gate. |
+| ~~`short_url_analytics`~~ → `wstera_link` (`LK01`) | **Retired 2026-08-26** (owner decision, merged into `wstera_link` — see `docs/products/registry.yaml`). Cloudflare-first multi-tenant TypeScript rebuild; docs-only intake, zero application code as of 2026-08-26. | Standalone/dedicated-runtime by its own locked architecture doc; not a Project B candidate. |
 | `content_autopilot` | Four copied modules; no app | Registry says dedicated runtime, while the shared-runtime plan calls it a possible second candidate. Routing is unresolved; do not treat either as approved until the owner decides. |
 
 **Owner decision 2026-08-20 — Project B admission order locked (booking already in), superseded 2026-08-21 (see below):**
@@ -113,13 +113,60 @@ product's own PRD marks itself "Draft — NOT approved for pilot." No timeline c
 its own Pilot Acceptance Gate, the portfolio has no sellable LINE OA AI product — this is a real gap in
 the near-term revenue plan, not a same-tier swap.
 
-Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `short_url_analytics` are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
+Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `wstera_link` (retired `short_url_analytics`/`SU01`, replaced 2026-08-26 by `LK01` — see `docs/products/registry.yaml`) are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
 
 **Hard dependency:** §0 gate 2 (Phase 0) blocked admission until it closed — **closed 2026-08-20** (see above). `pawspace` admission (Phase 3 of the shared-runtime plan) can now start first.
 
 ---
 
-## Active scope — locked 2026-08-23
+## Active scope — locked 2026-08-27 (supersedes 2026-08-23 lock below)
+
+Owner expanded and re-split the active scope in this session, after a full differentiation pass
+(`differentiation-proposals/SYNTHESIS-2026-08-27.md` — 4 submitted proposals cross-checked, 3
+competitive claims independently web-verified) and a market-speed-to-first-sale ranking of the
+whole 18-product registry. Locked to **7 products**, split by commercial model so each track can be
+built as one coherent motion instead of mixing SaaS-subscription and one-time-license work:
+
+**Subscribe (hosted, recurring billing) — 4:**
+1. **`booking`** (`BK01`) — unchanged from the 2026-08-23 lock; already Done per A1 below, work
+   continues on remaining production-launch items (Stripe webhook production endpoint, domain,
+   deferred DB-password rotation).
+2. **`pawspace`** (`PS01`) — unchanged from the 2026-08-23 lock; Phase 1–10 shipped, work continues
+   toward a real pilot shop running the operational loop end to end. No billing collection exists
+   yet by design (see its registry entry) — will need `stripe_billing`'s modules, same as the rest
+   of this Subscribe group (see the `stripe_billing` update below).
+3. **`wstera_link`** (`LK01`) — added this session. Docs-only (LOCKED pre-build spec, zero app
+   code), but its own PRD already has a locked billing spec (Free/Pro ฿199/Business ฿590,
+   full lifecycle) and its market wedge (channel-aware link routing) was independently arrived at
+   by all 4 differentiation submissions and survived competitive fact-checking. Weakest execution
+   state of the four — flagged, not hidden.
+4. **`doccraft`** (`DC01`) — added this session, moved here (not to the license-sale track) after
+   re-reading `products/DocCraft/docs/BUSINESS_MODEL.md`, which is explicit: "แนวทางหลัง MVP: Free:
+   core local-first document creation / Pro: cloud sync, reusable customers/catalog, cross-device
+   access" with hypothesis pricing at ฿290/month (lifetime is a secondary option, not the primary
+   model). Cloud sync/auth/billing are still explicitly post-MVP/not built — this is a Free/Pro
+   *subscription* target, not a one-time license, despite V1 itself being local-first/no-login.
+
+**Sell outright (one-time license) — 3:**
+1. **`multi_tenant_ai`** (`MT01`) — REVENUE-STRATEGY.md's own fastest path to first revenue (Path
+   1, 1–2 days); reference server + tests already done, remaining gap is purely commercial
+   packaging (checkout, distribution).
+2. **`booking_ticket_module`** (`CM01`) — closest-to-done template in the portfolio (61/61 tests,
+   E2E configured); own family, not `BK02` (see `docs/platform/TICKET_SYSTEMS_DISAMBIGUATION.md` —
+   targets dev/agency buyers embedding the UI, a disjoint customer base from `booking`'s own
+   tenants).
+3. **`headless_commerce`** (`HC01`) — four modules + reference server + 14/14 tests already exist;
+   REVENUE-STRATEGY.md already prices a one-time self-host source-license option ($99) alongside
+   its SaaS-tier option.
+
+Everything else in the portfolio (`feature_flag`, `content_autopilot`, `omnidesk`, `tracking`,
+`rentmatrix`, `compliance_audit`, `ai_resilience_gateway`, `it_ops_watchdog`, `bulk_etl_sync`,
+`line_oa_ai`) is paused — no further doc work or dev work — until the owner revisits this lock.
+`line_oa_ai` was explicitly considered for the Subscribe track and dropped: real demand and a warm
+channel (KMO pilot) exist, but the owner's own 2026-08-21 decision (above) already pulled it from
+the near-term sell-first shortlist over AI-answer-quality confidence, and that has not changed.
+
+### 2026-08-23 lock (superseded above, kept for history)
 
 Owner locked the current hands-on-keyboard working set to three products, decided in a Mac
 session after independently verifying each candidate against source (not doc-trust — same
@@ -148,10 +195,6 @@ discipline as the rest of this roadmap):
    for V1 by product design (browser-only, no-login), so it does not compete with or depend on the
    `pawspace` → `line_oa_ai` → `headless_commerce` Project B admission order above.
 
-Everything else in the portfolio (wave_2/wave_3 products, deferred Project B candidates,
-`rentmatrix`, `omnidesk`, `booking_ticket_module`, etc.) remains out of active scope until the
-owner revisits this lock.
-
 ---
 
 ## Track A — Products (sell the finished app, not just the module pile)
@@ -166,7 +209,7 @@ engineering default; customer demand or an owner decision may override it.
 |---|---|---|
 | `booking_ticket_module` | Closest to done — 61/61 tests, E2E configured (re-verified 2026-08-21: `npm test` really runs 12 files/61 tests, 5 real Playwright E2E specs). Needs a real backend adapter (currently localStorage-only by design) before it is more than a demo template. **Owner decision 2026-08-21, superseded same day:** first proposed bundling this into `booking` as an after-sales case-management add-on — retracted after discovering `booking` already has its own native, more capable ticket system (`apps/booking-admin/src/lib/ticket-service.ts` + `ticket-domain.ts`, real Supabase/RLS-backed, migration `20260818000000_local_service_tickets.sql`), making the bundle redundant. **Current status: no clear sell path** — dropped from the near-term "sell first" shortlist entirely (final shortlist: `booking`, `pawspace`). Standalone template-market sale remains theoretically possible but weak (no distribution channel); revisit only if a concrete buyer/channel appears. | Small–medium |
 | `line_oa_ai` | Needs a real LINE OA sandbox test for the *product* surface (onboarding, per-shop config, billing) before claiming end-to-end proof — still true after 2026-08-19 deep verification. **New evidence:** the module's core AI-response path has 1–3 days of real production traffic via a live KMO LINE OA (owner-run internal pilot); this de-risks the AI core specifically but does not close the product-packaging gap. `RedisSessionStore` is documented but not implemented (only `MemorySessionStore` exists). Project B admission is a separate Phase 0 + owner-confirmation gate. | Small |
-| `short_url_analytics` | **Corrected 2026-08-22** (ground-truth code scan, not doc-trust): the `pydantic_core`-missing blocker does not reproduce — `pytest -q` runs clean, 6/6 passed. No known code gap remains; it remains standalone unless the owner approves a Project B migration. | Done |
+| ~~`short_url_analytics`~~ | **Retired 2026-08-26** (owner decision) — the Python/FastAPI/SQLite prototype (6/6 tests passing per the 2026-08-22 correction below, once "Done") is kept only as behavior reference inside `wstera_link`'s own repo (`references/prototype-v2/`), not run or deployed. Superseded by **`wstera_link`** (`LK01`) — a from-scratch Cloudflare-first, multi-tenant TypeScript rebuild with real Supabase Auth/RLS and a locked billing spec (Free/Pro ฿199/Business ฿590), currently docs-only (LOCKED pre-build spec, zero app code). See `docs/products/registry.yaml`. ~~2026-08-22 note: the `pydantic_core`-missing blocker does not reproduce — `pytest -q` runs clean, 6/6 passed.~~ | ~~Done~~ → docs-only intake |
 | `tracking` | **Corrected 2026-08-20** (live code check, not doc-trust): real auth now exists (salted password hash, `HttpOnly` session cookie) — the "no auth" claim above was stale. Still no real DB (`fs.readFileSync`/`writeFileSync` on `tickets.json`/`users.json`) and in-memory sessions (`Map`) — single always-on Node process only, cannot deploy to Vercel serverless as-is. No tests. | Medium |
 | `booking` | Most mature (28 migrations, real Stripe/auth/tenant code, DB-level hold/collision protection, real LINE HMAC). **2026-08-19 deep verification found quota/staff/top-up limits from `PRICING_SPEC.md` enforced nowhere in code — fixed same day** (`booking@ed06fa2`, migration `20260819000000_quota_staff_topup_enforcement.sql`, QA PASS=6/FAIL=0 in dev DB). Phase 0 baseline (§0 gate 2) **closed 2026-08-20** — see `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §5 and `products/booking/docs/platform/PHASE_0_BASELINE_SNAPSHOT_2026-08-20.md`. | Done |
 
@@ -192,7 +235,7 @@ below is by existing scaffolding, not proof of market demand or commercial readi
    PR #1's description still needs updating to drop the old "acceptable documented limitation"
    framing before merge. Its possible Project B admission is still conditional and cannot start
    before Phase 0 and its product admission review, independent of these bugs.
-3. **`stripe_billing`** — scope depends on whether it is a sellable product or shared internal infrastructure. Do not create its application plan until the owner chooses.
+3. ~~`stripe_billing` — scope depends on whether it is a sellable product or shared internal infrastructure. Do not create its application plan until the owner chooses.~~ **Resolved 2026-08-27** — shared internal infrastructure for the Active scope Subscribe group (see §"Owner decisions still required" below). No standalone application/reference-server layer planned.
 4. **`feature_flag`** — two modules and no app. Its possible Project B admission is conditional and needs Phase 0 plus a quota/access review.
 
 ### A3. Wave 3 (backlog tier)
@@ -226,9 +269,9 @@ artifact. Prioritise these gaps:
 
 ## Owner decisions still required
 
-- ~~`stripe_billing`: sellable product or shared internal infrastructure.~~ **Resolved 2026-08-22** — owner chose backlog: leave the 4 proven modules (291/291 tests pass) as-is, don't build an app/reference-server layer for it now. Other products keep copying from it as needed under the normal copy-and-own pattern; no dedicated sell/internal-service plan for now.
+- ~~`stripe_billing`: sellable product or shared internal infrastructure.~~ **Resolved 2026-08-22, refined 2026-08-27** — owner chose backlog on 2026-08-22 (leave the 4 proven modules as-is, no app/reference-server layer, no dedicated plan). **2026-08-27: given a dedicated role** — shared billing infrastructure (`payment`, `subscription`, `webhook-receiver`, `audit-log` modules, 291/291 tests pass) for the "Active scope" Subscribe group (`booking`, `pawspace`, `wstera_link`, `doccraft`) above. `booking` already has its own inline Stripe integration (keep as-is, no rework forced). `pawspace`, `wstera_link`, and `doccraft` have no billing built yet — copy-and-own `stripe_billing`'s modules into each rather than building billing from scratch per product. Still **not** a standalone sellable product — that part of the 2026-08-22 decision stands.
 - `content_autopilot`: dedicated runtime or a conditional Project B candidate.
-- `short_url_analytics`: stay standalone or deliberately migrate to Project B.
+- ~~`short_url_analytics`: stay standalone or deliberately migrate to Project B.~~ **Moot 2026-08-26** — retired, replaced by `wstera_link` (`LK01`), which is Cloudflare-first/dedicated-runtime by its own locked architecture doc; this decision no longer applies.
 - Standalone module pricing and packaging.
 - Whether to run Track A1 and A2 in parallel. This roadmap defaults to finishing A1 first; it is a priority choice, not a technical fact.
 - **(Added 2026-08-19)** Approved pricing for `line_oa_ai`, `multi_tenant_ai`, and

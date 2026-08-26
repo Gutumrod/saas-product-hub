@@ -18,6 +18,10 @@
 /products/DocCraft/
 /products/OmniDesk/
 /products/RentMatrix/
+/products/wstera-link/
+
+# OS junk
+.DS_Store
 /_archive/bike-booking-saas-cf-poc/
 
 # secrets

@@ -5,10 +5,20 @@
 # docs/platform/ROADMAP.md is the source of truth for development sequencing,
 # verified current readiness, and routing decisions. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
-# Last Updated: 2026-08-20
+# Last Updated: 2026-08-26
+#
+# product_id / product_code: owner-approved 2026-08-26, full-portfolio adoption
+# — see docs/platform/PRODUCT_ID_HOSTNAME_NAMESPACE_PROPOSAL.md for the model and
+# decision log. product_id is a permanent internal identity (never reused, never
+# displayed to customers). product_code is a permanent short portfolio code
+# (never recycled even after retirement) reserved for future canonical hostnames
+# of the form <code>.wstera.com — reservation is documentation-only here; no DNS
+# record has been created for any product, including booking/BK01. `key` remains
+# the existing repo/catalog identifier used elsewhere in this file and in code —
+# it is NOT renamed or replaced by this change.
 # ==============================================================================
 
-version: "1.0"
+version: "1.1"
 platform: "SaaS Product Hub"
 repository: "Gutumrod/saas-product-hub"
 
@@ -37,6 +47,10 @@ waves:
 # ------------------------------------------------------------------------------
 products:
   - key: "booking"
+    product_id: "prd_f55973504ccf4872a4a0a259e80e4550"
+    product_code: "BK01"
+    # BK family reserved for the booking product line — see booking_ticket_module
+    # (BK02) below. canonical_host bk01.wstera.com is reserved, not yet live.
     name: "Local Service Booking"
     slug: "service-booking"
     category: "Operations & Scheduling"
@@ -63,6 +77,8 @@ products:
       support: true
 
   - key: "line_oa_ai"
+    product_id: "prd_eeceec1167344c38977bf18e7af36047"
+    product_code: "LN01"
     name: "LINE OA AI Customer Service Bot"
     slug: "line-oa-ai"
     category: "Customer Communication & AI"
@@ -86,6 +102,11 @@ products:
       support: false
 
   - key: "tracking"
+    product_id: "prd_730f458a6184486f9433375cd69b36e4"
+    product_code: "TT01"
+    # Own family — unrelated to booking (checked at build time, no overlap) and
+    # unrelated to booking_ticket_module/CM01 (different audience, different
+    # stack layer). Full comparison: docs/platform/TICKET_SYSTEMS_DISAMBIGUATION.md
     name: "Ticket & Service Tracking"
     slug: "ticket-tracking"
     category: "Customer Communication & Operations"
@@ -110,6 +131,8 @@ products:
       support: false
 
   - key: "headless_commerce"
+    product_id: "prd_576929fe6e294d01bc6f708ef51ec803"
+    product_code: "HC01"
     name: "Headless Commerce API"
     slug: "headless-commerce"
     category: "E-Commerce"
@@ -139,6 +162,8 @@ products:
       support: false
 
   - key: "stripe_billing"
+    product_id: "prd_adfa36d74d764e6eb617a41da88faa71"
+    product_code: "SB01"
     name: "Stripe Billing Backend"
     slug: "stripe-billing"
     category: "Billing & Monetization"
@@ -171,6 +196,8 @@ products:
     # still an open owner decision — see "Owner decisions still required" below.
 
   - key: "multi_tenant_ai"
+    product_id: "prd_f44256f593314d9d932ad6b6da2f586f"
+    product_code: "MT01"
     name: "Multi-Tenant AI Starter Kit"
     slug: "multi-tenant-ai-starter"
     category: "Developer Starter Kit"
@@ -206,6 +233,8 @@ products:
       support: false
 
   - key: "feature_flag"
+    product_id: "prd_b46a3df82c7f420d8bc59d8f4595279c"
+    product_code: "FF01"
     name: "Feature Flag & Config Platform"
     slug: "feature-flags"
     category: "Developer Tools"
@@ -230,6 +259,8 @@ products:
       support: false
 
   - key: "content_autopilot"
+    product_id: "prd_2fc5f6d0ea664164813e48130d22538c"
+    product_code: "CA01"
     name: "Content Auto-Pilot"
     slug: "content-autopilot"
     category: "Marketing Automation"
@@ -254,6 +285,8 @@ products:
       support: false
 
   - key: "it_ops_watchdog"
+    product_id: "prd_f7eb3dccfb4044a2b8c2530b9bb98794"
+    product_code: "IO01"
     name: "Autonomous IT Ops Watchdog"
     slug: "it-ops-watchdog"
     category: "DevOps & Infrastructure"
@@ -278,6 +311,8 @@ products:
       support: false
 
   - key: "bulk_etl_sync"
+    product_id: "prd_791ec676192947cc897cdc7738b9c88b"
+    product_code: "ET01"
     name: "Enterprise Bulk ETL & Sync"
     slug: "bulk-etl-sync"
     category: "Data & Integration"
@@ -302,6 +337,8 @@ products:
       support: false
 
   - key: "compliance_audit"
+    product_id: "prd_148be06c0b3541c2a4763689edc0ec5f"
+    product_code: "CO01"
     name: "Compliance & Audit Trail"
     slug: "compliance-audit"
     category: "Security & Governance"
@@ -326,6 +363,8 @@ products:
       support: false
 
   - key: "ai_resilience_gateway"
+    product_id: "prd_b3836f6b77f4462f8af3e0ca45075132"
+    product_code: "AR01"
     name: "AI Resilience Gateway"
     slug: "ai-resilience-gateway"
     category: "AI Infrastructure"
@@ -347,6 +386,14 @@ products:
       support: false
 
   - key: "booking_ticket_module"
+    product_id: "prd_a33aba1a1f9841c1806cd23ce0ae8a66"
+    product_code: "CM01"
+    # Own family — explicitly NOT grouped with booking/BK01 despite the name.
+    # Owner decision 2026-08-26 after code-level verification: this module and
+    # booking's own native ticket system target disjoint customer bases and
+    # share no live code path (only a historical ancestor commit — booking's
+    # ticket-domain.ts was ported from this module's domain code, then diverged).
+    # Full comparison: docs/platform/TICKET_SYSTEMS_DISAMBIGUATION.md
     name: "Booking Claim & Case Management Module"
     slug: "booking-ticket-module"
     category: "Operations & Scheduling"
@@ -366,20 +413,41 @@ products:
       commercial: false
       support: false
 
-  - key: "short_url_analytics"
-    name: "Short URL Analytics"
-    slug: "short-url-analytics"
+  - key: "wstera_link"
+    product_id: "prd_f4be6d1a9b544632a527e0e15e485622"
+    product_code: "LK01"
+    # canonical_host lk01.wstera.com reserved (docs-only, no DNS record created).
+    # Supersedes and replaces the retired "short_url_analytics" entry (product_code
+    # SU01, retired 2026-08-26 — owner decision: merge into one product, WSTERA Link
+    # as primary). SU01 is retired, not reassigned — do not reissue SU01 to a future
+    # product. The old Python/FastAPI/SQLite prototype is kept as behavior reference
+    # only at wstera-link's own references/prototype-v2/ (not run/deployed).
+    name: "WSTERA Link"
+    slug: "wstera-link"
     category: "Marketing & Analytics"
-    tagline: "ระบบย่อลิงก์ ติดตามยอดคลิก และวิเคราะห์พฤติกรรมผู้ใช้"
-    description: "High-speed URL redirection and click telemetry service."
-    deployment_model: "shared_runtime"
-    runtime_project: "Project B"
-    schema: "short_url"
-    commercial_status: "beta"
+    tagline: "ลิงก์แคมเปญแบรนด์ WSTERA พร้อมวิเคราะห์คลิกสำหรับผู้ขายออนไลน์ไทย"
+    description: "Branded campaign-link and click-analytics multi-tenant SaaS for Thai online sellers, creators, affiliate operators, and agencies — not a generic URL shortener; the product promise is a stable branded link with changeable destination and channel attribution. Cloudflare-first TypeScript, Supabase Auth/RLS, Free/Pro (฿199)/Business (฿590) plans with full billing lifecycle (Stripe, grace period, downgrade rules). Vendors 10 modules from modules-hub (auth-supabase, tenant-context, subscription, payment, webhook-receiver, rate-limit, audit-log, config-runtime, health-check, import-export). Docs-only intake as of 2026-08-26 — repo has a LOCKED pre-build spec baseline (9 numbered spec docs + provenance/decisions docs) but zero application code written yet."
+    deployment_model: "dedicated_runtime"
+    runtime_project: "TBD - admission/deployment validation required"
+    commercial_status: "prototype"
     wave: 2
-    path: "products/short-url-analytics"
-    # standalone FastAPI/Python service — doesn't use the modules-hub
-    # copied-module pattern the other products do, so no modules list here
+    path: "products/wstera-link"
+    modules:
+      - "auth-supabase"
+      - "tenant-context"
+      - "subscription"
+      - "payment"
+      - "webhook-receiver"
+      - "rate-limit"
+      - "audit-log"
+      - "config-runtime"
+      - "health-check"
+      - "import-export"
+    # Registered 2026-08-26 from docs-only intake (same pattern as rentmatrix/omnidesk).
+    # architecture:true reflects a LOCKED, unusually thorough pre-build spec (PRD,
+    # architecture, data/security/tenancy, pricing/entitlements, analytics, UX flows,
+    # roadmap, test/release gates, external deps all written) plus 10 modules already
+    # vendored from modules-hub — not evidence of a runnable app.
     acceptance:
       architecture: true
       operations: false
@@ -387,6 +455,8 @@ products:
       support: false
 
   - key: "pawspace"
+    product_id: "prd_c3a024781f4e4079815b2399cfe330e0"
+    product_code: "PS01"
     name: "PawSpace — Pet Hotel & Daycare OS"
     slug: "pawspace"
     category: "Vertical SaaS — Pet Hospitality"
@@ -425,6 +495,8 @@ products:
       support: false
 
   - key: "rentmatrix"
+    product_id: "prd_38c559ebcb334bc7af0f4a43cedf522e"
+    product_code: "RM01"
     name: "RentMatrix — Heavy Equipment Rental OS"
     slug: "rentmatrix"
     category: "Vertical SaaS — Equipment Rental"
@@ -443,6 +515,8 @@ products:
       commercial: false
       support: false
   - key: "omnidesk"
+    product_id: "prd_04db9a74892b45758391af0efe71801c"
+    product_code: "OD01"
     name: "OmniDesk"
     slug: "omnidesk"
     category: "Customer Communication & Social Commerce"
@@ -462,6 +536,8 @@ products:
       support: false
 
   - key: "doccraft"
+    product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
+    product_code: "DC01"
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"

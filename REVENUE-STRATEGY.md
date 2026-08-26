@@ -16,6 +16,19 @@ number for those three in this document remains a proposal only, not a decision.
 near-term products are code-ready for real revenue yet either; see the deep-verification doc
 above before acting on any of this.
 
+**2026-08-26 correction:** `short_url_analytics` (`SU01`) is **retired** — owner decision, merged
+into a new registry product `wstera_link` (`LK01`, see `docs/products/registry.yaml`). The old
+Python/FastAPI/SQLite prototype below is kept only as behavior reference inside `wstera_link`'s own
+repo (`products/wstera-link/references/prototype-v2/`), not run or deployed. `wstera_link` is a
+from-scratch rebuild — Cloudflare-first multi-tenant TypeScript, Supabase Auth/RLS, real Stripe
+billing lifecycle (Free/Pro ฿199/Business ฿590) — currently **docs-only** (LOCKED pre-build spec,
+zero application code as of 2026-08-26), not code-ready like the retired prototype was. Every
+`short_url_analytics` mention below is a **historical record of the retired product**, not a
+current packaging option — do not quote its pricing/readiness as `wstera_link`'s state without
+checking `docs/products/registry.yaml` first. Notably, its own §2 Option A below (Pro ฿199/mo,
+custom domain support) already anticipated close to what `wstera_link`'s locked PRD later adopted
+as real pricing — kept as-is for that continuity, not because it still describes a live product.
+
 ---
 
 ## 1. Fastest Path to First Revenue
@@ -86,7 +99,7 @@ graph TD
 | **`booking`** | Service SMEs (Auto repair, Salons, Clinics) | Tiered Monthly/Annual SaaS | ฿490 – ฿990 / month (owner-approved `PRICING_SPEC.md`; see correction in §2) |
 | **`line_oa_ai`** | Service SMEs, Online Shops, Clinics on LINE | Message Volume SaaS / Hero Bundle | ฿590 – ฿2,990 / month (or +฿800 bundle) |
 | **`headless_commerce`** | E-commerce Merchants, Storefront Builders | API Quota SaaS / Source License | $29 – $79 / mo (or $99 Source) |
-| **`short_url_analytics`** | Marketers, Creators, Tech SMEs | Low-Ticket Micro-SaaS / Script License | ฿199 / month (or $39 Source) |
+| ~~**`short_url_analytics`**~~ **Retired 2026-08-26 → `wstera_link` (`LK01`)** | Thai online sellers, creators, affiliates, agencies | Multi-tenant SaaS (Free/Pro ฿199/Business ฿590) — see registry.yaml, not this row | See §"2026-08-26 correction" above |
 | **`booking_ticket_module`** | Frontend Devs, Web Agencies | UI Component / Template License | $39 Standard / $129 Agency |
 
 ---
@@ -147,7 +160,7 @@ pricing to take real customers.
 - **Option C — Base + GMV Share:**
   - $19/month base + 0.5% of order value processed through the catalog payment integration.
 
-#### 5. `short_url_analytics` (Short URL Analytics)
+#### 5. ~~`short_url_analytics` (Short URL Analytics)~~ — **Retired 2026-08-26, see correction note at top of file**
 *Tagline: "ระบบย่อลิงก์ ติดตามยอดคลิก และวิเคราะห์พฤติกรรมผู้ใช้"*
 - **Option A — Micro-SaaS Freemium (Recommended):**
   - **Free:** 50 links, 7-day click retention.
@@ -218,13 +231,13 @@ The following checklist represents the **"Owner decisions still required"** sect
 
 - [ ] `stripe_billing`: sellable product or shared internal infrastructure.
 - [ ] `content_autopilot`: dedicated runtime or a conditional Project B candidate.
-- [ ] `short_url_analytics`: stay standalone or deliberately migrate to Project B.
+- [x] ~~`short_url_analytics`: stay standalone or deliberately migrate to Project B.~~ **Moot 2026-08-26** — retired, replaced by `wstera_link` (`LK01`), which is Cloudflare-first/dedicated-runtime by its own locked architecture doc, not a Project B candidate.
 - [ ] Standalone module pricing and packaging.
 - [ ] Whether to run Track A1 and A2 in parallel. This roadmap defaults to finishing A1 first; it is a priority choice, not a technical fact.
 
 ### Commercial Impact of These Decisions:
 1. **`stripe_billing` Decision:** Determines whether time is spent marketing Stripe billing as a standalone developer micro-service ($49/mo) or treating it purely as the silent financial backbone of `booking` and the Hub.
-2. **`short_url_analytics` Decision:** If it stays standalone (FastAPI + SQLite), it can be monetized immediately as a micro-tool or template. Migrating it to Project B adds schema overhead and delays monetization.
+2. ~~**`short_url_analytics` Decision:** If it stays standalone (FastAPI + SQLite), it can be monetized immediately as a micro-tool or template. Migrating it to Project B adds schema overhead and delays monetization.~~ **Superseded 2026-08-26** — moot, see correction note at top of file. `wstera_link` (`LK01`) is docs-only; no monetization timeline yet.
 3. **Track A1 vs A2 Execution:** If the owner chooses to focus on A1 first, all effort goes to clearing `booking` gates and validating `line_oa_ai`. If run in parallel, `multi_tenant_ai` can be launched simultaneously.
 
 ---
