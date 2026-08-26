@@ -3,10 +3,18 @@
 **จัดทำโดย:** Claude (Opus 5) — Mac session
 **สั่งการโดย:** CEO (owner)
 **วันที่:** 2026-08-27
-**สถานะ:** PROPOSED — รอ owner อนุมัติ ยังไม่ใช่เอกสาร LOCKED
+**สถานะ:** SUPPLEMENTAL INDEPENDENT REVIEW — เก็บไว้เป็น audit/ข้อสังเกตประกอบ ไม่ใช่ execution plan
 **ขอบเขต:** 7 product ใน Active scope ที่ owner ล็อกไว้ 2026-08-27 (ดู `ROADMAP.md` §Active scope)
-**อำนาจของเอกสารนี้:** เป็นแผนงานวิศวกรรมและ checkpoint เท่านั้น **ไม่ตัดสินราคา ไม่ประกาศว่า product ไหน commercially ready** — สองเรื่องนั้นเป็นสิทธิ์ owner ตามกฎเดิมใน `ROADMAP.md`
-**ความสัมพันธ์กับเอกสารอื่น:** `ROADMAP.md` ยังเป็น source of truth ของ verified state และลำดับงาน; เอกสารนี้ต่อยอดจากมัน ไม่แทนที่ `docs/platform/BILLING_CORE_PLAN.md` เป็นแผนย่อยของ Platform Track P1 ด้านล่าง (LOCKED แล้ว ห้ามออกแบบซ้อน)
+**อำนาจของเอกสารนี้:** ไม่มีอำนาจกำหนดลำดับ execution, effort, ราคา, รายได้, งบประมาณ หรือการตัดสินใจเชิงการเงิน
+**ความสัมพันธ์กับเอกสารอื่น:** `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` คือ execution authority;
+`PORTFOLIO_REAUDIT_2026-08-27.md` คือ intake evidence ล่าสุด; `BILLING_CORE_PLAN.md` คือแผนย่อย
+billing ที่แก้ trust boundary แล้ว เอกสารนี้ไม่แทนที่เอกสารใดในสามตัวนั้น
+
+> **CEO scope clarification applied 2026-08-27:** เนื้อหาเรื่องราคา รายได้ งบ forecast,
+> ช่องทางขาย หรือ effort ด้านล่างเป็นข้อความจาก independent draft เดิมและ **non-authoritative**
+> ทั้งหมด ห้ามนำไปใช้เป็น financial plan หรือ blocker ของ engineering plan ข้อสังเกตสถานะโค้ดที่ยัง
+> มีประโยชน์ต้อง revalidate กับ commit ปัจจุบันก่อนใช้ เพราะ clean-slate rerun พบข้อมูลใหม่ เช่น
+> BK01 lint fail, PS01 test runner หาย, HC01 13/14 test และ dependency advisories
 
 ---
 
@@ -347,7 +355,9 @@ CM-1 (owner ตัดสิน) ──> CM-2 ทั้งหมด
 
 ## 8. Change control
 
-เอกสารนี้อยู่ใต้กฎเดียวกับ `ROADMAP.md`:
-- แก้เอกสารนี้ในการเปลี่ยนแปลงเดียวกันกับที่หลักฐานเปลี่ยน priority/gate/สถานะ
-- **ห้ามทำเครื่องหมายว่า product ไหน commercially ready ในเอกสารนี้** — บันทึกหลักฐานแล้วขอการตัดสินใจจาก owner
-- ถ้า `ROADMAP.md` กับเอกสารนี้ขัดกันเรื่อง verified state ให้ `ROADMAP.md` ชนะ (มันเป็น source of truth) แต่ §1.1 ของเอกสารนี้ระบุ 5 จุดที่ `ROADMAP.md` เองยังไม่ตรงกับโค้ด — ควรแก้ที่นั่นแล้วลบออกจากที่นี่
+เอกสารนี้ถูก freeze เป็น supplemental snapshot:
+- ไม่อัปเดต priority/gate/financial status ที่นี่ ให้แก้ master plan และ evidence ปัจจุบันแทน
+- **ห้ามทำเครื่องหมายว่า product ไหน commercially ready ในเอกสารนี้**
+- เมื่อข้อมูลขัดกัน ให้ `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` กำกับ execution และให้
+  `PORTFOLIO_REAUDIT_2026-08-27.md` หรือ evidence ที่ใหม่กว่ากำกับ verified state
+- เก็บ §1.1 ไว้เป็น provenance ของ independent review เดิม ไม่ใช่ current verdict

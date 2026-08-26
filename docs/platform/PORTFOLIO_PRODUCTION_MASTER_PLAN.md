@@ -10,7 +10,7 @@
 
 **Date:** 2026-08-27
 
-**Status:** CEO-approved execution baseline
+**Status:** CEO-approved execution baseline — revision 2 after clean-slate re-audit
 
 **Scope:** Engineering, security, operations, product delivery, and launch readiness only
 
@@ -18,6 +18,13 @@
 > revenue targets, budgets, unit economics, financial forecasts, or commercial package values. The
 > CEO owns those decisions in a separate plan. Billing work here means only the technical machinery
 > required to collect, reconcile, and enforce an owner-approved commercial configuration.
+
+Revision history:
+
+- **R1:** initial CEO-approved seven-product production baseline.
+- **R2:** clean-slate re-audit added Hub as a gated dependency, executable baseline failures,
+  supply-chain/identity/SLO gates, the V0–V5 verification protocol, a risk/decision register and
+  billing-core least-privilege corrections. Evidence: `PORTFOLIO_REAUDIT_2026-08-27.md`.
 
 ---
 
@@ -43,7 +50,12 @@ When documents disagree, use this order:
 3. Product-specific locked architecture, PRD, security, and release documents.
 4. `docs/platform/BILLING_CORE_PLAN.md` for the centralized billing implementation boundary.
 5. `docs/products/registry.yaml` for catalog identity and declared acceptance state.
-6. `docs/platform/ROADMAP.md` and older audit/evidence documents as historical evidence.
+6. `docs/platform/PORTFOLIO_REAUDIT_2026-08-27.md` for the latest intake evidence.
+7. `docs/platform/ROADMAP.md` and older audit/evidence documents as historical evidence.
+
+`docs/platform/PRODUCTION_LAUNCH_PLAN_2026-08-27.md` is retained as a supplemental independent
+review. It is not a competing execution plan, and its effort, finance, price, revenue, sequencing,
+and unresolved-owner-decision sections are non-authoritative.
 
 The product repositories remain independent repositories cloned under `products/` for local work.
 They must not be embedded into the Hub git history as subtrees, submodules, or copied source trees.
@@ -52,23 +64,34 @@ They must not be embedded into the Hub git history as subtrees, submodules, or c
 
 ## 2. Evidence baseline verified on 2026-08-27
 
-The plan is based on direct inspection of the current default branches, not readiness claims alone.
+The plan is based on direct inspection and executable checks recorded in
+`PORTFOLIO_REAUDIT_2026-08-27.md`, not readiness claims alone.
 
 | Product | Default branch and inspected head | Verified current state | Primary production gap |
 |---|---|---|---|
-| BK01 | `main` at `e99615d` | Two Next.js applications, Supabase migrations, auth, tenant, quota, Stripe and Cloudflare deployment scaffolding exist | No repository CI; automated application regression and live production evidence are incomplete |
-| PS01 | `master` at `97c9fd6` | Next.js application, Supabase migrations, operational flows and substantial phase test evidence exist | No repository CI; payment activation, production operations and real-shop pilot evidence remain open |
+| BK01 | `main` at `e99615d` | Two Next.js applications, 28 Supabase migrations, auth, tenant, quota, Stripe and Cloudflare scaffolding exist | Clean lint fails, clean build depends on untracked environment state, and there is no application test suite or CI |
+| PS01 | `master` at `97c9fd6` | Clean lint/build pass; Next.js application, Supabase migrations and operational flows exist | TypeScript phase tests lack a checked-in runner/standard `test` script; billing, operations, brand review and real-shop pilot remain open |
 | LK01 | `main` at `bf591e3` | Locked documentation and a retired prototype reference exist | No production application code exists |
-| DC01 | `master` at `2a8652e` | Next.js local-first document application with unit and browser tests exists | Account, cloud persistence, centralized billing integration and production operations remain open |
-| MT01 | `master` at `92139cf` | Reusable modules and an Express reference server exist | It is not a packaged, deployable, documented customer product |
-| CM01 | `main` at `be37b0a` | React/Vite template with unit and Playwright tests exists | Persistence is local-only; packaging, adapters, buyer verification and release automation are incomplete |
-| HC01 | `master` at `3147162` | Four independent modules exist on the default branch | No integrated service, database application, installer, release root or deployment contract exists |
+| DC01 | `master` at `2a8652e` | Clean typecheck, 118 unit tests, build and 32 browser tests pass | Gate 3 manual Chrome/Edge print acceptance is open; a critical test-tool advisory and all cloud/SaaS work remain |
+| MT01 | `master` at `92139cf` | Reference server typecheck and 13 tests pass | Server remains in-memory/demo-only; high/critical dependency findings, license, packaging and deployable product are open |
+| CM01 | `main` at `be37b0a` | Clean typecheck, 61 unit tests and build pass; MIT license exists | High/critical toolchain findings, exact browser rerun, adapter/package/release automation and buyer verification remain |
+| HC01 | `master` at `3147162` | Four independent modules exist; open PR #1 adds a local reference server | Default branch has no integrated product; PR server has no auth/persistent DB and reproducibly passes only 13/14 tests on the audit host |
+
+The portfolio also depends on the private `Gutumrod/hub-web` control-plane repository (`main` at
+`8a3e493` during intake). Its clean typecheck, 15 tests and build pass, but it has no CI/release tag,
+has high/critical dependency findings, and its current shared HMAC product-event contract does not
+cryptographically bind an emitter to one product.
 
 Cross-portfolio observations:
 
-- None of the seven inspected default branches contains a GitHub Actions workflow.
+- None of the seven product default branches, the parent Hub, or `hub-web` contains a GitHub Actions
+  workflow.
+- None of the seven products has a release tag; CM01 is the only one with a repository license.
+- Default-branch protection was not detected through the GitHub API during intake.
 - Several manifests use floating compatible ranges such as `^`; releases are not uniformly
   reproducible from a declared runtime and lockfile policy.
+- Current dependency audits report at least one high or critical finding in Hub, BK01, DC01, MT01,
+  CM01, and the HC01 feature server. Counts are time-sensitive and must be regenerated at release.
 - Historical evidence is useful but cannot replace rerunning the gate on the exact release commit.
 - The Hub contains older scope and sequencing discussions. They must not silently reintroduce
   products outside the seven-product scope.
@@ -82,7 +105,8 @@ refresh its own baseline before implementation.
 
 ### 3.1 Hub responsibility
 
-`wstera.com` is the portfolio storefront and staff control plane. It may own:
+`wstera.com` is the portfolio storefront and staff control plane. Its source is the separate private
+`Gutumrod/hub-web` repository, normally cloned at `apps/hub-web`. It may own:
 
 - product catalog and public product pages;
 - product launch status and destination URLs;
@@ -94,14 +118,33 @@ refresh its own baseline before implementation.
 It must not become a browser-accessible super-database for product tenant data, and must not hold a
 client-exposed key capable of crossing product boundaries.
 
+Each product-event signer must have a separate identity/key bound server-side to exactly one product.
+The signed envelope includes version, key ID, product ID, event ID, issued-at time and body digest;
+the Hub enforces a short replay window, idempotency, body-size limit and rate limit before database
+writes. A shared HMAC secret that permits any emitter to choose any `productSlug` is prohibited.
+
+Hub installation summaries default to an opaque external account ID and operational status. Email,
+name, notes or other personal data are stored only when a documented support purpose, retention rule,
+access audit and deletion path exist.
+
+Public asset uploads require magic-byte/content validation, active-content rejection, safe download
+headers, bounded decoding, quarantine/malware policy and orphan cleanup. A caller-declared MIME type
+alone is not sufficient evidence that a file is safe to publish.
+
 ### 3.2 Subscription products
 
 - BK01 keeps its existing self-contained Stripe integration. Do not migrate it merely for symmetry.
 - PS01, LK01, and DC01 integrate with the centralized service defined by
   `docs/platform/BILLING_CORE_PLAN.md`.
+- Billing-core may not hold a PawSpace project-wide elevated Supabase key while describing it as
+  least-privilege or “scoped.” Use a narrow signed PawSpace ingress that owns the elevated key
+  internally, or obtain an explicit CEO security-risk acceptance before Phase P1 implementation.
 - Product authorization remains local to each product. A Hub account or payment record alone never
   grants access to tenant data.
 - Every product defines its own account/tenant identity, roles, retention rules, and denial tests.
+- Billing or entitlement lookup must not sit on LK01's redirect hot path or prevent DC01 local drafts
+  from opening. Entitlements are synchronized/cached at control-plane boundaries with documented
+  expiry and degraded behavior.
 
 ### 3.3 One-time products
 
@@ -118,6 +161,10 @@ Every hosted product and shared service uses separate local, preview, staging, a
 configuration. Preview and staging must never write to production data. Production secrets are
 stored in the platform secret manager, never `.env` files committed to git.
 
+Required production variables are validated at startup/deploy and fail closed. Empty strings,
+development defaults and mock adapters are forbidden in production. Each environment has separate
+provider credentials, webhook endpoints, storage namespaces, data, alerts and rotation records.
+
 ---
 
 ## 4. Mandatory production gates
@@ -128,8 +175,13 @@ exact release commit.
 ### G0 — Scope and architecture
 
 - PRD and explicit non-goals are current.
+- Repository ownership, canonical checkout path/casing, default branch and source-of-truth files are
+  recorded; a nested repo is never mistaken for tracked parent-repo source.
 - Tenant, trust, data-flow, deployment, and external dependency boundaries are documented.
+- Identity lifecycle covers signup/invite, verification, recovery, session revocation, role change,
+  staff removal and break-glass administration where applicable.
 - Risk register identifies security, privacy, operational and vendor failure modes.
+- Non-financial architecture decisions are recorded in an ADR/decision log before implementation.
 - Architecture review has no unresolved release blocker.
 
 ### G1 — Build integrity
@@ -138,15 +190,26 @@ exact release commit.
 - Direct dependencies are exact-versioned for release or controlled by an approved lockfile policy.
 - Clean install, typecheck, lint, unit test and production build pass in CI.
 - Generated artifact is reproducible and traceable to an immutable commit/tag.
-- Dependency and secret scanning run automatically.
+- Dependency, license, secret, SAST and artifact scanning run automatically; full git history is in
+  scope for secret scanning.
+- No unaccepted high/critical dependency finding remains. Any exception names reachability,
+  compensating control, owner, expiry and re-review date.
+- Release provenance includes lockfile hash, SBOM, artifact checksum and source commit.
 
 ### G2 — Security and tenant isolation
 
 - Threat model and authorization matrix are reviewed.
 - Anonymous, unauthenticated, wrong-role, wrong-tenant, replay and privilege-escalation tests pass.
 - Webhooks verify signatures before state mutation and process duplicates idempotently.
+- Cross-product messages cryptographically bind signer identity to the authorized product and enforce
+  timestamp/replay windows; account IDs supplied by callers are checked against authenticated
+  ownership.
 - Rate limits, abuse controls and safe error responses are active.
-- Secrets are scoped, rotated when exposure is suspected, and absent from client bundles/logs.
+- Browser security headers, CSP, CSRF strategy, redirect allowlists and upload/content controls are
+  verified where applicable.
+- Secrets use the least privilege the provider actually supports, are rotated when exposure is
+  suspected, and are absent from client bundles/logs. A key that bypasses RLS is always documented
+  as project-wide even if it has a service-specific name.
 - High-severity findings are closed; accepted residual risk is recorded by the CEO.
 
 ### G3 — Data and recovery
@@ -156,6 +219,8 @@ exact release commit.
 - Backup ownership, frequency, retention and restore procedure are documented.
 - A restore rehearsal succeeds and its recovery time/data-loss observations are recorded.
 - Export, deletion and retention behavior are tested for applicable personal data.
+- The CEO approves explicit RTO and RPO targets before launch; restore evidence meets them.
+- Schema/API changes include compatibility, backfill, partial-failure and zero/low-downtime behavior.
 
 ### G4 — Reliability and observability
 
@@ -164,20 +229,29 @@ exact release commit.
 - Alerts have a named recipient, severity and response runbook.
 - Retry, timeout, circuit-breaker or dead-letter behavior is defined where external APIs are used.
 - Load and concurrency tests cover the product's critical path.
+- Product SLO/SLIs, synthetic checks, alert thresholds and degraded modes are approved and tested.
+- Queued/background work proves retry exhaustion, poison-message handling, reconciliation and safe
+  manual replay.
 
 ### G5 — Product acceptance
 
 - Critical user journeys pass in real browsers against staging.
-- Accessibility and supported viewport checks pass.
+- Accessibility, Thai/English/i18n, timezone/calendar and supported browser/viewport checks pass.
 - Empty, loading, error, retry and partial-failure states are verified.
 - Customer-facing claims match implemented and tested behavior.
 - Setup/onboarding can be completed from the published instructions.
+- Authentication email/invite/recovery delivery and expiry behavior are tested when the product uses
+  email identity.
 
 ### G6 — Release and operations
 
 - Release, rollback/forward-fix, incident, support and status communication runbooks exist.
 - Production configuration has been reviewed separately from staging.
 - Smoke tests pass after deployment.
+- DNS, TLS, security headers, cache rules, redirects and any required email-domain records are
+  verified from outside the operator network.
+- A staged/canary release and rollback or forward-fix trigger is defined; emergency disablement does
+  not corrupt tenant state.
 - On-call responsibility and escalation path are explicit, even if the CEO is the sole operator.
 - Legal/privacy/support artifacts required by the product are published.
 
@@ -188,7 +262,27 @@ exact release commit.
 - One-time product: a clean-machine buyer simulation installs, runs, tests, upgrades and removes the
   product using only shipped materials.
 - All findings are triaged; no P0/P1 issue remains open.
+- The final reviewer is independent from the implementation pass and reruns evidence rather than
+  accepting an agent-authored report.
 - CEO records a final Go/No-Go decision.
+
+### Verification protocol applied to every release candidate
+
+1. **V0 — Baseline:** refresh remote/default branch, working tree, runtime versions, lockfile,
+   environment inventory and known open issues before changing code.
+2. **V1 — Implementer self-test:** the implementer runs the smallest complete local loop and records
+   failures without declaring a production gate passed.
+3. **V2 — Automated regression:** clean install, static checks, unit/integration/contract/database
+   tests and production build run from one documented CI entrypoint.
+4. **V3 — Real-environment E2E:** use real staging services/provider sandboxes and real browsers;
+   mocks alone cannot close an external-system gate.
+5. **V4 — Adversarial and failure-path:** cover tamper, replay, wrong tenant/role, concurrency,
+   timeout, retry exhaustion, provider outage, restore and rollback/forward-fix boundaries.
+6. **V5 — Independent combined review:** a reviewer inspects code and reviews V2–V4 together, reruns
+   representative evidence, records limitations, then returns `PASS` or `REMEDIATE`.
+
+No public/live release occurs between V1 and V5. A later code, dependency, configuration or provider
+change invalidates the affected evidence and reruns the relevant stages.
 
 ---
 
@@ -201,37 +295,58 @@ not bypass an earlier gate or overload the same production trust boundary.
 
 Deliverables:
 
-1. Add a standard CI baseline to each product: install, typecheck, lint, test, build, dependency
-   audit, secret scan and artifact retention where applicable.
-2. Pin Node/package-manager/runtime versions and document the lockfile update policy.
-3. Add repository-level `SECURITY.md`, release checklist, incident contacts and vulnerability
-   handling policy.
-4. Define environment naming, secret ownership and domain ownership.
-5. Create a common evidence template containing commit, environment, commands, outputs, reviewer,
-   known limitations and Go/No-Go result.
-6. Confirm branch protection and required checks on each default branch.
+1. Publish a repository map for the parent Hub, private `hub-web`, seven products and future
+   `billing-core`: remote URL, canonical local path/casing, default branch, owner and release
+   authority. Resolve `PawSpace`/`pawspace`, `DocCraft`/`doccraft` and hostname naming drift before
+   automation depends on case-sensitive paths.
+2. Add a standard CI baseline to `hub-web` and each product: frozen install, typecheck, lint, test,
+   build, dependency/license audit, history-aware secret scan, SAST and artifact retention where
+   applicable.
+3. Close the known intake blockers: BK01 lint/build/test-entrypoint gaps, PS01 missing test runner,
+   DC01/MT01/CM01/HC01/Hub dependency findings and HC01's reproducible failing test.
+4. Pin Node/package-manager/runtime versions and document the lockfile update policy.
+5. Add repository-level `SECURITY.md`, release checklist, incident contacts, vulnerability policy,
+   license and release/version policy appropriate to each product.
+6. Define environment naming, required-variable validation, secret ownership, domain ownership,
+   RTO/RPO/SLO decision owner and external-provider inventory.
+7. Create a common evidence template containing commit, lockfile/artifact digest, environment,
+   commands, outputs, reviewer, known limitations and Go/No-Go result.
+8. Enable branch protection and required checks on every default branch; triage or close stale,
+   divergent and unmerged feature branches rather than merging them mechanically.
 
 Checkpoint **P0-C1 — Release foundation ready**:
 
-- Seven CI pipelines run on clean clones.
+- Eight CI pipelines (`hub-web` plus seven products) run on clean clones; billing-core joins the gate
+  when its repository/service skeleton is created.
 - No pipeline relies on an untracked local file.
-- All build/test commands are documented and reproducible.
+- All build/test commands are documented, reproducible and include the correct browser/runtime
+  installation step.
+- No unaccepted high/critical advisory or failing required check remains.
 - Initial threat model and release owner exist for every product.
 
 ### Phase P1 — Platform integration foundation
 
 Deliverables:
 
-1. Preserve the Hub as catalog/control plane with signed, minimal product events.
-2. Execute the already locked `BILLING_CORE_PLAN.md`; do not create a competing billing design.
+1. Harden Hub as catalog/control plane: per-product signer identity, timestamped/versioned envelopes,
+   bounded requests, replay window, rate limiting, minimized PII and safe public asset handling.
+2. Execute `BILLING_CORE_PLAN.md` after its least-privilege amendment; do not create a competing
+   billing service.
 3. Keep BK01 billing isolated from billing-core.
 4. Define a versioned contract for Hub installation summaries and one-time artifact fulfillment.
-5. Add audit, idempotency, replay protection and operational dashboards to shared integrations.
+5. Keep billing-core and analytics off LK01's redirect hot path and preserve DC01 local/offline
+   access during a billing outage.
+6. Add durable event intake, audit, idempotency, reconciliation, replay tooling and operational
+   dashboards to shared integrations.
+7. Record vendored-module upstream commit/checksum and add a drift/update test so fixes do not split
+   silently across `modules-hub`, billing-core and product copies.
 
 Checkpoint **P1-C1 — Shared boundary proven**:
 
 - Invalid signatures and replayed events cannot duplicate state changes.
+- A valid signer for one product cannot emit an event for another product.
 - No browser can use a shared service credential to cross a product boundary.
+- Billing-core cannot use its PawSpace credential to perform arbitrary project-wide Data API access.
 - Billing-core's three prescribed test approaches have been completed and reviewed together.
 - Shared-service failure behavior is documented for PS01, LK01 and DC01.
 
@@ -308,10 +423,12 @@ Checkpoint **P6-C1 — Portfolio externally operable**:
 Work packages:
 
 1. **BK-A Baseline reconciliation** — refresh migration, environment, Stripe, LINE and Cloudflare
-   state; list unresolved TODOs and verify that older evidence still matches the default branch.
+   state; list unresolved TODOs; fix current lint failures; make build/config validation reproducible
+   from a clean clone; disposition the divergent Stripe feature branch; and verify that older
+   evidence still matches the default branch.
 2. **BK-B Automated release gate** — add CI, application tests and database/RLS regression. Cover
-   hold expiry, collision, cancellation/reconfirmation, staff capacity, quota/top-up, role denial
-   and locale-critical routes.
+   signup/login/recovery/session behavior, hold expiry, collision, cancellation/reconfirmation,
+   staff capacity, quota/top-up, role denial, both webhook routes and locale-critical browser flows.
 3. **BK-C Deployment** — validate both Workers builds, staging domains, production secrets, cache
    behavior, redirects and post-deploy smoke tests.
 4. **BK-D External systems** — verify Stripe signatures/idempotency/reconciliation and LINE
@@ -336,7 +453,8 @@ integrations.
 Work packages:
 
 1. **PS-A Evidence refresh** — rerun migrations, RLS/RPC tests, application build and phase suites;
-   resolve differences between evidence documents and committed source.
+   add `tsx` or an approved runner plus one standard `test` entrypoint; resolve differences between
+   `COMMERCIAL_READINESS.md`, evidence documents and committed Phase 13 source.
 2. **PS-B CI and environments** — establish staging/production projects, deploy pipeline and secret
    boundaries for Supabase, LINE, Google and camera access.
 3. **PS-C Billing-core connection** — implement only the contract locked in
@@ -345,7 +463,9 @@ Work packages:
    and reconciliation, expired camera links and vendor outage recovery.
 5. **PS-E Privacy and operations** — retention/deletion, audit logs, access expiry, backup/restore,
    alerts and staff support runbooks.
-6. **PS-F Real-shop pilot** — staff complete reservation, check-in, care reporting, visitor access,
+6. **PS-F Brand and namespace gate** — resolve the open brand-name collision issue before public
+   domain, legal copy, app-store/social identity or customer-facing rollout is finalized.
+7. **PS-G Real-shop pilot** — staff complete reservation, check-in, care reporting, visitor access,
    checkout and failure recovery using real operational accounts.
 
 Release checkpoint **PS-L1**:
@@ -366,13 +486,14 @@ Work packages:
 2. **LK-B Control plane** — build authentication, tenant membership, link CRUD, validation, RLS and
    audit trails with denial-first tests.
 3. **LK-C Redirect plane** — implement a small edge path with validated destinations, cache policy,
-   abuse controls and a failure mode independent of the analytics pipeline.
+   abuse controls and a failure mode independent of the analytics and billing services.
 4. **LK-D Analytics plane** — asynchronous ingestion, batching, deduplication, aggregation,
    retention and deletion. Define acceptable event loss explicitly in the product SLO.
 5. **LK-E Custom domains** — ownership challenge, certificate lifecycle, revalidation, removal and
    anti-takeover tests.
-6. **LK-F Subscription authorization** — pull entitlements from billing-core with authenticated,
-   cache-bounded and fail-closed behavior.
+6. **LK-F Subscription authorization** — pull/synchronize entitlements only on authenticated
+   control-plane and scheduled boundaries. Persist a bounded local entitlement snapshot; fail closed
+   for premium mutations without placing billing-core on every redirect request.
 7. **LK-G Load and staged launch** — test redirect latency, burst traffic, queue backlog, database
    saturation and regional failure; release through staged traffic.
 
@@ -389,10 +510,12 @@ Release checkpoint **LK-L1**:
 
 Work packages:
 
-1. **DC-A Preserve the local-first core** — rerun domain calculations, persistence migrations,
-   image pipeline, import/export and recovery tests before adding cloud behavior.
-2. **DC-B Print fidelity** — establish visual fixtures for supported documents, page breaks, Thai
-   text, tax conditions, images and supported browsers/printers.
+1. **DC-A Preserve the local-first core** — remediate the critical test-tool advisory, then rerun
+   domain calculations, 118-test baseline, persistence migrations, image pipeline, import/export,
+   32 browser tests and recovery behavior before adding cloud functionality.
+2. **DC-B Close existing Gate 3** — complete the product's required human Chrome and Edge native
+   print-preview acceptance. Establish fixtures for supported documents, page breaks, Thai text,
+   tax conditions, images and supported browsers/printers; do not open Phase 5 before PASS.
 3. **DC-C Account and tenant boundary** — add authentication, document ownership, RLS, device/session
    control, export and deletion without breaking offline/local drafts.
 4. **DC-D Cloud synchronization** — versioned envelope, conflict handling, retry, encryption,
@@ -416,14 +539,17 @@ Release checkpoint **DC-L1**:
 Work packages:
 
 1. **MT-A Product contract** — define exactly what the starter kit deploys, supported providers,
-   supported runtime/database, extension points and explicit non-goals.
+   supported runtime/database, extension points and explicit non-goals. Replace the registry's
+   “production-ready boilerplate” claim until these gates actually pass.
 2. **MT-B Repository integration** — create root workspace orchestration; replace the demonstration
-   start path with a production server, migrations, environment validation and health checks.
+   start path and in-memory repositories with a production reference implementation, migrations,
+   environment validation, health/readiness checks and clean install command.
 3. **MT-C Security** — tenant/RLS denial suite, provider-key custody, webhook verification,
    idempotency, SSRF/input limits, rate limits and audit logging.
 4. **MT-D AI reliability** — timeouts, retry policy, provider failover, usage accounting, prompt/data
    isolation, safe error handling and observable request correlation.
-5. **MT-E Deployment kit** — pinned dependencies, `.env.example`, database bootstrap, Docker or
+5. **MT-E Deployment kit** — remediate dependency advisories, pin dependencies, add `.env.example`,
+   database bootstrap, Docker or
    approved deployment path, production configuration and upgrade/forward-fix procedure.
 6. **MT-F Buyer package** — license, documentation, examples, API contract, changelog, checksum,
    SBOM and automated buyer acceptance suite.
@@ -443,13 +569,15 @@ Work packages:
 
 1. **CM-A Product boundary** — keep it distinct from BK01's native ticket system; describe it as a
    reusable module/template and remove hosted-backend implications.
-2. **CM-B Persistence contract** — define typed adapter interfaces for list/read/create/update,
-   authentication context, optimistic conflict, pagination and error mapping. Keep local storage as
-   a documented demo adapter only.
+2. **CM-B Persistence contract** — lock whether the deliverable is deliberately local-only or ships
+   a production reference backend. For the production-adapter scope in this plan, define typed
+   interfaces for list/read/create/update, authentication context, optimistic conflict, pagination
+   and error mapping. Keep local storage as a documented demo adapter only.
 3. **CM-C Host integration** — provide a production-quality reference adapter and theme/i18n
    integration guide without embedding customer credentials.
-4. **CM-D Quality** — add lint to scripts, CI gates, accessibility, browser E2E, build artifact and
-   dependency scanning.
+4. **CM-D Quality** — remediate high/critical toolchain advisories, add lint to scripts, CI gates,
+   exact Playwright browser provisioning, accessibility, browser E2E, build artifact and dependency
+   scanning.
 5. **CM-E Buyer package** — versioned archive/package, license variants supplied by the CEO's
    commercial plan, changelog, compatibility matrix, upgrade guide, checksum and support boundary.
 
@@ -465,19 +593,22 @@ Release checkpoint **CM-L1**:
 
 Work packages:
 
-1. **HC-A Product and domain contract** — lock catalog, variant, inventory, reservation, order,
-   payment, media, import/export and tenant behavior; decide what is explicitly not included.
-2. **HC-B Application shell** — create root workspace, API runtime, configuration validation,
-   health/readiness endpoints and integration of the existing modules.
-3. **HC-C Database** — versioned PostgreSQL migrations, tenant/RLS policies, inventory ledger,
+1. **HC-A Branch and evidence disposition** — independently review open PR #1; fix its reproducible
+   oversized-import `EPIPE` failure and high/critical runtime/tooling advisories. Treat the local
+   reference server as reusable input only, then explicitly merge, rewrite or supersede it.
+2. **HC-B Product and domain contract** — replace the unfinished BRIEF with locked catalog, variant,
+   inventory, reservation, order, payment, media, import/export, tenant and non-goal contracts.
+3. **HC-C Application shell** — create root workspace, API runtime, authentication/authorization,
+   configuration validation, health/readiness endpoints and integration of reviewed modules.
+4. **HC-D Database** — versioned PostgreSQL migrations, tenant/RLS policies, inventory ledger,
    concurrency-safe reservations, idempotent commands and audit history.
-4. **HC-D External boundaries** — object storage, signed uploads, validated import/export jobs and
+5. **HC-E External boundaries** — object storage, signed uploads, validated import/export jobs and
    payment webhook verification without coupling buyers to WSTERA infrastructure.
-5. **HC-E API product** — OpenAPI contract, pagination/filtering/errors, compatibility policy,
+6. **HC-F API product** — OpenAPI contract, pagination/filtering/errors, compatibility policy,
    example client/storefront and contract tests.
-6. **HC-F Reliability** — load, contention, oversell, replay, job retry, backup/restore and migration
+7. **HC-G Reliability** — load, contention, oversell, replay, job retry, backup/restore and migration
    rehearsal.
-7. **HC-G Buyer package** — installer, `.env.example`, exact dependencies, seed/demo data, license,
+8. **HC-H Buyer package** — installer, `.env.example`, exact dependencies, seed/demo data, license,
    SBOM, checksum, upgrade guide and clean-machine acceptance.
 
 Release checkpoint **HC-L1**:
@@ -495,12 +626,13 @@ This sequence minimizes dependency conflicts and starts with the most mature del
 not a financial prioritization:
 
 1. Portfolio P0 release foundation.
-2. CM01 productization and BK01 production hardening in parallel where ownership permits.
-3. Centralized billing-core execution under its locked plan.
-4. DC01 cloud-production track and PS01 production/pilot track.
+2. Hub event/upload hardening and BK01 production hardening; CM01 dependency/clean-buyer work may run
+   as the bounded secondary track.
+3. Billing-core least-privilege amendment and centralized service execution.
+4. Close DC01's existing print gate, then run DC01 cloud-production and PS01 production/pilot tracks.
 5. MT01 starter-kit productization.
-6. LK01 implementation from the locked pre-build specification.
-7. HC01 integrated application and buyer package.
+6. LK01 implementation from the reconciled pre-build specification.
+7. HC01 PR disposition, integrated application and buyer package.
 8. Portfolio P6 reconciliation and externally operable closure.
 
 Do not launch a product merely because it is earlier in the sequence. Its own release gate controls
@@ -516,15 +648,22 @@ Every checkpoint record must include:
 Checkpoint ID:
 Product / service:
 Repository and commit:
+Default branch and clean-tree status:
+Runtime/package-manager versions:
+Lockfile hash:
 Environment:
 Scope tested:
 Commands and automated results:
 Manual scenarios and observations:
 Security/negative-path results:
+Dependency/license/secret scan results:
+Migration/restore and RTO/RPO results:
+SLO/alert/degraded-mode results:
 Known limitations:
 Open P0/P1 issues:
 Reviewer:
 CEO decision: GO / NO-GO / CONDITIONAL
+Artifact/tag/checksum:
 Evidence links:
 ```
 
@@ -533,17 +672,68 @@ and reruns the relevant gates.
 
 ---
 
-## 9. Definition of done for the portfolio
+## 9. Portfolio risk register
+
+| ID | Risk | Severity | Required control |
+|---|---|---|---|
+| R1 | BK01 has no application regression suite and current clean lint/build gates fail | Critical | Close BK-A/B before production deployment or feature expansion |
+| R2 | Billing-core directly holding a PawSpace project-wide RLS-bypass key expands compromise blast radius | Critical | Narrow signed ingress or explicit time-bounded CEO risk acceptance |
+| R3 | Hub's shared HMAC secret lets one product signer impersonate another product | High | Per-product/asymmetric signer identity bound to product ID, timestamp and replay window |
+| R4 | Hub and products have no CI, release tags, and detected branch protection | High | P0-C1 required checks and protected release flow |
+| R5 | Known high/critical dependency findings can ship to operators or buyers | High | Remediate or record reachability-based exception with expiry before release |
+| R6 | Seven products plus shared services can remain partially complete through context switching | High | One heavy track plus one bounded track; phase exit evidence before opening the next wave |
+| R7 | HC01's open branch can be mistaken for production-ready because it contains a server/tests | High | Independent PR disposition; fix failing test, auth/persistence and advisories before integration |
+| R8 | Stale/conflicting status documents can override current code evidence | High | Authority order, exact-commit evidence and same-change documentation updates |
+| R9 | LINE, Google, Stripe, Supabase, Cloudflare and storage failures cross operational boundaries | High | Per-provider timeout/retry/reconciliation/degraded-mode runbooks and alerts |
+| R10 | Naming/path case drift and unresolved PawSpace brand risk can force late migrations | Medium | Repository map, canonical path/hostname ADR and brand clearance before public rollout |
+| R11 | Hub stores cross-product customer PII beyond its minimal control-plane role | Medium | Data minimization, field purpose, access audit, retention and deletion verification |
+| R12 | Source products can expose WSTERA secrets, unsupported dependencies or unclear IP rights | High | Clean-room packaging, full-history secret scan, license audit, SBOM and buyer acceptance |
+
+Risk severity is engineering/operational impact, not a financial estimate. A risk stays open until its
+control has executable evidence or the CEO records a named, expiring acceptance.
+
+---
+
+## 10. Non-financial decisions required before affected work
+
+1. **Repository map and casing:** approve canonical checkout paths for Hub, PawSpace, DocCraft and
+   the other nested repos on case-sensitive and case-insensitive systems.
+2. **Hostname convention:** reconcile descriptive hosts such as `booking.wstera.com` and
+   `links.wstera.com` with reserved product-code hosts such as `bk01.wstera.com` before DNS and OAuth
+   redirect configuration becomes permanent.
+3. **Hub event trust:** approve per-product HMAC keys or asymmetric signing; one shared product-event
+   secret is not an acceptable production boundary.
+4. **PawSpace billing trust:** approve the narrow signed ingress design, or explicitly accept the
+   project-wide elevated-key risk before billing-core Phase 1.
+5. **PawSpace brand:** close the existing name-collision review before public identity is frozen.
+6. **CM01 deliverable boundary:** lock local-only template versus production reference adapter. This
+   changes engineering scope but does not decide price.
+7. **HC01 product boundary:** lock what the production source product includes beyond PR #1's demo
+   server before database/API work begins.
+8. **Operational targets:** approve SLO, RTO, RPO, supported browser/runtime matrix and retention
+   requirements for each hosted product.
+
+These decisions are intentionally limited to product/engineering behavior. Pricing, budgets,
+forecasts and revenue decisions stay in the CEO's separate financial plan.
+
+---
+
+## 11. Definition of done for the portfolio
 
 The seven-product initiative is complete only when:
 
 - each product independently passes its applicable production gates;
+- Hub/control-plane and billing-core dependencies pass their own security, recovery and operations
+  gates before a product relies on them;
 - live Hub claims and links match actual product state;
 - subscription products have tested entitlement and failure behavior without redefining the CEO's
   financial plan;
 - one-time products have immutable, scanned, installable buyer artifacts;
 - tenant and product boundaries have executable negative tests;
+- exact release commits have protected CI, no unaccepted high/critical findings, immutable tags,
+  SBOMs and artifact checksums;
 - backup/restore, incident response and support paths have been rehearsed;
+- V2–V4 evidence has been reviewed together by an independent reviewer;
 - no P0/P1 defect remains open;
 - each launch has a recorded CEO Go decision.
 

@@ -19,6 +19,26 @@ Next authorized implementation checkpoint is **P0-C1 — Release foundation read
 any product, refresh the named repository's default-branch baseline and follow that repository's
 own AGENTS/CLAUDE instructions and approval gates.
 
+### Clean-slate re-audit revision
+
+Codex reran a fresh intake after the initial plan instead of trusting prior status reports. Evidence:
+`docs/platform/PORTFOLIO_REAUDIT_2026-08-27.md`.
+
+New hard facts that P0 must address:
+
+- `hub-web` is a separate private repo (`Gutumrod/hub-web`) and is now a first-class platform gate;
+- BK01 currently fails clean lint/build and still has no application test suite;
+- PS01 builds but its TypeScript phase tests have no installed runner or standard `test` script;
+- DC01 automated gates pass, but manual Chrome/Edge print Gate 3 and a critical tool advisory remain;
+- HC01 PR #1 is open, demo-only, has dependency findings, and reproducibly passes 13/14 tests on the
+  audit host;
+- Hub product events use one shared HMAC secret without signer-to-product binding;
+- a Supabase service-role/secret key is project-wide and bypasses RLS, so billing-core must use the
+  narrow PawSpace ingress amendment now recorded in `BILLING_CORE_PLAN.md`.
+
+`docs/platform/PRODUCTION_LAUNCH_PLAN_2026-08-27.md` is preserved as a supplemental independent
+review only. It cannot override the master plan or the CEO's separate financial plan.
+
 วันที่: 2026-08-25
 สรุปงานที่ทำในเซสชันนี้ (ต่อเนื่องจาก 2026-08-24): เจอ/แก้เอกสาร wstera.com ที่บันทึกผิด, ตัด customer signup ออกจาก apps/hub-web, ย้าย apps/hub-web ไป Cloudflare Workers ทั้งหมด, rotate DB password ที่ค้างมาตั้งแต่ incident 2026-08-15, ถอด Vercel ออก
 

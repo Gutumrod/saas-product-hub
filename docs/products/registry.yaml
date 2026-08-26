@@ -2,8 +2,9 @@
 # SaaS Product Hub — Product Portfolio Registry
 # ==============================================================================
 # Product catalog and declared target configuration. Once the owner declares it,
-# docs/platform/ROADMAP.md is the source of truth for development sequencing,
-# verified current readiness, and routing decisions. A target deployment value below
+# docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md is the source of truth for the
+# locked seven-product engineering sequence and production gates; ROADMAP.md remains
+# historical portfolio context. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
 # Last Updated: 2026-08-27
 #
@@ -20,9 +21,12 @@
 # get subdomains, they do not own it.
 # ==============================================================================
 
-version: "1.1"
+version: "1.2"
 platform: "SaaS Product Hub"
 repository: "Gutumrod/saas-product-hub"
+# delivery_model records the CEO-locked delivery contract, not price or financial status:
+# subscription_saas | one_time_source_product. It is intentionally separate from
+# deployment_model, which describes runtime topology.
 # The Hub itself lives at apps/hub-web (repo Gutumrod/hub-web) and is not listed as a product
 # below — it's the storefront, not one of the items for sale. Its domain is wstera.com (root,
 # acquired 2026-08-23 via Cloudflare Registrar); individual products get subdomains under it
@@ -55,6 +59,7 @@ products:
   - key: "booking"
     product_id: "prd_f55973504ccf4872a4a0a259e80e4550"
     product_code: "BK01"
+    delivery_model: "subscription_saas"
     # BK family reserved for the booking product line — see booking_ticket_module
     # (BK02) below. canonical_host bk01.wstera.com is reserved, not yet live.
     name: "Local Service Booking"
@@ -163,14 +168,14 @@ products:
   - key: "headless_commerce"
     product_id: "prd_576929fe6e294d01bc6f708ef51ec803"
     product_code: "HC01"
+    delivery_model: "one_time_source_product"
     name: "Headless Commerce API"
     slug: "headless-commerce"
     category: "E-Commerce"
     tagline: "API แคตตาล็อกสินค้า สต็อก และหมวดหมู่สำหรับร้านค้าออนไลน์"
-    description: "High-performance headless e-commerce catalog API with variant management and media storage."
-    deployment_model: "shared_runtime"
-    runtime_project: "Project B"
-    schema: "commerce"
+    description: "One-time self-hosted source-product target. The default branch currently contains four modules only; open PR #1 adds a local reference server but not production auth, tenant isolation, persistent database, installer, or release artifact."
+    deployment_model: "source_product"
+    runtime_project: "External / Self-hosted"
     commercial_status: "beta"
     wave: 2
     path: "products/headless-commerce"
@@ -182,9 +187,8 @@ products:
       - "webhook-receiver"
     # list corrected 2026-08-18: import-export/payment were copied on disk but never
     # listed here (full portfolio audit, Hermes+AGY)
-    # webhook-receiver added 2026-08-22: copied in 2026-08-19 (commit 79c1d7c) to fix the
-    # Stripe signature-verification bug, but never added to this list until now (ground-truth
-    # code scan, Claude)
+    # webhook-receiver exists only on open PR #1 / feat/reference-server at the 2026-08-27
+    # re-audit; modules below describe intended product composition, not master-branch proof.
     acceptance:
       architecture: true
       operations: false
@@ -228,11 +232,12 @@ products:
   - key: "multi_tenant_ai"
     product_id: "prd_f44256f593314d9d932ad6b6da2f586f"
     product_code: "MT01"
+    delivery_model: "one_time_source_product"
     name: "Multi-Tenant AI Starter Kit"
     slug: "multi-tenant-ai-starter"
     category: "Developer Starter Kit"
     tagline: "Boilerplate สำหรับสร้างเว็บแอป AI รองรับหลาย Tenant และจำกัด Quota"
-    description: "Production-ready boilerplate for multi-tenant SaaS with rate limiting, tenant isolation, and AI integrations."
+    description: "One-time starter-kit target built from reusable modules plus an Express reference server. The current server proves composition with in-memory repositories and demo integrations; it is not yet a production deployment, licensed buyer artifact, or clean-install release."
     deployment_model: "source_product"
     runtime_project: "External / Self-hosted"
     commercial_status: "sellable"
@@ -418,6 +423,7 @@ products:
   - key: "booking_ticket_module"
     product_id: "prd_a33aba1a1f9841c1806cd23ce0ae8a66"
     product_code: "CM01"
+    delivery_model: "one_time_source_product"
     # Own family — explicitly NOT grouped with booking/BK01 despite the name.
     # Owner decision 2026-08-26 after code-level verification: this module and
     # booking's own native ticket system target disjoint customer bases and
@@ -446,6 +452,7 @@ products:
   - key: "wstera_link"
     product_id: "prd_f4be6d1a9b544632a527e0e15e485622"
     product_code: "LK01"
+    delivery_model: "subscription_saas"
     # canonical_host lk01.wstera.com reserved (docs-only, no DNS record created).
     # Supersedes and replaces the retired "short_url_analytics" entry (product_code
     # SU01, retired 2026-08-26 — owner decision: merge into one product, WSTERA Link
@@ -487,13 +494,14 @@ products:
   - key: "pawspace"
     product_id: "prd_c3a024781f4e4079815b2399cfe330e0"
     product_code: "PS01"
+    delivery_model: "subscription_saas"
     name: "PawSpace — Pet Hotel & Daycare OS"
     slug: "pawspace"
     category: "Vertical SaaS — Pet Hospitality"
     tagline: "Pet Hotel OS จัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE โดยร้านเป็นเจ้าของข้อมูลเอง"
-    description: "Room-matrix booking with DB-level collision constraints, LINE Flex Message daily care reports, and Google Sheets sync so the shop retains data ownership. Scoped to pet hotel/daycare only (not clinic or grooming) for V1. Owner/Manager dashboard with Starter/Pro/Enterprise commercial-tier representation (no payment collection). Public visitor camera access and customer self-service booking via LINE LIFF also shipped."
-    deployment_model: "source_product"
-    runtime_project: "External / Self-hosted"
+    description: "Hosted subscription-SaaS target for pet hotel/daycare operations. Phase 13 subscription lifecycle schema/RPCs exist, but payment collection, standardized test runner, production deployment/operations, brand clearance, and a real-shop pilot remain open."
+    deployment_model: "shared_runtime_candidate"
+    runtime_project: "Project B - admission and deployment review required"
     commercial_status: "beta"
     wave: 1
     path: "products/PawSpace"
@@ -592,13 +600,14 @@ products:
   - key: "doccraft"
     product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
     product_code: "DC01"
+    delivery_model: "subscription_saas"
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"
     tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
-    description: "Browser-first document studio for quotations, invoices, receipts, work orders, and conditional tax invoices. V1 is local-first, no-login, and uses native browser printing rather than an application PDF engine. Phase 1 (domain calculation) and Phase 2 (editor + modular blocks) are implemented and independently reviewer-verified (Gate 2 PASS: 57/57 unit tests, typecheck, lint, prod build, Playwright E2E 9/9)."
-    deployment_model: "source_product"
-    runtime_project: "External / Self-hosted"
+    description: "Local-first document studio evolving into a hosted subscription SaaS with optional cloud capability. Phase 4 is independently closed and the 2026-08-27 clean rerun passed 118 unit tests, build, and 32 browser tests; Gate 3 manual Chrome/Edge native-print acceptance and later cloud/auth/billing/operations phases remain open."
+    deployment_model: "dedicated_runtime"
+    runtime_project: "TBD - hosted SaaS deployment validation required"
     commercial_status: "prototype"
     wave: 1
     path: "products/DocCraft"
@@ -618,4 +627,3 @@ products:
       operations: false
       commercial: false
       support: false
-

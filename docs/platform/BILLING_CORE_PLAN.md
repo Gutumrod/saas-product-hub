@@ -3,20 +3,45 @@
 **Status:** LOCKED — owner-approved 2026-08-27. This is the canonical architecture for portfolio
 billing going forward. Do not design a competing/parallel billing architecture without an explicit
 owner decision superseding this document.
-**Revision:** v2 (2026-08-27, same day) — second review pass. v1 was approved and pushed; v2 adds
+**Revision:** v3 (2026-08-27, same day) — v2 added
 §0 (hard prerequisites, incl. a real Supabase-project-quota blocker v1 missed), the concrete
 status-enum mapping, Stripe-customer/idempotency-key/backfill/proration specifics that v1 left to
 the implementer's improvisation, and operational sections (secrets, observability, rollback,
-explicit out-of-scope). No architectural decision from v1 changed — every v2 edit is a gap fill.
+explicit out-of-scope). v3 incorporates the independent clean-slate security review and removes
+financial-policy decisions from this engineering plan.
+
+**Security amendment — 2026-08-27 clean-slate review:** The centralized-service decision remains
+locked, but four implementation details below are corrected before build:
+
+1. A Supabase secret or legacy service-role key is not privilege-scoped. It authorizes the
+   project-wide `service_role` and bypasses RLS. A separately named key narrows rotation impact, not
+   database privilege.
+2. Billing-core therefore does not hold PawSpace's project-wide elevated key. It calls a narrow
+   PawSpace Edge Function ingress using a dedicated HMAC/asymmetric service credential; that
+   function alone holds the PawSpace elevated key and exposes only validated subscription
+   transitions.
+3. Cloudflare Cron uses the Worker's internal `scheduled()` handler. No public
+   `/internal/cron/...` endpoint protected only by a shared header is created.
+4. LK01 redirect requests never synchronously call billing-core. Billing is checked/synchronized on
+   control-plane boundaries and stored as a bounded local entitlement snapshot.
+
+These are least-privilege and availability corrections, not a second billing architecture and not
+financial-plan changes. Supabase-specific implementation must target the current hosted Edge Runtime
+(Deno 2.1 at review time), use explicit Data API grants plus RLS where a schema is exposed, and run
+database/security advisors before migration release.
+
+Primary references: [Supabase API-key privileges](https://supabase.com/docs/guides/getting-started/api-keys),
+[RLS and elevated-key behavior](https://supabase.com/docs/guides/database/postgres/row-level-security),
+and [Data API exposure/grants](https://supabase.com/docs/guides/api/securing-your-api).
+
 **Supersedes for Phase 1 purposes:** `docs/platform/identity-billing-platform/PRD.md`'s Phase 1
 ("wire the 4 stripe-billing modules into a real app/server layer") — this document is that Phase 1,
 specified concretely. Phases 2+ of that PRD (Hub-wide organizations/entitlement-sync/bundle
 checkout) are not in scope here and remain a separate, still-unapproved future decision.
-**Relationship to the two production plans:** both `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` (Codex's)
-and `PRODUCTION_LAUNCH_PLAN_2026-08-27.md` (Claude's) already reference this document as the locked
-billing authority and explicitly forbid designing a competing billing track. Those two plans coexist
-deliberately by owner decision and are **not** to be merged here; this document stays the billing
-spec both of them point at.
+**Relationship to the production documents:** `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` is the
+seven-product execution authority and this document is its billing implementation boundary.
+`PRODUCTION_LAUNCH_PLAN_2026-08-27.md` is retained only as a supplemental independent review; it
+does not create a second sequence or financial authority.
 
 ## Context
 
@@ -62,24 +87,20 @@ ships partially, everything must be complete before real/live launch.
 
 ## 0. Hard prerequisites — resolve before Phase 1 starts
 
-**P-1. Supabase project quota is a real blocker (added v2).** This plan calls for a *new, separate*
-Supabase project for billing-core's own tables. The org is on the free tier, which allows **2
-active projects, and both slots are already used** (`gyleqrjdzwwlqierdwcy`, `coyelzlgukvpgguqpjdi`) —
-`ROADMAP.md` records the owner's intent to upgrade to Supabase Pro only *after* revenue exists,
-which is circular here (billing-core is what enables revenue). One of three must be chosen by the
-owner before Phase 1:
-- **(a) Upgrade to Supabase Pro now** — cleanest, matches the isolation intent, costs money before
-  first revenue.
-- **(b) Put billing-core's tables in a dedicated `billing_core` schema inside the existing
-  `coyelzlgukvpgguqpjdi` (hub) project**, with its own DB role scoped to that schema only — no new
-  project needed. Weaker isolation (shared DB blast radius) but preserves schema-level separation
-  and can be migrated to its own project later. Note `registry.yaml` already reserves the name
-  `schema: "billing_core"` for exactly this.
-- **(c) Defer billing-core until Pro is affordable** — blocks PS01/LK01/DC01 monetization entirely.
+**P-1. Supabase placement is a real blocker (added v2, refined v3).** The 2026-08-27 inventory
+reported no unused project slot. Reconfirm the actual account capacity when Phase 0 starts because
+plan limits and project state can change. The CEO must select one engineering boundary before
+Phase 1:
 
-Recommendation: **(b) now, (a) at first revenue.** It unblocks the build immediately at zero cost
-and the eventual move is a schema dump/restore, not a redesign. **This choice must be made before
-Phase 1; do not let an implementer silently pick one.**
+- **Separate billing project** — strongest project-level isolation.
+- **Dedicated `billing_core` schema in the Hub project** — weaker blast-radius isolation; requires
+  a dedicated Postgres role/connection limited to that schema. A project-wide secret/service-role
+  key is not an acceptable substitute for that role.
+- **Defer the service** — leaves PS01/LK01/DC01 billing integration blocked.
+
+The CEO's separate financial plan owns any cost or timing decision. This engineering gate closes
+only when the selected placement, credential boundary, backup/restore test, and future migration
+path are recorded and verified; an implementer must not silently pick one.
 
 **P-2. Stripe account/mode.** Confirm which Stripe account billing-core uses and that **test-mode
 keys are used for everything through Phase 3.** Live keys must not exist in any local `.env` or
@@ -87,21 +108,22 @@ Worker secret until the owner explicitly authorizes go-live. Guard: billing-core
 `STRIPE_SECRET_KEY` starts with `sk_live_` unless `BILLING_CORE_ALLOW_LIVE=true` is also set —
 implement this check in `src/lib/config.ts` as a startup assertion, not a comment.
 
-**P-3. Currency and minor units.** All amounts are **THB in satang** (minor units): ฿990/month =
-`99000`, ฿9,900/year = `990000`. The `payment` module already validates integer minor units; the
-plan seed data and every price in billing-core's `plans` table must follow this. Getting this wrong
-is a 100× billing error, so it is called out explicitly rather than left implicit.
+**P-3. Currency and minor units.** Currency, prices, intervals, tax behavior, trials, refunds, and
+proration policy come from the CEO's separate approved financial configuration. Billing-core stores
+integer minor units and validates the Stripe currency exponent; it must not assume every currency
+uses two decimal places or hard-code values in source. Contract tests use owner-approved fixtures
+and prove that display units, stored minor units, Checkout, invoices, and webhook reconciliation
+agree exactly.
 
 **P-4. Phase 0 is a cross-repo change.** `modules-hub` is a **separate git repo**
 (`github.com/Gutumrod/modules-hub`), not a subdirectory of this one — the Phase 0 fixes need their
-own commit and push there. Deliberate decision on the existing stale copies of those modules:
+own commit and push there. Deliberate disposition of the existing copied modules:
 - `products/multi-tenant-ai/modules/*` and `products/headless-commerce` (its `feat/reference-server`
-  branch) — **leave stale.** They are sell-outright products with their own working reference
-  servers; re-syncing them is unrelated churn and out of scope here.
-- `products/stripe-billing/modules/*` — **leave stale**, and stop treating it as a build source.
-  Its role is now historical; `billing-core` builds from `modules-hub`. (Optional cleanup, not
-  required: the stray `.agy-prompt.md` / `.codex-result.json` / `.qwen-*` agent artifacts sitting in
-  that tree.)
+  branch) — do not resync as part of billing-core. Their own production gates must independently
+  patch, replace, or pin every copied module and record provenance; known-stale code cannot ship
+  merely because it is out of scope for this service.
+- `products/stripe-billing/modules/*` — stop treating it as a build source and mark it historical;
+  `billing-core` builds from a reviewed, immutable `modules-hub` commit.
 - `products/wstera-link/vendor/modules/*` — becomes **obsolete** once LK01 switches to the pull
   model (§3). Remove it as part of LK01's doc/architecture correction so nobody builds against it
   by accident.
@@ -125,8 +147,9 @@ In `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/subscr
 - Add unit tests proving both fixes (`past_due` blocks, `grace_period` respects its own end time,
   monthly/annual period math including leap-year and month-overflow cases).
 - `modules/payment/adapters/stripe-adapter.ts` — extend `createPayment` to support
-  `mode: 'subscription'` with inline `price_data[recurring][interval]` (keeps billing-core's own
-  `Plan` table as the pricing source of truth, no manual Stripe Price provisioning per plan). Native
+  `mode: 'subscription'` with inline `price_data[recurring][interval]` (keeps the owner-approved
+  billing configuration as the application source of truth, with no untracked manual Stripe Price
+  provisioning per plan). Native
   Stripe Subscriptions were chosen over "one-time Checkout per period" because the portfolio's
   existing (partial) webhook-glue code in `multi-tenant-ai` already assumes real
   `customer.subscription.*`/`invoice.*` Stripe objects.
@@ -150,14 +173,24 @@ fetch handler directly) — zero porting step later. It also structurally avoids
 body-parsing-middleware-order bug (`express.raw()` before `express.json()`) that already bit
 `multi-tenant-ai` once, since Hono has no global body parser to order against.
 
-**Persistence:** a new, separate Supabase project for billing-core's own
+**Persistence:** use the placement selected at P-1 for billing-core's own
 `plans`/`subscriptions`/`payments`/`webhook_idempotency` tables (used by `wstera_link`/`doccraft`-
-future accounts). `pawspace` keeps its own `shop_subscriptions` as authoritative — billing-core calls
-into it via RPC, described below.
+future accounts). A separate project is the stronger boundary; a shared project is permitted only
+with the dedicated-schema and narrow-role controls recorded at P-1. `pawspace` keeps its own
+`shop_subscriptions` authoritative and exposes only the narrow ingress described below.
 
-**Scheduler:** Cloudflare Cron Trigger (`wrangler.jsonc`, every 15 min) sweeping for `grace_period`
-subscriptions whose `gracePeriodEnd`/`grace_period_end` has passed, in both billing-core's own DB
-and PawSpace's `shop_subscriptions` — advances them to `expired`.
+Billing tables default to a private, non-exposed schema. If any object must use the Data API, expose
+only the intended schema/object, grant roles explicitly, enable RLS, and test anonymous,
+unauthenticated, wrong-account, wrong-product and elevated-service paths. Do not assume newly created
+tables are automatically exposed. Migrations include explicit function `REVOKE`/`GRANT`, fixed
+`search_path`, idempotency constraints and `supabase db advisors` evidence.
+
+**Scheduler:** Cloudflare Cron Trigger (`wrangler.jsonc`, every 15 min) sweeps billing-core's own
+expired `grace_period` rows. For PawSpace, the same internal `scheduled()` handler sends a signed,
+replay-bounded `expire_due` command to the narrow PawSpace ingress; the PawSpace function selects
+and advances only eligible rows inside its own project. Billing-core never queries PawSpace with an
+elevated key. The job function is shared with tests/manual operator tooling; there is no public cron
+HTTP route.
 
 **API surface:**
 ```
@@ -166,28 +199,43 @@ GET  /v1/subscriptions/:product/:accountId      status (wstera_link/doccraft —
 GET  /v1/entitlements/:product/:accountId/:key  canUseFeature/getLimit wrapper
 POST /v1/portal                                 Stripe Billing Portal session
 POST /webhooks/stripe                           raw-body-first, Stripe-Signature verified
-POST /internal/cron/grace-period-sweep          shared-secret header, cron-invoked
 ```
 
+Every `/v1/*` route authenticates the caller, derives product/account from an authorization binding,
+and rejects a caller-supplied account ID that it does not own. Product-to-product calls use separate
+service identities and audience-bound credentials. Checkout creation has an idempotency key and a
+database uniqueness/lock boundary; request authentication is tested independently from Stripe
+success. The webhook endpoint is the only public unauthenticated route and is bounded by body size,
+rate/abuse controls and Stripe signature verification.
+
 **How each product gets entitlement updates — decided per product, not generic:**
-- **`pawspace`**: no webhook-out, no polling. Billing-core holds a scoped PawSpace Supabase
-  service-role key and calls its *existing* RPCs directly (`transition_shop_subscription(...)`,
-  `set_shop_commercial_package(...)`), using the Stripe event id as the RPC's built-in
-  `p_idempotency_key`. No new PawSpace-side code needed — this reuses an already-audited trust
-  boundary (`SECURITY DEFINER`, `service_role`-only) instead of building a new inbound webhook + auth
-  story on PawSpace's side. `Plan.id` for pawspace plans is set to literally equal PawSpace's
-  `commercial_packages.id` (`starter`/`pro`/`enterprise`) so no translation table is needed beyond
-  `billingInterval` (`month`/`year`) ↔ `billing_interval` (`monthly`/`annual`).
-- **`wstera_link`** (pre-build): future app calls `GET /v1/subscriptions`/`GET /v1/entitlements`
-  synchronously at request time — pull, not push, since it has no local subscription state of its
-  own. Billing-core *is* its subscription source of truth.
-- **`doccraft`** (forward-looking, Phase 8): same pull model, documented only.
+- **`pawspace`**: billing-core sends a versioned, timestamped, signed request to a narrow PawSpace
+  Edge Function such as `billing-entitlement-ingress`. The function binds the caller to the billing
+  service, enforces a short replay window, validates product/shop/event/transition fields, and calls
+  only the existing `transition_shop_subscription(...)` and
+  `set_shop_commercial_package(...)` RPCs. The function derives the RPC's UUID idempotency value
+  deterministically from the Stripe event ID as specified in §2b. Only the PawSpace function
+  environment holds its elevated project credential. That credential still has project-wide
+  RLS-bypass privilege and must be isolated, redacted, rotated and never returned to billing-core.
+  Review the existing `SECURITY DEFINER` functions, explicit
+  `REVOKE`/`GRANT`, `search_path` and deprecated `auth.role()` usage before release. `Plan.id` for
+  PawSpace plans remains equal to `commercial_packages.id`; only interval representation is mapped.
+- **`wstera_link`** (pre-build): authenticated control-plane writes and a scheduled reconciler pull
+  subscription/entitlement state into a bounded local snapshot. Link creation/update and premium
+  mutations fail closed when the snapshot is missing/expired. The redirect plane reads only the
+  already-approved link/routing state and never waits synchronously for billing-core.
+- **`doccraft`** (forward-looking, Phase 8): authenticated cloud operations use a bounded signed or
+  server-fetched entitlement snapshot. Local drafts remain readable/exportable during billing-core
+  outage; cloud-only premium mutations fail closed after the documented snapshot/grace boundary.
 
 Webhook handler order (`routes/webhook.ts`), following the one proven-working pattern in this
 portfolio (`multi-tenant-ai/server/src/routes/payment-demo.ts`), ported to Hono: read raw body first
-→ verify signature → on replay return `200` (not `401` — Stripe disables the endpoint after repeated
-401s on a legitimate duplicate) → route by event metadata to either PawSpace's RPC wrapper or
-billing-core's own `subscriptionCore.handleBillingEvent` → record to audit log → `200`.
+with a strict size limit → verify signature → durably persist the event/idempotency record → on
+replay return `200` → enqueue/apply the transition → record a redacted audit result. The handler
+acknowledges only after durable intake, and a reconciler compares local state with Stripe to recover
+missed, delayed or out-of-order delivery. Delivery to PawSpace uses the signed ingress above, not a
+project-wide key held by billing-core. Invalid signatures return `401`; legitimate duplicates return
+`200` without re-applying state.
 
 #### 2a. Status enum mapping (added v2 — verified against both sources)
 
@@ -223,8 +271,8 @@ surfaces that rejection instead of swallowing it.
   so retries can't create duplicate Stripe Customers.
 - **Idempotency key derivation:** PawSpace's `transition_shop_subscription(p_idempotency_key UUID)`
   needs a **UUID**, but Stripe event ids are `evt_1AbC...` strings. Derive deterministically:
-  `p_idempotency_key = uuidv5(stripe_event_id, BILLING_CORE_NAMESPACE_UUID)` with one fixed
-  namespace UUID constant checked into `src/lib/ids.ts`. Deterministic means a replayed Stripe
+  UUIDv5 with `namespace = BILLING_CORE_NAMESPACE_UUID` and `name = stripe_event_id`, using one
+  fixed namespace UUID constant checked into `src/lib/ids.ts`. Deterministic means a replayed Stripe
   delivery derives the same UUID and hits PawSpace's `UNIQUE(subscription_id, idempotency_key)`
   constraint — the replay protection is enforced inside PawSpace's own transaction, independent of
   billing-core's own idempotency store. Do not use `gen_random_uuid()` here; a random key defeats
@@ -246,17 +294,14 @@ flow set. This means the two populations coexist during rollout, which is intend
 migration, no big-bang cutover. The grace-period sweep (§3) skips shops with no `stripe_customers`
 mapping, so it never touches manually-administered shops.
 
-#### 2d. Plan changes and proration (added v2)
+#### 2d. Plan changes and proration seam (added v2, financial policy externalized in v3)
 
 The module's `changePlan` accepts an `immediate` flag and **ignores it** (verified — no proration,
-no period reset). Do not build on it for paid plan changes. Decision: **plan changes are performed
-Stripe-side, not module-side** — upgrade/downgrade goes through the Stripe Billing Portal
-(`/v1/portal`), Stripe applies its own proration, and the resulting
-`customer.subscription.updated` webhook is what updates state on our side (for PawSpace, via
-`set_shop_commercial_package` + `transition_shop_subscription`). This keeps one source of truth for
-money math and avoids reimplementing proration. `changePlan` remains usable only for
-non-billing-affecting internal corrections; if that's ever needed for a paid subscription, its
-ignored-`immediate` behavior must be fixed first.
+no period reset), so it cannot implement paid changes safely. The CEO's separate financial plan
+defines upgrade, downgrade, proration, trial, refund, and tax behavior. Engineering must map that
+approved policy to Stripe primitives, treat Stripe webhook state as the synchronization input, and
+prove the resulting state transitions in contract/E2E tests. Until that mapping is approved and
+tested, paid plan-change actions remain disabled; this document does not choose the policy.
 
 ### 3. Correct `wstera_link` and `doccraft` docs to point at billing-core
 
@@ -273,17 +318,24 @@ ignored-`immediate` behavior must be fixed first.
 
 ### 4. Phased build order (matches the owner's mandated methodology exactly)
 
-0. **Prerequisite gate (v2)** — §0's P-1 (Supabase project decision) answered by the owner, and P-2
-   (test-mode-only guard) implemented. Phase 1 cannot start before P-1 is answered.
-1. **Phase 0** — modules-hub fixes + tests green (above), committed and pushed to the `modules-hub`
-   repo (separate repo — see §0 P-4).
-2. **Phase 1** — billing-core skeleton + PawSpace wired end to end only (wstera_link/doccraft routes
-   stub `501` for now). Seed billing-core's plan table with PawSpace's real 3 tiers. Done when one
-   real PawSpace shop can complete a Stripe test-mode checkout and its `shop_subscriptions` row
-   updates correctly, observed manually once.
-3. **Phase 2 — self-test**: implementer smoke-checks every route locally before formal testing
+1. **Prerequisite gate** — record the P-1 placement/credential boundary, implement P-2's
+   test-mode startup guard, and load only the owner-approved P-3 configuration. Phase 1 cannot start
+   before this evidence is approved.
+2. **Phase 0** — finish the `modules-hub` fixes/tests above and push them to that separate repo at a
+   reviewed immutable commit; record how every consumer pins it.
+3. **Phase 0.5 — security contracts** — threat-model the Hub/billing/PawSpace boundary; implement
+   and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
+   ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
+   Worker's internal `scheduled()` contract. No Stripe checkout work starts before this review
+   passes.
+4. **Phase 1** — build the billing-core skeleton and wire PawSpace end to end only
+   (`wstera_link`/`doccraft` routes return explicit `501` until their phases). Seed the service from
+   the owner-approved configuration without redefining financial values here. Done when one real
+   PawSpace staging shop completes a Stripe test-mode checkout and its `shop_subscriptions` row
+   updates through the narrow ingress with end-to-end audit correlation.
+5. **Phase 2 — self-test**: implementer smoke-checks every route locally before formal testing
    starts.
-4. **Phase 3 — three test rounds, reviewed together only after all three finish, not one at a
+6. **Phase 3 — three test rounds, reviewed together only after all three finish, not one at a
    time:**
    - **A — automated regression**: module unit tests (incl. new bug-fix tests) + billing-core's own
      repository/mapping/integration tests.
@@ -291,45 +343,45 @@ ignored-`immediate` behavior must be fixed first.
      the real Stripe test API — closes the previously-flagged gap that the Stripe adapter had never
      been tested against real Stripe, only mocks. Manually cross-check Stripe's test Dashboard
      (Customers/Subscriptions/Events/Webhook delivery success rate).
-   - **C — adversarial/negative-path**: replayed webhook idempotency, tampered signature rejection,
-     out-of-order events (confirm PawSpace's transition guard rejects illegal transitions and
-     billing-core surfaces that rejection rather than swallowing it), concurrent-checkout race, live
-     grace-period-boundary sweep test.
-5. **Phase 4** — finish remaining PawSpace routes + cron wiring; correct `wstera_link`/`doccraft`
-   docs; remove `wstera-link/vendor/modules/*` (now obsolete, §0 P-4); implement the scoped-DB-role
-   hardening for PawSpace access (§5a) and the alerting in §5b. Nothing here is "done" until
-   PawSpace is fully live, the doc corrections are in, and all of Phase 3's results have been
-   reviewed together — no partial ship before real launch.
+   - **C — adversarial/negative-path**: replayed webhook idempotency, tampered/expired PawSpace
+     ingress signature, wrong product/account binding, oversized body, out-of-order events,
+     concurrent-checkout race, queue retry exhaustion, webhook-to-Stripe reconciliation and live
+     grace-period-boundary sweep. Prove billing-core has no PawSpace Data API or elevated project
+     key.
+7. **Phase 4** — finish the remaining PawSpace routes and internal cron wiring; correct
+   `wstera_link`/`doccraft` docs; remove obsolete LK01 vendored billing copies; activate the
+   monitoring/alerting/rollback controls in §5. Nothing is done until PawSpace's full staging gate,
+   the documentation corrections, and the combined Phase 3 review all pass. No partial live ship.
 
 ---
 
-## 5. Operations (added v2)
+## 5. Operations (added v2, hardened v3)
 
 ### 5a. Secrets
 
-Required (Worker secrets in prod via `wrangler secret put`, local `.env` for dev — never committed):
+Required values are separate for local/staging/production. Production Worker secrets use the
+deployment platform's secret store; local values use an ignored development-secret file and never a
+committed `.env`:
 
 | Secret | Purpose |
 |---|---|
 | `STRIPE_SECRET_KEY` | Stripe API (test-mode until go-live — see P-2) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...`, signature verification |
-| `BILLING_CORE_SUPABASE_URL` / `..._SERVICE_ROLE_KEY` | billing-core's own tables |
-| `PAWSPACE_SUPABASE_URL` / `..._SERVICE_ROLE_KEY` | calling PawSpace's two RPCs |
-| `BILLING_CORE_CRON_SECRET` | shared secret for `/internal/cron/grace-period-sweep` |
+| `BILLING_CORE_DATABASE_URL` | Dedicated database role limited to billing-core's schema |
+| `PAWSPACE_BILLING_INGRESS_KEY` | Per-environment credential for signed calls to the narrow ingress |
+| PawSpace elevated project key | PawSpace Edge Function environment only; never billing-core |
 
 Portfolio convention applies: real values live in the central vault
 (`.secrets/keys.txt`) and are read from it directly — never copied into repo files, docs, chat, or
 agent output. When updating a secret, verify with a live call, not a dashboard success message (the
 2026-08-20 DB-password rotation silently failed and looked successful — see `ROADMAP.md` gate 1).
 
-**Blast-radius note, stated deliberately:** billing-core holds PawSpace's **service-role** key,
-which is full-database access, to call two `SECURITY DEFINER` RPCs. That is a real concentration of
-privilege and the main security cost of centralizing. It is accepted because the alternative
-(building an authenticated inbound webhook endpoint on PawSpace) duplicates verification logic the
-RPC already provides. Mitigation, required at Phase 4: PawSpace should issue billing-core a
-**dedicated DB role with `EXECUTE` on exactly those two RPCs and nothing else**, rather than the
-blanket service-role key, once the integration is proven. Track this as a Phase 4 hardening item,
-not an optional nice-to-have.
+The ingress signature includes version, key ID, timestamp, nonce, method/path, and body digest. The
+PawSpace function enforces a short clock window and one-time nonce before any RPC. Rotation supports
+current and previous key IDs for a bounded overlap, then proves the old key is rejected. The
+function's elevated Supabase key remains project-wide and bypasses RLS; naming it separately does
+not narrow privilege. Keep it only inside PawSpace, and narrow the callable database surface with
+explicit function grants, fixed `search_path`, validated input, and adversarial tests.
 
 ### 5b. Observability and alerting
 
@@ -337,19 +389,24 @@ The owner's stated reason for centralizing was: one place to fail means you find
 instead of four places failing quietly. **That only holds if something actually watches it** — so
 this is a required part of the build, not a follow-up:
 - Every webhook outcome (verified / replay / invalid-signature / routed / skipped / RPC-rejected)
-  is written to the `audit-log` module with the Stripe event id.
-- `GET /health` returns Stripe reachability + both Supabase connections, not just `200 OK`.
-- **Alert to the owner (LINE or email) on:** any invalid-signature burst, any RPC rejection that
-  isn't an expected idempotent duplicate, any cron sweep that errors or processes zero rows when
-  rows were due, and Stripe webhook delivery failures. Until a portfolio-wide alerting path exists,
-  the minimum acceptable version is a daily digest — silence must never be the only signal.
+  is durably recorded with the Stripe event ID, correlation ID, product, account reference, attempt,
+  latency, and redacted result.
+- Separate liveness and readiness probes. Dependency probes have strict timeouts and never expose
+  credentials, customer data, or raw provider errors.
+- Alert on invalid-signature bursts, unexpected RPC rejections, queue age/retry exhaustion,
+  reconciliation drift, failed sweeps, and Stripe webhook delivery failures. Threshold, owner,
+  destination, acknowledgement, and escalation path are written into the runbook before staging.
+- Dashboards expose intake rate, duplicate rate, processing lag, transition success/error rate,
+  reconciliation drift, and entitlement snapshot age by product/environment.
 - Weekly manual check during rollout: Stripe Dashboard → Developers → Webhooks delivery success
   rate is 100% and the endpoint is not disabled.
 
 ### 5c. Rollback / kill-switch
 
-- Billing-core is deployed independently of every product, so `wrangler rollback` reverts it
-  without touching PS01/LK01/DC01.
+- Billing-core is deployed independently from every product. Every deployment records the immutable
+  artifact/version, config revision, migration ID, and previous known-good rollback target.
+- Migrations are expand/contract and backward-compatible across at least the active and previous
+  Worker versions. Restore and rollback are rehearsed in staging before production.
 - **Products must fail safe when billing-core is unreachable.** For entitlement reads, PawSpace is
   already safe by construction (it reads its own DB; billing-core being down means state simply
   stops updating). For LK01/DC01's pull model, an unreachable billing-core must **not** silently
@@ -357,22 +414,23 @@ this is a required part of the build, not a follow-up:
   cached entitlement with a TTL"; LK01's own locked spec already mandates fail-closed, so follow it.
 - `/v1/checkout` failing is a lost sale, not a data-integrity problem — it is safe to hard-fail with
   a clear user-facing error.
-- A Stripe-side kill switch exists independently: disabling the webhook endpoint in the Stripe
-  Dashboard stops all inbound state changes without deploying anything.
+- A processing kill switch stops transition application while continuing to verify and durably
+  intake provider events. Recovery replays the retained queue and runs reconciliation before the
+  switch is cleared. Disabling the Stripe endpoint is an incident-authorized last resort, not the
+  normal rollback path, because it creates a delivery/reconciliation obligation.
 
 ### 5d. Explicitly out of scope
 
-Named so nobody re-opens them mid-build: VAT / Thai tax invoices (the org isn't VAT-registered —
-plain receipts only), Stripe Connect / marketplace payment splitting (not needed — all four
-Subscribe products collect into the platform's own Stripe account), migrating `booking` onto
-billing-core, Hub-wide multi-product bundle checkout and cross-product discounts (that's
-`identity-billing-platform`'s later phases, still unapproved), and dunning-email design (Stripe's
-built-in retry/dunning is used as-is for now).
+The CEO's separate plan owns monetary values, price/package design, taxes/invoices, discounts,
+refund/dunning rules, currency choice, and payment-account policy. This engineering plan implements
+only an approved configuration and its safety controls. Also out of scope here: migrating `booking`
+onto billing-core, Hub-wide bundle checkout/cross-product identity, and resynchronizing unrelated
+source-product modules. Those require explicit later plans and gates.
 
 **Known accepted consequence:** the portfolio will run **two billing systems permanently** —
 `booking`'s inline integration and billing-core. This is intentional (see Context), but it means any
-money-related bug must be checked in both places. This must be written into the operations runbook;
-in six months nobody will remember it otherwise.
+provider-integration defect must be triaged against both implementations. Record that split in the
+operations runbook and incident checklist.
 
 ---
 
@@ -380,7 +438,8 @@ in six months nobody will remember it otherwise.
 
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/subscription/core/{types,engine,service}.ts` — the two bug fixes + grace-period logic
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/payment/adapters/stripe-adapter.ts` — subscription-mode checkout support
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/PawSpace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql` — the existing RPC surface billing-core calls into (verified: `transition_shop_subscription`, `set_shop_commercial_package`, both `future_billing_event`-aware with idempotency keys)
+- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/PawSpace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql` — the existing privileged RPC surface called only by the new narrow PawSpace ingress after a fresh function/grant/advisor review
+- New in PawSpace: `supabase/functions/billing-entitlement-ingress/index.ts` (final name set by the PawSpace repo convention) — signed, timestamped, replay-bounded billing transition façade; Deno 2.1-compatible and independently tested
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/multi-tenant-ai/server/src/routes/payment-demo.ts` and `server/src/app.ts` — the proven webhook-wiring pattern to port to Hono
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/wstera-link/docs/02_SYSTEM_ARCHITECTURE.md`, `products/DocCraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` — doc corrections
 - New: `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/services/billing-core/` — the service itself (structure: `vendor/modules/`, `src/{lib,repositories,routes,jobs}/`, `wrangler.jsonc`)
@@ -395,6 +454,10 @@ cd modules-hub/modules/payment && npm test && npm run typecheck
 # Phase 1-3
 cd services/billing-core && npm run typecheck && npm test
 
+# PawSpace ingress and database security (exact commands resolved from current CLI --help)
+cd products/PawSpace && supabase functions serve
+cd products/PawSpace && supabase db advisors --local --type security --fail-on error
+
 # Approach B — Stripe CLI, test-mode keys only
 stripe listen --forward-to localhost:8787/webhooks/stripe
 stripe trigger checkout.session.completed
@@ -408,7 +471,10 @@ interval/price on the Subscription object, webhook delivery success rate 100% wi
 
 Adversarial scripts to actually run (Approach C): replay a captured webhook body twice (expect
 `200 {duplicate:true}` on the second, no duplicate audit-log row); resend with one tampered byte +
-original signature (expect `401`); fire two concurrent `/v1/checkout` calls for the same account
-(expect only one non-cancelled subscription to exist afterward); force a subscription's
-`grace_period_end` to the near future, wait, invoke the cron sweep manually, confirm it flips to
-`expired` and the entitlement check returns `false`.
+original signature (expect `401`); resend a valid PawSpace ingress request outside its timestamp
+window or for the wrong product/shop (expect rejection before RPC); fire two concurrent
+`/v1/checkout` calls for the same account (expect only one non-cancelled subscription); prove the
+billing-core Worker environment contains no PawSpace Supabase secret/service-role key; force a
+subscription's `grace_period_end` to the near future, invoke the same job used by the Worker's
+`scheduled()` handler, confirm it flips to `expired`, and confirm the entitlement check returns
+`false`.

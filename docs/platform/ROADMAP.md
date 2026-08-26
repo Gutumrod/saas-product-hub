@@ -6,8 +6,9 @@
 > remains historical evidence and detailed prior context. Financial planning is outside the new
 > master plan and remains owner-controlled.
 
-**Status:** Ready for owner declaration as the source of truth for development
-sequencing, technical gates, and evidence standards in this portfolio. It is not a commercial-readiness decision:
+**Status:** Historical portfolio roadmap; superseded for the locked seven-product engineering
+sequence and production gates by `PORTFOLIO_PRODUCTION_MASTER_PLAN.md`. It remains detailed prior
+context and is not a commercial-readiness decision:
 `commercial_status` and `acceptance.commercial` remain owner-only.
 
 **Authority boundary:** This document records verified current state and the
@@ -167,15 +168,14 @@ built as one coherent motion instead of mixing SaaS-subscription and one-time-li
    REVENUE-STRATEGY.md already prices a one-time self-host source-license option ($99) alongside
    its SaaS-tier option.
 
-**Production plan for this locked scope (added 2026-08-27):** `docs/platform/PRODUCTION_LAUNCH_PLAN_2026-08-27.md`
-— per-product path to production with gate ladders (S0–S7 for the Subscribe group, L0–L5 for the
-sell-outright group), six shared platform tracks, wave sequencing, and a risk register. It is a
-PROPOSED engineering plan, not an owner commercial decision, and does not supersede this roadmap:
-where the two disagree on verified state, this roadmap wins. Its §1.1 lists five places where this
-roadmap's own text is now stale against code checked on 2026-08-27 — most importantly that `booking`,
-marked "Done" in §A1 below, has **zero** application-layer automated tests (0 test files, no test
-runner configured; the SQL QA suite covers DB-level enforcement only). "Done" there means
-feature-complete, not production-safe.
+**Independent review retained for comparison (added 2026-08-27):**
+`docs/platform/PRODUCTION_LAUNCH_PLAN_2026-08-27.md` is supplemental only. The CEO-approved execution
+authority is `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md`; refreshed executable evidence is
+`docs/platform/PORTFOLIO_REAUDIT_2026-08-27.md`. Financial/price/revenue/effort content in the
+supplemental draft is non-authoritative. Its useful code observations must be revalidated against the
+new audit: `booking` has no application tests and currently fails clean lint/build gates, PawSpace's
+phase tests lack a checked-in runner, and HC01 PR #1 reproducibly passes only 13/14 tests on the audit
+host rather than the previously reported 14/14.
 
 Everything else in the portfolio (`feature_flag`, `content_autopilot`, `omnidesk`, `tracking`,
 `rentmatrix`, `compliance_audit`, `ai_resilience_gateway`, `it_ops_watchdog`, `bulk_etl_sync`,
