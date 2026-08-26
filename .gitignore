@@ -44,3 +44,4 @@ __pycache__/
 # agent scratch work (evidence files, dispatch prompts) - not repo deliverables
 /I18N_PHASE*.md
 .agy-*.md
+/products/WSTERA-Link/
