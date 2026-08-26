@@ -1,5 +1,11 @@
 # Portfolio Development Roadmap — Source of Truth (2026-08-18)
 
+> **2026-08-27 authority update:** The CEO-approved seven-product production execution plan is
+> `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md`. It governs engineering sequence, production
+> gates, checkpoints, and the final scope of BK01, PS01, LK01, DC01, MT01, CM01, and HC01. This file
+> remains historical evidence and detailed prior context. Financial planning is outside the new
+> master plan and remains owner-controlled.
+
 **Status:** Ready for owner declaration as the source of truth for development
 sequencing, technical gates, and evidence standards in this portfolio. It is not a commercial-readiness decision:
 `commercial_status` and `acceptance.commercial` remain owner-only.

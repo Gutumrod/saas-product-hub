@@ -1,5 +1,24 @@
 # Handoff — saas-product-hub
 
+## 2026-08-27 — Seven-product production master plan
+
+CEO approved the engineering-only production plan for the final seven products: subscription SaaS
+BK01/PS01/LK01/DC01 and one-time source products MT01/CM01/HC01. The plan explicitly excludes
+prices, revenue targets, budgets, forecasts, and other financial planning; those remain in the
+CEO's separate plan.
+
+Canonical execution document:
+`docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md`
+
+Centralized billing architecture remains governed by the already locked
+`docs/platform/BILLING_CORE_PLAN.md`: BK01 keeps its existing isolated Stripe implementation;
+PS01/LK01/DC01 use billing-core according to that document. Do not invent a parallel billing
+architecture.
+
+Next authorized implementation checkpoint is **P0-C1 — Release foundation ready**. Before changing
+any product, refresh the named repository's default-branch baseline and follow that repository's
+own AGENTS/CLAUDE instructions and approval gates.
+
 วันที่: 2026-08-25
 สรุปงานที่ทำในเซสชันนี้ (ต่อเนื่องจาก 2026-08-24): เจอ/แก้เอกสาร wstera.com ที่บันทึกผิด, ตัด customer signup ออกจาก apps/hub-web, ย้าย apps/hub-web ไป Cloudflare Workers ทั้งหมด, rotate DB password ที่ค้างมาตั้งแต่ incident 2026-08-15, ถอด Vercel ออก
 
