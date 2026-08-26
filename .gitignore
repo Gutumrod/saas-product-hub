@@ -10,6 +10,7 @@
 /products/headless-commerce/
 /products/it-ops-watchdog/
 /products/line-oa-ai/
+/products/LINE OA AI Sales & Service Engine/
 /products/multi-tenant-ai/
 /products/stripe-billing/
 /products/short-url-analytics/
@@ -19,6 +20,7 @@
 /products/OmniDesk/
 /products/RentMatrix/
 /products/wstera-link/
+/products/money-leak-buddy/
 
 # OS junk
 .DS_Store
@@ -46,3 +48,4 @@ __pycache__/
 # agent scratch work (evidence files, dispatch prompts) - not repo deliverables
 /I18N_PHASE*.md
 .agy-*.md
+/products/WSTERA-Link/

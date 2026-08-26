@@ -5,7 +5,7 @@
 # docs/platform/ROADMAP.md is the source of truth for development sequencing,
 # verified current readiness, and routing decisions. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
-# Last Updated: 2026-08-26
+# Last Updated: 2026-08-27
 #
 # product_id / product_code: owner-approved 2026-08-26, full-portfolio adoption
 # — see docs/platform/PRODUCT_ID_HOSTNAME_NAMESPACE_PROPOSAL.md for the model and
@@ -15,12 +15,18 @@
 # of the form <code>.wstera.com — reservation is documentation-only here; no DNS
 # record has been created for any product, including booking/BK01. `key` remains
 # the existing repo/catalog identifier used elsewhere in this file and in code —
-# it is NOT renamed or replaced by this change.
+# it is NOT renamed or replaced by this change. Consistent with the Hub/root-domain
+# note below (owner-confirmed 2026-08-24): wstera.com is the portfolio root: products
+# get subdomains, they do not own it.
 # ==============================================================================
 
 version: "1.1"
 platform: "SaaS Product Hub"
 repository: "Gutumrod/saas-product-hub"
+# The Hub itself lives at apps/hub-web (repo Gutumrod/hub-web) and is not listed as a product
+# below — it's the storefront, not one of the items for sale. Its domain is wstera.com (root,
+# acquired 2026-08-23 via Cloudflare Registrar); individual products get subdomains under it
+# (e.g. booking.wstera.com), they do not own the root domain. Confirmed by owner 2026-08-24.
 
 # ------------------------------------------------------------------------------
 # Release Waves
@@ -65,11 +71,15 @@ products:
     # modules: list removed 2026-08-18 — products/booking/ has no modules/ folder at
     # all; auth/tenant/billing were built inline instead of copied from modules-hub
     # (confirmed via full portfolio audit, Hermes+AGY, cross-checked against disk)
-    # domain acquired 2026-08-23: wstera.com (Cloudflare Registrar). Not yet live — Cloudflare
-    # Workers deploy via @opennextjs/cloudflare scaffolded (products/booking@e99615d) but not
-    # deployed, custom domain not attached yet. commercial/operations still gated until live;
-    # Phase 2 (Hub CTA handoff) blocked until then — see vault/06-Agent-Logs/Service-Booking-SaaS
-    # 2026-08-14 handoff (its "no domain yet" framing is now superseded by this note)
+    # will deploy under booking.wstera.com (subdomain) — the root wstera.com domain (acquired
+    # 2026-08-23, Cloudflare Registrar) belongs to the SaaS Product Hub itself (apps/hub-web),
+    # not to booking; corrected 2026-08-24 after being misrecorded here as booking's own domain
+    # earlier the same day. Cloudflare Workers deploy via @opennextjs/cloudflare scaffolded
+    # (products/booking@e99615d, Worker names wstera-consumer/wstera-admin are brand naming, not
+    # a claim on the root domain) but not deployed, subdomain not attached yet. commercial/
+    # operations still gated until live; Phase 2 (Hub CTA handoff) blocked until then — see
+    # vault/06-Agent-Logs/Service-Booking-SaaS 2026-08-14 handoff (its "no domain yet" framing is
+    # now superseded by this note)
     acceptance:
       architecture: true
       operations: false
@@ -83,21 +93,41 @@ products:
     slug: "line-oa-ai"
     category: "Customer Communication & AI"
     tagline: "บอท AI ตอบคำถาม รับจอง และปิดการขายบน LINE Official Account"
-    description: "Stateful conversational AI bot integrated with LINE Messaging API, supporting FAQ, booking intent, and human handoff."
+    description: "Legacy LINE OA AI product retained for operational evidence and compatibility. Its core AI-response path has real KMO usage, but it is no longer the portfolio's near-term commercial LINE product."
     deployment_model: "shared_runtime"
     runtime_project: "Project B"
     schema: "line_oa"
-    commercial_status: "beta"
+    commercial_status: "prototype"
     wave: 1
     path: "products/line-oa-ai"
     modules:
       - "line-oa-ai-module"
+    # Removed from the near-term sell-first shortlist by owner decision 2026-08-21.
     # webhook-receiver/ai-provider removed 2026-08-17: never actually copied into
     # products/line-oa-ai/modules/, listing was aspirational, not real (confirmed by
     # both this session's investigation and Hermes's independent cross-check)
     acceptance:
       architecture: true
       operations: true
+      commercial: false
+      support: false
+
+  - key: "line_oa_ai_sales_service_engine"
+    name: "LINE OA AI Sales & Service Engine"
+    slug: "line-oa-ai-sales-service-engine"
+    category: "Customer Communication & AI"
+    tagline: "AI Customer Operations บน LINE OA ที่ช่วยแอดมิน คุยกับลูกค้า และเดิน workflow ภายใต้ policy ที่ตรวจสอบได้"
+    description: "Replacement multi-tenant SaaS product. Phase 1 automated code gate is verified at 25/25 tests with typecheck/build passing; the required real LINE OA sandbox round-trip is still pending, so Phase 2 and pilot/commercial claims remain blocked."
+    deployment_model: "source_product"
+    runtime_project: "TBD - SaaS deployment/admission validation required"
+    commercial_status: "prototype"
+    wave: 1
+    path: "products/LINE OA AI Sales & Service Engine"
+    # Separate nested repository created 2026-08-24: Gutumrod/line-oa-ai-sales-service-engine.
+    # Target product form is multi-tenant SaaS; registry presence is not deployment or pilot evidence.
+    acceptance:
+      architecture: true
+      operations: false
       commercial: false
       support: false
 
@@ -529,6 +559,30 @@ products:
     path: "products/OmniDesk"
     # Registered 2026-08-22 after docs-only intake. Architecture is sufficient for Phase 0
     # scaffold validation, but runtime/operations/commercial/support remain unproven.
+    acceptance:
+      architecture: true
+      operations: false
+      commercial: false
+      support: false
+
+  - key: "money_leak_buddy"
+    name: "Money Leak Buddy"
+    slug: "money-leak-buddy"
+    category: "Personal Finance & Consumer AI"
+    tagline: "AI เพื่อนปากดีใน LINE ที่ช่วยจับเงินรั่วจากใบเสร็จ บิล และสลิป"
+    description: "Consumer-facing LINE bot: user sends a receipt/bill/slip photo or PDF, system OCR-extracts with field-level confidence, checks personal/household memory, and replies with a leak analysis in a polite-or-snarky persona. Distinct from line_oa_ai / line_oa_ai_sales_service_engine, which serve businesses (B2B customer service on LINE OA) — this is B2C personal finance. Docs-only intake, same as rentmatrix/omnidesk were: no runnable app, no OCR/LLM wiring, no LINE webhook, no pilot evidence yet."
+    deployment_model: "source_product"
+    runtime_project: "TBD - admission/deployment validation required"
+    commercial_status: "prototype"
+    wave: 3
+    path: "products/money-leak-buddy"
+    # Registered 2026-08-25 from docs-only intake (5 locked spec docs: user flow, confidence
+    # logic, memory model, persona rules, data schema — moved in from a sibling project folder,
+    # renamed from Thai "LINE-เพื่อนรัก-ปากดี" to an English slug for portfolio consistency,
+    # git-initialized and pushed to Gutumrod/money-leak-buddy). Spec is unusually detailed for a
+    # docs-only entry (numeric confidence thresholds, full DB schema, RLS/ownership contract) but
+    # that is documentation rigor, not implementation evidence — acceptance flags below reflect
+    # zero code written.
     acceptance:
       architecture: true
       operations: false

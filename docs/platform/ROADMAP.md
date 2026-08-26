@@ -29,7 +29,7 @@ development, standalone products, or module hardening.
 
 1. **Rotate exposed Supabase service-role/API credentials for the two affected projects** — owner-only action in Supabase Dashboard. `gyleqrjdzwwlqierdwcy` and `coyelzlgukvpgguqpjdi` are project references, not secret values; never place credentials in this roadmap, git, or chat.
    **2026-08-20 — API-key half closed.** Both projects migrated off the legacy JWT-based `anon`/`service_role` keys to the new `sb_publishable_.../sb_secret_...` format (wired into `products/booking`'s 3 env files and `apps/hub-web/.env`), then the legacy keys were disabled at the platform level via the Management API (`PUT /v1/projects/{ref}/api-keys/legacy?enabled=false`) — verified dead on both projects (`401 Legacy API keys are disabled`) and the new keys verified live (`200`). The BOOKING2-scoped Management API PAT (separate credential, account-level) was also rotated and the old one confirmed dead.
-   **DB password half — still open, deliberately deferred.** `coyelzlgukvpgguqpjdi`'s Postgres password (the `DATABASE_URL` used by `apps/hub-web`) is the other half of what leaked in the original `key.txt` incident and has NOT been rotated — a reset was attempted but the new value entered matched the old one byte-for-byte, so the actual password is unchanged. Owner decision 2026-08-20: leave it as-is until closer to real commercial launch, same deferral pattern as this gate's original credential-rotation decision. This still fully blocks public production deployment using this credential — direct DB access bypasses RLS entirely, worse exposure than the API keys that were just closed.
+   **DB password half — CLOSED 2026-08-25.** `coyelzlgukvpgguqpjdi`'s Postgres password (the `DATABASE_URL` used by `apps/hub-web`) is the other half of what leaked in the original `key.txt` incident. The 2026-08-20 reset attempt failed silently (new value matched the old one byte-for-byte); a second attempt on 2026-08-25 succeeded — verified with a live `SELECT 1` connection test, not just a dashboard success toast — and the new value is pushed to the Cloudflare Worker "hub-web" secret `DATABASE_URL` (part of the Cloudflare migration cutover). Central vault (`D:\AI-Workspace\.secrets\keys.txt`) updated to match. This credential no longer blocks public production deployment on that basis.
 2. **Complete `docs/platform/SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` Phase 0** — hard gate *before Project B accepts a second product schema*. It requires booking migration-history reconciliation, E3.3 live RLS/security verification, disposition of booking's outstanding work, and a reviewed baseline commit.
    **CLOSED 2026-08-20.** All 5 exit-evidence items verified live against the deployed
    project (not self-reported) — see `products/booking/docs/platform/PHASE_0_BASELINE_SNAPSHOT_2026-08-20.md`.
@@ -73,7 +73,7 @@ development, standalone products, or module hardening.
 
 | Product | Verified current state | Routing decision for development |
 |---|---|---|
-| `booking` | Existing Project B baseline; domain acquired 2026-08-23 (`wstera.com`, Cloudflare Registrar) — Cloudflare Workers deploy scaffolded (`@opennextjs/cloudflare`) but not yet deployed or attached to the domain | Phase 0 governs its baseline/security work; public launch also needs Stripe, a live deploy on the new domain, and live migration evidence. |
+| `booking` | Existing Project B baseline; will deploy under `booking.wstera.com` (subdomain — the root `wstera.com` is the SaaS Product Hub's own domain, see `apps/hub-web`, corrected 2026-08-24 after being misrecorded 2026-08-24 as booking's own domain) — Cloudflare Workers deploy scaffolded (`@opennextjs/cloudflare`, Worker names `wstera-consumer`/`wstera-admin` — brand-name naming, not a claim on the root domain) but not yet deployed or attached to the subdomain | Phase 0 governs its baseline/security work; public launch also needs Stripe, a live deploy on the subdomain, and live migration evidence. |
 | `line_oa_ai` | Express app exists; no Project B admission evidence | Cleared to start (Phase 0 closed 2026-08-20). **Order changed 2026-08-21 — now 2nd** (see below). Still needs its own Phase 3 admission review (schema, RLS, webhook idempotency, quota) before code lands. |
 | `headless_commerce` | Four copied modules; no app/schema/deploy config | Conditional Project B candidate. Build only after its storage, catalog-growth, payment, and admission review. |
 | `feature_flag` | Two copied modules; no app/schema/service | Conditional Project B candidate. Require quota and developer-access review before admission. |
@@ -105,13 +105,15 @@ for the KMO repo owner to verify against real data before any fix lands. Project
 from the near-term "sell first" shortlist entirely, not just deprioritized.** Owner's own read: the
 KMO live bot can't decide much on its own and doesn't cover the range of real inbound customer
 messages — tolerable so far only because KMO is the owner's own shop and he personally catches what
-it misses, which is not evidence it can serve a third-party customer unsupervised. Owner is building
-a replacement, `products/LINE OA AI Sales & Service Engine/` (started 2026-08-21, see its own
-`docs/04-PRD.md` — agentic goal execution, Green/Yellow/Red action-approval gates, dual transactional
-adapters for order+booking), intentionally kept **docs-only, zero code**, until the plan is solid. That
-product's own PRD marks itself "Draft — NOT approved for pilot." No timeline committed. Until it clears
-its own Pilot Acceptance Gate, the portfolio has no sellable LINE OA AI product — this is a real gap in
-the near-term revenue plan, not a same-tier swap.
+it misses, which is not evidence it can serve a third-party customer unsupervised.
+The replacement, `products/LINE OA AI Sales & Service Engine/`, is now a separate nested repo at
+`Gutumrod/line-oa-ai-sales-service-engine` (created 2026-08-24). Ground-truth verification on
+2026-08-24 confirms Phase 1 code exists and its automated gate passes: **25/25 tests + typecheck +
+build PASS**. Its real LINE OA sandbox round-trip is still NOT RUN/pending external LINE setup, and
+its own contracts explicitly block Phase 2 (Transaction Engine: ORDER + BOOKING) until that evidence
+passes. The PRD remains "Draft for Owner Review — NOT approved for pilot"; no Pilot/Commercial SaaS
+claim is authorized. The portfolio therefore has a real replacement codebase, but still no sellable
+LINE OA AI product until the evidence gates close.
 
 Strategy stated by owner: use these 4 (booking + 3 above) to reach revenue, then upgrade the org to Supabase Pro to remove the 2-free-project ceiling and admit the remaining portfolio. Explicitly deferred for now: `feature_flag`, `content_autopilot`, `multi_tenant_ai` (not a hosted tenant by plan design), `stripe_billing`, `ai_resilience_gateway`, `it_ops_watchdog` (all Project-B-eligible but not in this first wave); `bulk_etl_sync`/`compliance_audit` remain dedicated-project by design regardless. `booking_ticket_module`, `tracking`, `wstera_link` (retired `short_url_analytics`/`SU01`, replaced 2026-08-26 by `LK01` — see `docs/products/registry.yaml`) are standalone/self-hosted by design and don't consume Project B's schema slots or the 2-project Supabase quota at all — they can launch on their own timeline independent of this sequencing.
 

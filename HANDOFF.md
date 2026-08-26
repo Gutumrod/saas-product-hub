@@ -1,40 +1,40 @@
 # Handoff — saas-product-hub
 
-วันที่: 2026-08-15
-สรุปงานที่ทำในเซสชันนี้: รีวิวโค้ด `apps/hub-web` + ตรวจความพร้อมเปิดเว็บ + เจอและแก้ไข secret รั่ว
+วันที่: 2026-08-25
+สรุปงานที่ทำในเซสชันนี้ (ต่อเนื่องจาก 2026-08-24): เจอ/แก้เอกสาร wstera.com ที่บันทึกผิด, ตัด customer signup ออกจาก apps/hub-web, ย้าย apps/hub-web ไป Cloudflare Workers ทั้งหมด, rotate DB password ที่ค้างมาตั้งแต่ incident 2026-08-15, ถอด Vercel ออก
 
-## 1. ความปลอดภัย — แก้ไขแล้ว ✅
+เอกสารนี้แทนที่ฉบับ 2026-08-15 ทั้งหมด — เนื้อหาเก่าล้าสมัยแล้ว (README/todo.md ที่เคยพูดถึงแก้ไปหมดแล้ว, service_role key ที่เคยบอกว่ายังไม่ rotate ก็ rotate ไปแล้วตั้งแต่ 2026-08-20, DB password ที่เคยบอกว่า "ยังไม่ทำ" ก็ปิดจบวันนี้)
 
-พบไฟล์ `products/booking/key.txt` มี Supabase `service_role` key + `DATABASE_URL` (มีรหัสผ่าน) ของ 2 โปรเจกต์เก็บเป็น plaintext อยู่ในโฟลเดอร์โปรเจกต์ (ไม่ได้ถูก track ใน git แต่เสี่ยงหลุดถ้ามีการ sync/แชร์โฟลเดอร์)
+## 1. สถานะ apps/hub-web ตอนนี้
 
-**ดำเนินการ:**
-- ยืนยันว่าทั้ง 2 โปรเจกต์ (`gyleqrjdzwwlqierdwcy` และ `coyelzlgukvpgguqpjdi` / "SaaS Hub") มี backup ครบอยู่แล้วใน vault ตัวจริง `D:\AI-Workspace\.secrets\keys.txt`
-- ลบไฟล์ `products/booking/key.txt` ทิ้ง (ไม่มีสำเนาเหลือนอกวอลต์แล้ว)
+**Production เดียวคือ Cloudflare Workers:** `https://wstera.com` — custom domain ผูกสำเร็จ 2026-08-25 (`wrangler.jsonc` route + redeploy, zone active อยู่แล้วในบัญชี Cloudflare) ทดสอบ live ครบ (`/`, SPA routes, tRPC health check, DB query จริง) URL ชั่วคราวเดิม `hub-web.titazmth.workers.dev` ปิดอัตโนมัติแล้ว (ปกติของ Cloudflare เมื่อมี custom domain)
 
-**กฎใหม่ที่บันทึกไว้ในหน่วยความจำของ agent:** ห้ามคัดลอก/ย้ายเนื้อหาออกจาก `D:\AI-Workspace\.secrets\keys.txt` ไปที่อื่นอีกเด็ดขาด — อ่านจากวอลต์ตรงๆ เท่านั้น (ดูรายละเอียดกฎที่ `memory/secrets-vault-handling.md` ของ agent)
+**Vercel ถอดออกแล้ว 2026-08-25:** `api/index.ts`, `vercel.json` ลบออกจาก repo แล้ว (commit `45fb7b7`) ตัว Vercel project เอง (`service-booking-saas`) ยังไม่ได้ลบ — ต้องเข้า vercel.com ลบเองที่ Settings → Delete Project (API คืน 403 บน plan Hobby)
 
-**ยังไม่ทำ / ควรพิจารณาต่อ:** ยังไม่ได้ rotate service_role key ทั้ง 2 ตัว — ไฟล์นอนอยู่ในโฟลเดอร์โปรเจกต์มาตั้งแต่ 14 ส.ค. 11:15 ถ้าไม่มั่นใจว่าไม่เคยหลุดไปที่ไหน ควร rotate ที่ Supabase dashboard เพื่อความชัวร์
+**Auth เปลี่ยนสถาปัตยกรรม 2026-08-24 (commit `7d7bb3b`):** Hub ไม่รัน customer signup เองแล้ว — `AuthModal.tsx` และ `/account` ถูกลบ เหลือแค่ `Login.tsx` สำหรับ admin/staff เข้าจัดการ catalog เท่านั้น แต่ละโปรดักต์ (booking ฯลฯ) ต้องมีระบบสมัครสมาชิกของตัวเอง Hub แค่บันทึกว่า "ลูกค้าคนนี้ใช้โปรดักต์อะไรบ้าง" ผ่านตารางใหม่ `product_installations` (2 ทาง: บันทึกมือที่ `/admin/customers`, หรือ webhook `POST /api/webhooks/product-events` ที่ยังไม่มีโปรดักต์ไหนยิงจริง)
 
-## 2. รีวิวโค้ด `apps/hub-web` (เว็บ Hub หลัก)
+**Pricing:** ดึงออกมาเป็น `<PricingSection>` component ใช้ซ้ำได้ — `Home.tsx` (`/products/service-booking`) อ่าน `ctaUrl` จริงจาก DB แทนการเปิด signup modal เดิม (ตอนนี้ยังว่าง เพราะยังไม่มีสินค้าจริงใน DB → ปุ่มขึ้น "เร็วๆ นี้" ทุกปุ่ม)
 
-รัน `tsc --noEmit`, `vite build`, `vitest run` จริงแล้ว — ผ่านหมด (0 type errors, build สำเร็จ, 4/4 tests ผ่าน)
+## 2. ความปลอดภัย — ปิดจบวันนี้ ✅
 
-**จุดที่แข็งแรง:**
-- Auth verify token ฝั่ง server จริงผ่าน Supabase (`server/_core/context.ts`) ไม่เชื่อ client
-- `adminProcedure` บังคับ role ฝั่ง server ทุก mutation (`server/_core/trpc.ts`)
-- Owner auto-promote อิงจาก env var ฝั่ง server เท่านั้น ไม่มีช่อง self-promote
-- Input validation ด้วย zod รัดกุม (slug regex, mime whitelist, ขนาดไฟล์ cross-check)
+**DB password ของ `coyelzlgukvpgguqpjdi` (apps/hub-web) rotate สำเร็จจริงแล้ว 2026-08-25** — นี่คือรหัสที่หลุดไปในไฟล์ `products/booking/key.txt` เมื่อ 2026-08-15 (ดูหัวข้อ 3 เดิม) การพยายาม rotate ครั้งแรก 2026-08-20 ล้มเหลวเงียบๆ (ใส่รหัสใหม่ตรงกับรหัสเดิมเป๊ะ) ครั้งนี้ยืนยันด้วยการเชื่อมต่อฐานข้อมูลจริง (`SELECT 1`) ไม่ใช่แค่เชื่อข้อความสำเร็จบนหน้าเว็บ — sync ไปแล้วทั้ง Cloudflare secret และ vault กลาง
 
-**ค้างจากรีวิว — ยังไม่ได้แก้:**
-| จุด | ปัญหา |
-|---|---|
-| `README.md` | อธิบายสถาปัตยกรรมผิด บอกว่าใช้ MySQL/TiDB + Manus OAuth แต่โค้ดจริงย้ายไป Postgres + Supabase แล้ว (ดู commit `859840f`) |
-| `todo.md` | Phase 2-7 ติ๊ก `[ ]` ทั้งที่งานทำเสร็จจริงแล้วตาม git log — ทำให้เข้าใจสถานะผิด |
-| `server/index.ts` | dead code — ไม่มีใคร import/ใช้เลย (dev/build/start ชี้ไป `server/_core/index.ts` หมด) |
-| build output | bundle เดียว 796KB (gzip 232KB) รวม admin code เข้าไปด้วย ไม่มี code splitting |
-| `drizzle/` | มีแค่ `schema.ts` ไม่มี migration file ที่ generate ไว้เลย — สร้าง DB ใหม่จาก repo นี้ตรงๆ ไม่ได้ |
-| tests | มีแค่ 4 tests ครอบคลุมแค่ `server/products.test.ts` — auth/admin-gate/upload ไม่มี test |
+**บทเรียนจากรอบนี้ (เผื่อต้อง rotate credential อื่นอีก):** รหัสที่ Supabase สุ่มให้มักมีอักขระพิเศษ (เช่น `%`) ที่ต้อง URL-encode ก่อนใส่ใน connection string ไม่งั้น connect ไม่ติดแบบเงียบๆ (error message จะบอกแค่ "password authentication failed" ทำให้เข้าใจผิดว่ารหัสผิด ทั้งที่จริงคือ encode ผิด) และถ้า copy จากหน้า "Connect" ของ Supabase ต้องเช็คว่าได้แทนที่ placeholder `[YOUR-PASSWORD]` ด้วยรหัสจริงแล้ว ไม่ใช่ copy ทั้ง bracket มาด้วย
 
-## สรุปความพร้อมเปิดเว็บ
+**API keys (service_role/anon) ของทั้ง 2 โปรเจกต์ (`gyleqrjdzwwlqierdwcy`, `coyelzlgukvpgguqpjdi`) rotate เสร็จไปแล้วตั้งแต่ 2026-08-20** (ย้ายไป format ใหม่ `sb_publishable_.../sb_secret_...`, ปิด legacy key ยืนยันตายแล้วทั้งคู่) — ไม่ใช่เรื่องใหม่ของวันนี้ แต่บันทึกไว้เผื่อ session ถัดไปงง
 
-โค้ดหลัก (auth, admin gate, build, deploy config) แข็งแรงพอเปิดได้ แต่แนะนำให้แก้ README กับ todo.md ก่อน (กัน dev/agent คนต่อไปเข้าใจสถานะ/สถาปัตยกรรมผิด) และพิจารณา rotate key ตามข้อ 1
+**Vault กลาง** (`D:\AI-Workspace\.secrets\keys.txt`) sync ตรงกับของจริงแล้วทุกค่าที่เช็ค — กฎเดิมยังใช้อยู่: ห้าม copy ไฟล์นี้ออกไปที่อื่น อ่านค่าที่ต้องการตรงๆ เท่านั้น
+
+**ข้อควรระวังสำหรับ agent ตัวถัดไป:** ตอนแก้ไฟล์ที่มี secret (เช่น keys.txt) ห้ามใช้ Read tool ดึงทั้งไฟล์/ทั้งบล็อกที่มีค่าจริงออกมาโชว์ในผลลัพธ์ — ใช้ script เทียบ hash หรือ grep เฉพาะชื่อ key (ไม่เอาค่า) แทน เคยพลาดจุดนี้ไปหนึ่งครั้งในเซสชันนี้
+
+## 3. เอกสารที่แก้ไขให้ตรงกับความจริงวันนี้
+
+- `docs/platform/ROADMAP.md` — domain ownership (`wstera.com` เป็นของ Hub ไม่ใช่ booking, แก้ commit เดิมที่บันทึกผิด), gate 1's DB-password half ปิดแล้ว
+- `docs/products/registry.yaml` — เพิ่ม note ระดับ platform อธิบายว่า Hub เองไม่ได้อยู่ใน registry (เป็นหน้าร้าน ไม่ใช่สินค้า) และ wstera.com เป็นโดเมนของ Hub
+- `apps/hub-web/README.md`, `docs/cloudflare-workers-deployment.md`, `todo.md`, `CLOUDFLARE-MIGRATION-BRIEF.md` — sync กับสถานะจริงหมดแล้ว (ดูหัวข้อ 1)
+
+## 4. ยังไม่ได้ทำ
+
+1. ~~ผูก `wstera.com` เป็น custom domain ของ Worker `hub-web`~~ **เสร็จ 2026-08-25**
+2. เพิ่มสินค้าจริงผ่าน `/admin/products` + `/admin/customers` — รอ booking มี URL สมัครจริงก่อน ไม่งั้นปุ่ม CTA จะว่างอยู่ดี
+3. ลบ Vercel project เองที่ dashboard (ไม่เร่งด่วน โค้ดถอดออกแล้ว)
