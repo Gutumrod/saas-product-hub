@@ -161,6 +161,16 @@ built as one coherent motion instead of mixing SaaS-subscription and one-time-li
    REVENUE-STRATEGY.md already prices a one-time self-host source-license option ($99) alongside
    its SaaS-tier option.
 
+**Production plan for this locked scope (added 2026-08-27):** `docs/platform/PRODUCTION_LAUNCH_PLAN_2026-08-27.md`
+— per-product path to production with gate ladders (S0–S7 for the Subscribe group, L0–L5 for the
+sell-outright group), six shared platform tracks, wave sequencing, and a risk register. It is a
+PROPOSED engineering plan, not an owner commercial decision, and does not supersede this roadmap:
+where the two disagree on verified state, this roadmap wins. Its §1.1 lists five places where this
+roadmap's own text is now stale against code checked on 2026-08-27 — most importantly that `booking`,
+marked "Done" in §A1 below, has **zero** application-layer automated tests (0 test files, no test
+runner configured; the SQL QA suite covers DB-level enforcement only). "Done" there means
+feature-complete, not production-safe.
+
 Everything else in the portfolio (`feature_flag`, `content_autopilot`, `omnidesk`, `tracking`,
 `rentmatrix`, `compliance_audit`, `ai_resilience_gateway`, `it_ops_watchdog`, `bulk_etl_sync`,
 `line_oa_ai`) is paused — no further doc work or dev work — until the owner revisits this lock.
