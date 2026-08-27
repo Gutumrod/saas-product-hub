@@ -392,8 +392,9 @@ single front-loaded gate whose slowest repository stalled all seven.
 
 1. Publish a repository map for the parent Hub, private `hub-web`, seven products and future
    `billing-core`: remote URL, canonical local path/casing, default branch, owner and release
-   authority. Resolve `PawSpace`/`pawspace`, `DocCraft`/`doccraft` and hostname naming drift before
-   automation depends on case-sensitive paths.
+   authority. Resolve `PawSpace`/`pawspace` and `DocCraft`/`doccraft` path casing before automation
+   depends on case-sensitive paths. Hostname convention is already decided (§10 D1); this step only
+   records it in the map.
 2. Define — not yet install everywhere — the standard CI baseline every repository must run: frozen
    install, typecheck, lint, test, build, dependency/license audit, history-aware secret scan, SAST
    and artifact retention where applicable. Publish it as a reusable definition, and prove it on
@@ -410,8 +411,9 @@ single front-loaded gate whose slowest repository stalled all seven.
    "payment collection absent" instead of denying both; `ROADMAP.md` describes an HC01 reference
    server and its passing tests as if they exist on the default branch when they exist only on the
    open PR; `ROADMAP.md` §A1 still carries CM01's superseded 2026-08-21 removal against the
-   2026-08-27 seven-product lock; and DC01's registry description still reports Phase 1–2 against a
-   Phase 4 head.
+   2026-08-27 seven-product lock; `ROADMAP.md`'s "Project B routing truth" table still routes
+   `booking` to `booking.wstera.com` against the decided code-host convention (§10 D1); and DC01's
+   registry description still reports Phase 1–2 against a Phase 4 head.
 
 Checkpoint **P0a-C1 — Portfolio foundation ready**:
 
@@ -807,18 +809,18 @@ and reruns the relevant gates.
 |---|---|---|---|
 | R1 | BK01 has no application regression suite and current clean lint/build gates fail | Critical | Close BK-A/B before production deployment or feature expansion |
 | R2 | Billing-core directly holding a PawSpace project-wide RLS-bypass key expands compromise blast radius | Critical | Narrow signed ingress or explicit time-bounded CEO risk acceptance |
-| R3 | Hub's shared HMAC secret lets one product signer impersonate another product | High | Per-product/asymmetric signer identity bound to product ID, timestamp and replay window |
+| R3 | Hub's shared HMAC secret lets one product signer impersonate another product | High | Decided §10 D2 — per-product HMAC keys bound to one product ID, with timestamp and replay window; shared secret retired at P1 |
 | R4 | Hub and products have no CI, release tags, and detected branch protection | High | P0a-C1 CI definition and per-repository P0b-C1 required checks and protected release flow |
 | R5 | Known high/critical dependency findings can ship to operators or buyers | High | Remediate or record reachability-based exception with expiry before release |
 | R6 | Seven products plus shared services can remain partially complete through context switching | Critical | §5 focus gate as a binding concurrency limit — a recorded CEO decision or written overlap authorization is required before a second heavy track opens |
 | R7 | HC01's open branch can be mistaken for production-ready because it contains a server/tests | High | Independent PR disposition; fix failing test, auth/persistence and advisories before integration |
 | R8 | Stale/conflicting status documents can override current code evidence | High | Authority order, exact-commit evidence and same-change documentation updates |
 | R9 | LINE, Google, Stripe, Supabase, Cloudflare and storage failures cross operational boundaries | High | Per-provider timeout/retry/reconciliation/degraded-mode runbooks and alerts |
-| R10 | Naming/path case drift and unresolved PawSpace brand risk can force late migrations | Medium | Repository map, canonical path/hostname ADR and brand clearance before public rollout |
+| R10 | Naming/path case drift and unresolved PawSpace brand risk can force late migrations | Medium | Hostname settled (§10 D1, code host canonical); repository map and PawSpace brand clearance still required before public rollout |
 | R11 | Hub stores cross-product customer PII beyond its minimal control-plane role | Medium | Data minimization, field purpose, access audit, retention and deletion verification |
 | R12 | Source products can expose WSTERA secrets, unsupported dependencies or unclear IP rights | High | Clean-room packaging, full-history secret scan, license audit, SBOM and buyer acceptance |
 | R13 | No product has a working fulfillment path, so a finished one-time product still cannot be delivered to a buyer | High | L4 built once as the P1 Hub capability with idempotent, revocable, recorded delivery proven at P1-C1 |
-| R14 | Billing-core has no approved database placement while blocking PS01, LK01 and DC01 | High | Close `BILLING_CORE_PLAN.md` P-1 as decision §10.9 before Phase P1 begins |
+| R14 | Billing-core shares the Hub project database with the public storefront (decided §10 D3) | Medium | Dedicated schema, dedicated scoped Postgres role, private (non-Data-API) schema, isolated restore rehearsal and expand/contract migrations — all verified before Phase P1 |
 
 Risk severity is engineering/operational impact, not a financial estimate. A risk stays open until its
 control has executable evidence or the CEO records a named, expiring acceptance.
@@ -827,32 +829,53 @@ control has executable evidence or the CEO records a named, expiring acceptance.
 
 ## 10. Non-financial decisions required before affected work
 
+### Decided (2026-08-27 unless noted) — implementation must follow these, not re-open them
+
+- **D1. Hostname convention.** The canonical technical host for every product is its product code:
+  `bk01.wstera.com`, `ps01.wstera.com`, `lk01.wstera.com`, `dc01.wstera.com`. This was approved on
+  2026-08-26 with the `product_id`/`product_code` adoption (commit `45e6f23`); `registry.yaml`
+  already reserves each `canonical_host`. Stripe redirect URLs, OAuth callbacks and LINE callbacks
+  point at the code host, because the code never changes even when a brand name does. A branded
+  alias (`pawspace.wstera.com` → PS01) may be added later pointing at the same product and blocks
+  nothing. Residual work is documentation only: `ROADMAP.md`'s "Project B routing truth" table still
+  says `booking` deploys under `booking.wstera.com` — that line is stale and is corrected under P0a,
+  not treated as a live fork.
+- **D2. Hub event trust.** Per-product HMAC keys: each product-event signer holds its own secret,
+  bound server-side to exactly one product. The current single shared secret is prohibited in
+  production. Asymmetric signing remains a later upgrade option and does not need to be built now,
+  but the shared secret may not survive P1 in either case.
+- **D3. Billing-core database placement.** `billing_core` lives as a dedicated schema inside the Hub
+  project (Project A, `apps/hub-web`, Supabase `coyelzlgukvpgguqpjdi`) — the `BILLING_CORE_PLAN.md`
+  P-1 "dedicated schema in the Hub project" option. This matches the already-approved
+  `identity-billing-platform` PRD, which places the central billing/entitlement schema in Project A,
+  and it inherits real backups when Project A upgrades to Supabase Pro. A separate free account was
+  rejected: free tier has no automatic backups and pauses idle organizations, which is the wrong
+  home for payment records. Non-negotiable conditions, all verified before Phase P1:
+  1. `billing_core` is its own schema, not mixed into existing tables.
+  2. billing-core connects with a dedicated Postgres role scoped to that schema only. The project
+     `service_role`/secret key is never used by billing-core.
+  3. The schema is not exposed to the Data API; the Hub's public/anon key cannot reach it.
+  4. A restore rehearsal of the `billing_core` schema alone has succeeded.
+  5. Billing migrations are expand/contract and reviewed so a failed billing migration cannot break
+     the live Hub storefront.
+  Accepted residual risk: a Project-A outage also takes billing offline. Per `BILLING_CORE_PLAN.md`
+  §5c that means checkout fails — a lost sale, not data loss — which is acceptable. PawSpace keeps
+  its own project and is still reached only through the narrow signed ingress (see D4 below, still
+  open).
+
+### Still open — block the affected work until the CEO decides
+
 1. **Repository map and casing:** approve canonical checkout paths for Hub, PawSpace, DocCraft and
    the other nested repos on case-sensitive and case-insensitive systems.
-2. **Hostname convention:** reconcile descriptive hosts such as `booking.wstera.com` and
-   `links.wstera.com` with reserved product-code hosts such as `bk01.wstera.com` before DNS and OAuth
-   redirect configuration becomes permanent. `ROADMAP.md` currently records both conventions in
-   different sections. This blocks the **first product DNS record**, not merely the eventual launch:
-   changing it later is a migration across Stripe redirect URLs, LINE callbacks and OAuth redirects
-   for every hosted product.
-3. **Hub event trust:** approve per-product HMAC keys or asymmetric signing; one shared product-event
-   secret is not an acceptable production boundary.
-4. **PawSpace billing trust:** approve the narrow signed ingress design, or explicitly accept the
+2. **PawSpace billing trust (D4):** approve the narrow signed ingress design, or explicitly accept the
    project-wide elevated-key risk before billing-core Phase 1.
-5. **PawSpace brand:** close the existing name-collision review before public identity is frozen.
-6. **CM01 deliverable boundary:** lock local-only template versus production reference adapter. This
+3. **PawSpace brand:** close the existing name-collision review before public identity is frozen.
+4. **CM01 deliverable boundary:** lock local-only template versus production reference adapter. This
    changes engineering scope but does not decide price.
-7. **HC01 product boundary:** lock what the production source product includes beyond PR #1's demo
+5. **HC01 product boundary:** lock what the production source product includes beyond PR #1's demo
    server before database/API work begins.
-8. **Operational targets:** approve SLO, RTO, RPO, supported browser/runtime matrix and retention
+6. **Operational targets:** approve SLO, RTO, RPO, supported browser/runtime matrix and retention
    requirements for each hosted product.
-9. **Billing-core database placement:** close `BILLING_CORE_PLAN.md` P-1 by selecting a separate
-   billing project, a dedicated `billing_core` schema inside the Hub project with its own narrow
-   Postgres role, or deferring the service. This is on the critical path for PS01, LK01 and DC01,
-   and no implementer may pick it silently. The engineering decision is the isolation boundary,
-   the credential model, the backup/restore proof and the future migration path; any provider plan
-   or cost implication of that choice belongs to the CEO's separate plan and is recorded there, not
-   resolved here.
 
 These decisions are intentionally limited to product/engineering behavior. Pricing, budgets,
 forecasts and revenue decisions stay in the CEO's separate financial plan.

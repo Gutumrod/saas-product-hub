@@ -87,20 +87,33 @@ ships partially, everything must be complete before real/live launch.
 
 ## 0. Hard prerequisites — resolve before Phase 1 starts
 
-**P-1. Supabase placement is a real blocker (added v2, refined v3).** The 2026-08-27 inventory
-reported no unused project slot. Reconfirm the actual account capacity when Phase 0 starts because
-plan limits and project state can change. The CEO must select one engineering boundary before
-Phase 1:
+**P-1. Supabase placement — DECIDED 2026-08-27 (CEO, via Commander Final Review Gate).**
+`billing_core` lives as a **dedicated schema inside the Hub project** (Project A, `apps/hub-web`,
+Supabase `coyelzlgukvpgguqpjdi`). This matches the already-approved `identity-billing-platform` PRD,
+which places the central billing/entitlement schema in Project A, and it inherits real backups when
+Project A upgrades to Supabase Pro. A separate free Supabase account was rejected: free tier has no
+automatic backups and pauses idle organizations — the wrong home for payment records.
 
-- **Separate billing project** — strongest project-level isolation.
-- **Dedicated `billing_core` schema in the Hub project** — weaker blast-radius isolation; requires
-  a dedicated Postgres role/connection limited to that schema. A project-wide secret/service-role
-  key is not an acceptable substitute for that role.
-- **Defer the service** — leaves PS01/LK01/DC01 billing integration blocked.
+The gate closes only when all of the following are recorded and verified before Phase 1:
 
-The CEO's separate financial plan owns any cost or timing decision. This engineering gate closes
-only when the selected placement, credential boundary, backup/restore test, and future migration
-path are recorded and verified; an implementer must not silently pick one.
+1. `billing_core` is its own schema; it does not add columns to or share tables with existing Hub
+   schemas.
+2. billing-core connects with a **dedicated Postgres role scoped to the `billing_core` schema
+   only**. The project `service_role`/secret key is never used by billing-core. `BILLING_CORE_DATABASE_URL`
+   carries this narrow role, not an elevated key.
+3. `billing_core` is not exposed to the Data API. The Hub's public/anon key cannot reach it. Migrations
+   include explicit `REVOKE`/`GRANT`, fixed `search_path`, and `supabase db advisors` evidence.
+4. A restore rehearsal of the `billing_core` schema alone has succeeded in staging, with recovery
+   time and data-loss observations recorded.
+5. Billing migrations are expand/contract and reviewed so a failed billing migration cannot break the
+   live Hub storefront running in the same project.
+
+Accepted residual risk: a Project-A outage also takes billing offline. Per §5c that means checkout
+fails — a lost sale, not data loss — which the CEO accepts. Reconfirm actual account/plan state when
+Phase 0 starts. PawSpace keeps its own project and is still reached only through the narrow signed
+ingress below; billing-core still never holds PawSpace's elevated key.
+
+The CEO's separate financial plan owns the Supabase Pro upgrade timing and any cost decision.
 
 **P-2. Stripe account/mode.** Confirm which Stripe account billing-core uses and that **test-mode
 keys are used for everything through Phase 3.** Live keys must not exist in any local `.env` or
@@ -173,11 +186,11 @@ fetch handler directly) — zero porting step later. It also structurally avoids
 body-parsing-middleware-order bug (`express.raw()` before `express.json()`) that already bit
 `multi-tenant-ai` once, since Hono has no global body parser to order against.
 
-**Persistence:** use the placement selected at P-1 for billing-core's own
-`plans`/`subscriptions`/`payments`/`webhook_idempotency` tables (used by `wstera_link`/`doccraft`-
-future accounts). A separate project is the stronger boundary; a shared project is permitted only
-with the dedicated-schema and narrow-role controls recorded at P-1. `pawspace` keeps its own
-`shop_subscriptions` authoritative and exposes only the narrow ingress described below.
+**Persistence:** billing-core's own `plans`/`subscriptions`/`payments`/`webhook_idempotency` tables
+(used by `wstera_link`/`doccraft`-future accounts) live in the `billing_core` schema inside the Hub
+project, under the five controls recorded at P-1 — dedicated scoped Postgres role, private schema,
+isolated restore rehearsal, expand/contract migrations. `pawspace` keeps its own `shop_subscriptions`
+authoritative and exposes only the narrow ingress described below.
 
 Billing tables default to a private, non-exposed schema. If any object must use the Data API, expose
 only the intended schema/object, grant roles explicitly, enable RLS, and test anonymous,

@@ -135,7 +135,7 @@ billing ที่แก้ trust boundary แล้ว เอกสารนี�
 
 **หมายเหตุ P1:** `BILLING_CORE_PLAN.md` ล็อกไว้แล้วว่า `booking` **ไม่** ย้ายมาใช้ billing-core ตั้งใจให้เป็นแบบนั้น อย่าไปเปลี่ยน แต่ผลข้างเคียงที่ต้องรับรู้คือ **พอร์ตจะมีระบบเก็บเงิน 2 ระบบถาวร** (booking inline + billing-core) ซึ่งแปลว่าเวลาแก้บั๊กเรื่องเงินต้องแก้ 2 ที่ ต้องเขียนไว้ใน runbook ให้ชัด ไม่งั้นอีก 6 เดือนจะลืม
 
-**หมายเหตุ P3:** convention ที่ต้องล็อกก่อนออก DNS record แรก คือใช้ `product_code` ตัวเล็ก (`bk01.wstera.com`) หรือชื่อ product (`booking.wstera.com`) — `ROADMAP.md` เขียนไว้ทั้งสองแบบในคนละที่ (`booking.wstera.com` ใน routing table แต่ `<code>.wstera.com` ใน registry) **ต้องเลือกอันเดียวก่อนสร้าง record แรก** เพราะเปลี่ยนทีหลังคือ migration ที่แตะ Stripe redirect URL, LINE callback, OAuth redirect ทั้งหมด
+**หมายเหตุ P3 (RESOLVED 2026-08-27):** ~~convention ที่ต้องล็อก...~~ ตัดสินแล้ว — canonical host = `product_code` (`bk01.wstera.com`) ตาม master plan §10 D1 (การตัดสินใจนี้เกิดจริง 2026-08-26 พร้อม product_id/product_code adoption) ที่ค้างคือแก้ ROADMAP routing table บรรทัดเดียวที่ยังเขียน `booking.wstera.com` — เป็น P0a doc-fix ไม่ใช่ decision
 
 ---
 
@@ -359,8 +359,14 @@ CM-1 (owner ตัดสิน) ──> CM-2 ทั้งหมด
 
 เรียงตามความเร่งด่วน — ข้อ 1–3 บล็อก Wave 0/1
 
-1. **DNS convention** — `booking.wstera.com` หรือ `bk01.wstera.com` เอกสารเดิมเขียนไว้ทั้งสองแบบ ต้องเลือกก่อนสร้าง record แรก (P3)
-2. **Supabase Pro** — อัปก่อน หรือหาทาง workaround สำหรับ billing-core project ที่ 3 (R9)
+> **RESOLVED 2026-08-27 (ดู master plan §10):** ข้อ 1 = canonical host `bk01.wstera.com` (code host,
+> §10 D1). ข้อ 2 = billing_core เป็น dedicated schema ใน Project A/hub-web ไม่ใช่ project แยก
+> ไม่ใช่ account แยก (§10 D3 + 5 เงื่อนไข). Hub event signing = per-product HMAC key (§10 D2).
+> ที่ยังค้าง: CM01 boundary, ราคา (CEO/financial plan), จุดขาย LK01/HC01, PawSpace brand, PawSpace
+> billing trust (D4), operational targets
+
+1. ~~**DNS convention**~~ **RESOLVED** — `bk01.wstera.com` (code host) §10 D1
+2. ~~**Supabase Pro / billing-core project ที่ 3**~~ **RESOLVED** — billing_core = schema ใน Project A §10 D3
 3. **CM01 ขายแบบไหน** — template อย่างเดียว หรือเพิ่ม backend adapter (CM-1) — effort ต่างกันหลายเท่า
 4. **ราคาที่อนุมัติ** — 5 ตัวยังไม่มีราคาเป็นทางการ: `pawspace` (มี tier ในโค้ดแต่ยังไม่อนุมัติ), `multi_tenant_ai`, `headless_commerce`, `booking_ticket_module`, `doccraft` (มีแค่ hypothesis ฿290/เดือน) — `booking` มี `PRICING_SPEC.md` อนุมัติแล้ว, `wstera_link` มีสเปกล็อกแล้ว (฿199/฿590)
 5. **จุดขายของ LK01** — channel-aware routing เข้า Phase 2 หรือไปรอ Phase 5 (เปลี่ยน data model, ต้องตัดสินก่อนเขียนโค้ด)

@@ -48,14 +48,33 @@ master plan is now revision 3. What changed:
 - **Hub recorded as a pre-existing public surface.** `wstera.com` went live before this plan; from
   now on changing it is gated like a product release, and no destination URL is published before
   that product's CEO `GO`.
-- **New decisions and risks:** §10.9 billing-core database placement (blocks P1, blocks three
-  products); §10.2 hostname convention marked as blocking the first DNS record; R13 fulfillment
-  gap; R14 placement gap; R6 raised to Critical.
+- **New risks:** R13 fulfillment gap; R14 (now Medium) shared billing database; R6 raised to
+  Critical.
 
 `PRODUCTION_LAUNCH_PLAN_2026-08-27.md` keeps supplemental status, and three of its sections are now
 marked **VOID** — DC-5/DC-6 and the "release V1 free to validate demand" recommendation, plus the
 LK01 "furthest from revenue" reasoning. The dependency facts underneath them survive in the master
 plan; the demand-based reasoning does not.
+
+### CEO decisions locked — 2026-08-27 (master plan §10)
+
+- **D1 hostname.** Canonical technical host = product code (`bk01.wstera.com`, `ps01.wstera.com`,
+  …). This was already approved 2026-08-26 with `product_id`/`product_code` adoption; the review
+  wrongly re-listed it as open. `registry.yaml` already reserves each `canonical_host`. Branded
+  aliases may be layered on later. Only residual work: fix the one stale `ROADMAP.md` routing line.
+- **D2 Hub event trust.** Per-product HMAC keys, one secret bound server-side to one product. The
+  shared secret does not survive P1. Asymmetric signing stays a later option, not required now.
+- **D3 billing-core database.** `billing_core` is a dedicated schema inside the Hub project
+  (Project A, `apps/hub-web`, `coyelzlgukvpgguqpjdi`) — not a separate project, not a separate
+  Supabase account. A separate free account was rejected because free tier has no automatic backups
+  and pauses idle orgs. Five conditions are mandatory before P1: own schema; dedicated Postgres
+  role scoped to that schema only (never the service_role key); schema not exposed to the Data API;
+  isolated restore rehearsal; expand/contract migrations. Accepted residual risk: a Project-A
+  outage stops billing too, which means lost checkouts, not lost data.
+
+Still open at the CEO: repository path casing, PawSpace billing trust (D4 — narrow ingress vs
+accept elevated-key risk), PawSpace brand collision, CM01 deliverable boundary, HC01 product
+boundary, operational SLO/RTO/RPO targets.
 
 Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\2026-08-27-commander-final-review.md`
 
