@@ -19,7 +19,8 @@ locked, but four implementation details below are corrected before build:
 2. Billing-core therefore does not hold PawSpace's project-wide elevated key. It calls a narrow
    PawSpace Edge Function ingress using a dedicated HMAC/asymmetric service credential; that
    function alone holds the PawSpace elevated key and exposes only validated subscription
-   transitions.
+   transitions. **CEO-approved 2026-08-27 (master plan §10 D4)** — the risk-acceptance alternative
+   is closed; the ingress is mandatory and is built and tested in Phase 0.5.
 3. Cloudflare Cron uses the Worker's internal `scheduled()` handler. No public
    `/internal/cron/...` endpoint protected only by a shared header is created.
 4. LK01 redirect requests never synchronously call billing-core. Billing is checked/synchronized on

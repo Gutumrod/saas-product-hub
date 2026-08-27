@@ -362,12 +362,14 @@ CM-1 (owner ตัดสิน) ──> CM-2 ทั้งหมด
 > **RESOLVED 2026-08-27 (ดู master plan §10):** ข้อ 1 = canonical host `bk01.wstera.com` (code host,
 > §10 D1). ข้อ 2 = billing_core เป็น dedicated schema ใน Project A/hub-web ไม่ใช่ project แยก
 > ไม่ใช่ account แยก (§10 D3 + 5 เงื่อนไข). Hub event signing = per-product HMAC key (§10 D2).
-> ที่ยังค้าง: CM01 boundary, ราคา (CEO/financial plan), จุดขาย LK01/HC01, PawSpace brand, PawSpace
-> billing trust (D4), operational targets
+> PawSpace billing trust = narrow ingress (§10 D4). path casing = lowercase (§10 D5).
+> CM01 = template อย่างเดียว (§10 D6). SLO/RTO/RPO = 99%/4h/24h, billing RPO ≤1h (§10 D7).
+> ที่ยังค้าง: ราคา (CEO/financial plan), จุดขาย LK01/HC01, PawSpace brand (ชนจริง — รอชื่อใหม่),
+> HC01 scope (รอ CEO เพิ่มเอกสาร)
 
 1. ~~**DNS convention**~~ **RESOLVED** — `bk01.wstera.com` (code host) §10 D1
 2. ~~**Supabase Pro / billing-core project ที่ 3**~~ **RESOLVED** — billing_core = schema ใน Project A §10 D3
-3. **CM01 ขายแบบไหน** — template อย่างเดียว หรือเพิ่ม backend adapter (CM-1) — effort ต่างกันหลายเท่า
+3. ~~**CM01 ขายแบบไหน**~~ **RESOLVED** — template/source อย่างเดียว localStorage เป็น demo adapter §10 D6
 4. **ราคาที่อนุมัติ** — 5 ตัวยังไม่มีราคาเป็นทางการ: `pawspace` (มี tier ในโค้ดแต่ยังไม่อนุมัติ), `multi_tenant_ai`, `headless_commerce`, `booking_ticket_module`, `doccraft` (มีแค่ hypothesis ฿290/เดือน) — `booking` มี `PRICING_SPEC.md` อนุมัติแล้ว, `wstera_link` มีสเปกล็อกแล้ว (฿199/฿590)
 5. **จุดขายของ LK01** — channel-aware routing เข้า Phase 2 หรือไปรอ Phase 5 (เปลี่ยน data model, ต้องตัดสินก่อนเขียนโค้ด)
 6. **จุดขายของ HC01** — มุมไทย (COD/PromptPay/ขนส่ง) หรือมุม neutral catalog (HC-3)

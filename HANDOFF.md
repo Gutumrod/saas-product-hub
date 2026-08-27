@@ -72,9 +72,29 @@ plan; the demand-based reasoning does not.
   isolated restore rehearsal; expand/contract migrations. Accepted residual risk: a Project-A
   outage stops billing too, which means lost checkouts, not lost data.
 
-Still open at the CEO: repository path casing, PawSpace billing trust (D4 — narrow ingress vs
-accept elevated-key risk), PawSpace brand collision, CM01 deliverable boundary, HC01 product
-boundary, operational SLO/RTO/RPO targets.
+- **D4 PawSpace billing trust.** Approved: narrow signed Edge Function ingress only. billing-core
+  never holds PawSpace's elevated key. Built and tested in billing-core Phase 0.5. Risk-acceptance
+  alternative closed.
+- **D5 repository path casing.** All-lowercase (`products/pawspace`, `products/doccraft`, …). Every
+  mixed-case reference in docs/scripts/`registry.yaml` corrected under P0a.
+- **D6 CM01 (Booking Ticket Module).** Sold as a UI/source template only. Local storage stays a
+  documented demo adapter; no production backend adapter is built in this initiative. Sale materials
+  state that persistence is the buyer's responsibility.
+- **D7 operational targets (starting values).** Every hosted product: SLO 99%, RTO 4h, RPO 24h
+  (daily backup). Exception: billing-core RPO 1h or better. Raised, never silently lowered, each
+  raise recorded with its trigger.
+
+Still open at the CEO:
+
+- **PawSpace brand.** Collision check done — **a real collision was found.** `PawSpace` stays the
+  internal working name; a rename is expected; the final public name is a pending CEO decision. No
+  customer-facing use of the name (domain, legal copy, app-store, social, launch) until the CEO
+  confirms it. Engineering proceeds under the working name.
+- **HC01 (Headless Commerce) scope.** Confirmed as a product that will be sold, but its shape —
+  API skeleton vs full commerce backend vs Thailand-first order model — is undecided. The CEO will
+  add scope documentation. HC01's L0 stays open and no DB/API work starts until it lands; PR #1
+  disposition and advisory cleanup may proceed now.
+- Also open: repository map (the non-casing parts).
 
 Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\2026-08-27-commander-final-review.md`
 

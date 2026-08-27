@@ -177,9 +177,9 @@ plan and is not treated as a partial ship of it. Two consequences bind from R3 o
 - BK01 keeps its existing self-contained Stripe integration. Do not migrate it merely for symmetry.
 - PS01, LK01, and DC01 integrate with the centralized service defined by
   `docs/platform/BILLING_CORE_PLAN.md`.
-- Billing-core may not hold a PawSpace project-wide elevated Supabase key while describing it as
-  least-privilege or “scoped.” Use a narrow signed PawSpace ingress that owns the elevated key
-  internally, or obtain an explicit CEO security-risk acceptance before Phase P1 implementation.
+- Billing-core may not hold a PawSpace project-wide elevated Supabase key. Per §10 D4 it reaches
+  PawSpace only through the narrow signed Edge Function ingress that owns the elevated key
+  internally; the risk-acceptance alternative is closed.
 - Product authorization remains local to each product. A Hub account or payment record alone never
   grants access to tenant data.
 - Every product defines its own account/tenant identity, roles, retention rules, and denial tests.
@@ -412,8 +412,10 @@ single front-loaded gate whose slowest repository stalled all seven.
    server and its passing tests as if they exist on the default branch when they exist only on the
    open PR; `ROADMAP.md` §A1 still carries CM01's superseded 2026-08-21 removal against the
    2026-08-27 seven-product lock; `ROADMAP.md`'s "Project B routing truth" table still routes
-   `booking` to `booking.wstera.com` against the decided code-host convention (§10 D1); and DC01's
-   registry description still reports Phase 1–2 against a Phase 4 head.
+   `booking` to `booking.wstera.com` against the decided code-host convention (§10 D1); DC01's
+   registry description still reports Phase 1–2 against a Phase 4 head; and every mixed-case nested
+   path (`products/PawSpace`, `products/DocCraft`, including `registry.yaml`'s `path:` fields) is
+   corrected to all-lowercase per §10 D5.
 
 Checkpoint **P0a-C1 — Portfolio foundation ready**:
 
@@ -593,8 +595,11 @@ Work packages:
    and reconciliation, expired camera links and vendor outage recovery.
 5. **PS-E Privacy and operations** — retention/deletion, audit logs, access expiry, backup/restore,
    alerts and staff support runbooks.
-6. **PS-F Brand and namespace gate** — resolve the open brand-name collision issue before public
-   domain, legal copy, app-store/social identity or customer-facing rollout is finalized.
+6. **PS-F Brand and namespace gate** — a name-collision check found a real collision (§10 open
+   item 1). `PawSpace` stays the internal working name; the final public name is a pending CEO
+   decision and a rename is expected. This gate is not closed until the CEO confirms the public
+   name and, if it changes, the rename is completed across repo, domain, legal copy, app-store and
+   social identity. No customer-facing rollout before then.
 7. **PS-G Real-shop pilot** — staff complete reservation, check-in, care reporting, visitor access,
    checkout and failure recovery using real operational accounts.
 
@@ -693,18 +698,19 @@ Release checkpoint **MT-L1**:
 
 ### 6.6 CM01 — `booking_ticket_module`
 
-**Target:** reusable case-management UI/source product with explicit host integration boundaries.
+**Target:** reusable case-management UI/source template, sold as source, with local storage as the
+only shipped adapter. Per §10 D6, no production backend adapter is built in this initiative.
 
 Work packages:
 
 1. **CM-A Product boundary** — keep it distinct from BK01's native ticket system; describe it as a
-   reusable module/template and remove hosted-backend implications.
-2. **CM-B Persistence contract** — lock whether the deliverable is deliberately local-only or ships
-   a production reference backend. For the production-adapter scope in this plan, define typed
-   interfaces for list/read/create/update, authentication context, optimistic conflict, pagination
-   and error mapping. Keep local storage as a documented demo adapter only.
-3. **CM-C Host integration** — provide a production-quality reference adapter and theme/i18n
-   integration guide without embedding customer credentials.
+   reusable UI/source template and remove hosted-backend implications.
+2. **CM-B Persistence contract** — the deliverable is deliberately local-only. Document the storage
+   adapter interface (list/read/create/update, error shape) clearly enough that a buyer can write
+   their own backend adapter against it, but ship only the local-storage implementation. The sale
+   materials state plainly that a persistent backend is the buyer's responsibility.
+3. **CM-C Host integration** — provide the theme/i18n integration guide and the adapter interface
+   documentation; no reference backend adapter, no customer credentials anywhere.
 4. **CM-D Quality** — remediate high/critical toolchain advisories, add lint to scripts, CI gates,
    exact Playwright browser provisioning, accessibility, browser E2E, build artifact and dependency
    scanning.
@@ -713,21 +719,26 @@ Work packages:
 
 Release checkpoint **CM-L1**:
 
-- G0–G6 and clean-machine buyer acceptance pass.
-- A host can replace the demo adapter without changing UI domain code.
-- Local storage limitations are visible and cannot be mistaken for production persistence.
+- G0–G6, L0–L5 and clean-machine buyer acceptance pass.
+- Local storage limitations are stated in the product materials and in the running UI, and cannot
+  be mistaken for production persistence.
 
 ### 6.7 HC01 — `headless_commerce`
 
-**Target:** integrated self-hostable commerce API/source product, not a loose module collection.
+**Target:** an integrated self-hostable commerce source product. HC01 is confirmed in scope as a
+product that will be sold, but per §10 open item 2 its shape — API skeleton, full commerce backend,
+or a Thailand-first order model — is a pending CEO decision. The CEO will add scope documentation.
+Database and API implementation (HC-C onward) does not start until that lands.
 
 Work packages:
 
 1. **HC-A Branch and evidence disposition** — independently review open PR #1; fix its reproducible
    oversized-import `EPIPE` failure and high/critical runtime/tooling advisories. Treat the local
-   reference server as reusable input only, then explicitly merge, rewrite or supersede it.
-2. **HC-B Product and domain contract** — replace the unfinished BRIEF with locked catalog, variant,
-   inventory, reservation, order, payment, media, import/export, tenant and non-goal contracts.
+   reference server as reusable input only, then explicitly merge, rewrite or supersede it. This
+   work is valid under any scope and may proceed now.
+2. **HC-B Product and domain contract** — after the CEO's scope documentation lands, replace the
+   unfinished BRIEF with locked catalog, variant, inventory, reservation, order, payment, media,
+   import/export, tenant and non-goal contracts. This is the L0 gate and blocks everything below it.
 3. **HC-C Application shell** — create root workspace, API runtime, authentication/authorization,
    configuration validation, health/readiness endpoints and integration of reviewed modules.
 4. **HC-D Database** — versioned PostgreSQL migrations, tenant/RLS policies, inventory ledger,
@@ -808,7 +819,7 @@ and reruns the relevant gates.
 | ID | Risk | Severity | Required control |
 |---|---|---|---|
 | R1 | BK01 has no application regression suite and current clean lint/build gates fail | Critical | Close BK-A/B before production deployment or feature expansion |
-| R2 | Billing-core directly holding a PawSpace project-wide RLS-bypass key expands compromise blast radius | Critical | Narrow signed ingress or explicit time-bounded CEO risk acceptance |
+| R2 | Billing-core directly holding a PawSpace project-wide RLS-bypass key expands compromise blast radius | Critical | Decided §10 D4 — narrow signed Edge Function ingress only; billing-core never holds the elevated key; ingress built and tested in billing-core Phase 0.5 |
 | R3 | Hub's shared HMAC secret lets one product signer impersonate another product | High | Decided §10 D2 — per-product HMAC keys bound to one product ID, with timestamp and replay window; shared secret retired at P1 |
 | R4 | Hub and products have no CI, release tags, and detected branch protection | High | P0a-C1 CI definition and per-repository P0b-C1 required checks and protected release flow |
 | R5 | Known high/critical dependency findings can ship to operators or buyers | High | Remediate or record reachability-based exception with expiry before release |
@@ -816,7 +827,7 @@ and reruns the relevant gates.
 | R7 | HC01's open branch can be mistaken for production-ready because it contains a server/tests | High | Independent PR disposition; fix failing test, auth/persistence and advisories before integration |
 | R8 | Stale/conflicting status documents can override current code evidence | High | Authority order, exact-commit evidence and same-change documentation updates |
 | R9 | LINE, Google, Stripe, Supabase, Cloudflare and storage failures cross operational boundaries | High | Per-provider timeout/retry/reconciliation/degraded-mode runbooks and alerts |
-| R10 | Naming/path case drift and unresolved PawSpace brand risk can force late migrations | Medium | Hostname settled (§10 D1, code host canonical); repository map and PawSpace brand clearance still required before public rollout |
+| R10 | Naming/path case drift and confirmed PawSpace brand collision can force late migrations | Medium | Hostname settled (§10 D1); path casing settled all-lowercase (§10 D5, corrected under P0a); PawSpace brand collision confirmed and a rename is expected — no customer-facing use of the name until the CEO confirms the final public name |
 | R11 | Hub stores cross-product customer PII beyond its minimal control-plane role | Medium | Data minimization, field purpose, access audit, retention and deletion verification |
 | R12 | Source products can expose WSTERA secrets, unsupported dependencies or unclear IP rights | High | Clean-room packaging, full-history secret scan, license audit, SBOM and buyer acceptance |
 | R13 | No product has a working fulfillment path, so a finished one-time product still cannot be delivered to a buyer | High | L4 built once as the P1 Hub capability with idempotent, revocable, recorded delivery proven at P1-C1 |
@@ -860,22 +871,39 @@ control has executable evidence or the CEO records a named, expiring acceptance.
      the live Hub storefront.
   Accepted residual risk: a Project-A outage also takes billing offline. Per `BILLING_CORE_PLAN.md`
   §5c that means checkout fails — a lost sale, not data loss — which is acceptable. PawSpace keeps
-  its own project and is still reached only through the narrow signed ingress (see D4 below, still
-  open).
+  its own project and is still reached only through the narrow signed ingress (D4).
+- **D4. PawSpace billing trust.** Approved: billing-core reaches PawSpace only through the narrow
+  signed Edge Function ingress described in `BILLING_CORE_PLAN.md` §2 and §5a. billing-core never
+  holds PawSpace's elevated project key. The "accept the project-wide elevated-key risk" alternative
+  is closed. The ingress is built and tested in billing-core Phase 0.5 before any checkout work.
+- **D5. Repository path casing.** Canonical checkout paths are all-lowercase: `products/pawspace`,
+  `products/doccraft`, and likewise for every nested repo. Every document, script and CI reference
+  using a mixed-case path (`products/PawSpace`, `products/DocCraft`) is corrected under P0a,
+  including `registry.yaml`'s `path:` fields.
+- **D6. CM01 (Booking Ticket Module) deliverable boundary.** Sold as a UI/source template only.
+  Local storage stays a documented demo adapter; no production backend adapter is built in this
+  initiative. Its L2 persistence-contract work in §6.6 is the "deliberately local-only" branch, and
+  the sale materials must state plainly that persistence is the buyer's responsibility. A backend
+  adapter is a possible later product decision, not part of this scope.
+- **D7. Operational targets (starting values).** Until a product has enough paying customers to
+  justify tighter numbers, every hosted product targets **SLO 99%** availability, **RTO 4 hours**,
+  **RPO 24 hours** (daily backup). Exception: billing-core's **RPO is 1 hour or better** because a
+  lost payment record cannot be reconstructed from the product side. Supported browser/runtime
+  matrix and retention windows are still set per product at its G0. These values are raised, never
+  silently lowered, and any raise is recorded with its trigger.
 
 ### Still open — block the affected work until the CEO decides
 
-1. **Repository map and casing:** approve canonical checkout paths for Hub, PawSpace, DocCraft and
-   the other nested repos on case-sensitive and case-insensitive systems.
-2. **PawSpace billing trust (D4):** approve the narrow signed ingress design, or explicitly accept the
-   project-wide elevated-key risk before billing-core Phase 1.
-3. **PawSpace brand:** close the existing name-collision review before public identity is frozen.
-4. **CM01 deliverable boundary:** lock local-only template versus production reference adapter. This
-   changes engineering scope but does not decide price.
-5. **HC01 product boundary:** lock what the production source product includes beyond PR #1's demo
-   server before database/API work begins.
-6. **Operational targets:** approve SLO, RTO, RPO, supported browser/runtime matrix and retention
-   requirements for each hosted product.
+1. **PawSpace brand.** A name-collision check has been completed and **found a real collision**.
+   `PawSpace` is retained as the internal/working name for now, but it is **not cleared for public
+   use**. A rename is expected. Public domain, legal copy, app-store and social identity, and any
+   customer-facing launch are blocked until the CEO confirms the final public name. Engineering may
+   proceed under the working name; nothing customer-facing may.
+2. **HC01 (Headless Commerce) product scope.** HC01 is confirmed as a product that will be sold, but
+   what a buyer receives — API skeleton, full commerce backend, or a Thailand-first order model — is
+   not yet decided. The CEO will add scope documentation. Until it lands, HC01's L0 stays open and
+   no database or API implementation starts; PR #1 disposition and dependency/advisory cleanup may
+   proceed because they are needed under any scope.
 
 These decisions are intentionally limited to product/engineering behavior. Pricing, budgets,
 forecasts and revenue decisions stay in the CEO's separate financial plan.
