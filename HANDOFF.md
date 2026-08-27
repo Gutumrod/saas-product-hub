@@ -15,9 +15,49 @@ Centralized billing architecture remains governed by the already locked
 PS01/LK01/DC01 use billing-core according to that document. Do not invent a parallel billing
 architecture.
 
-Next authorized implementation checkpoint is **P0-C1 — Release foundation ready**. Before changing
-any product, refresh the named repository's default-branch baseline and follow that repository's
-own AGENTS/CLAUDE instructions and approval gates.
+Next authorized implementation checkpoint is **P0a-C1 — Portfolio foundation ready**, then
+**P0b-C1** for each repository as its track opens. Before changing any product, refresh the named
+repository's default-branch baseline and follow that repository's own AGENTS/CLAUDE instructions
+and approval gates.
+
+### Commander Final Review Gate — 2026-08-27 (revision 3 adopted)
+
+Claude (Commander) reviewed both production plans against the workspace iron rules and returned
+`REMEDIATE`; the CEO ordered the remediated plan adopted as the project's execution route. The
+master plan is now revision 3. What changed:
+
+- **§0 planning-input constraint.** Only dependency order, engineering maturity and risk may order
+  this plan. Financial inputs were already excluded; **usage and demand inputs are now excluded
+  too**, per the CEO iron rule of 2026-08-27 (`vault/00-System/Decisions/agent-iron-rules.md`).
+  "Ship this first because it reaches users soonest" and "validate demand before building the next
+  phase" are out of order regardless of how sensible they read.
+- **P0 split into P0a / P0b.** Portfolio-wide foundation blocks everyone; per-repository readiness
+  travels with that repository and no longer holds six other products hostage behind the slowest.
+- **Focus gate is binding, not advice.** One heavy track plus one bounded track. A second heavy
+  track opens only after a recorded CEO decision or a written overlap authorization. A blocked
+  track is paused, not replaced.
+- **L0–L5 ladder** added for MT01/CM01/HC01 — G0–G7 was written for hosted services and does not
+  cover buyer lock, clean-install proof by a non-author, license/IP audit, packaging, fulfillment
+  or support boundary.
+- **Fulfillment (L4) is a P1 Hub deliverable of its own** with its own checkpoint evidence. It was
+  previously a sub-clause, and it is the one thing standing between a finished source product and
+  an actual buyer.
+- **Document reconciliation** is now explicit P0a work (BK01 "Done" wording, PS01
+  `COMMERCIAL_READINESS.md`, the HC01 server that exists only on a PR, CM01's superseded removal,
+  DC01's stale registry description).
+- **Hub recorded as a pre-existing public surface.** `wstera.com` went live before this plan; from
+  now on changing it is gated like a product release, and no destination URL is published before
+  that product's CEO `GO`.
+- **New decisions and risks:** §10.9 billing-core database placement (blocks P1, blocks three
+  products); §10.2 hostname convention marked as blocking the first DNS record; R13 fulfillment
+  gap; R14 placement gap; R6 raised to Critical.
+
+`PRODUCTION_LAUNCH_PLAN_2026-08-27.md` keeps supplemental status, and three of its sections are now
+marked **VOID** — DC-5/DC-6 and the "release V1 free to validate demand" recommendation, plus the
+LK01 "furthest from revenue" reasoning. The dependency facts underneath them survive in the master
+plan; the demand-based reasoning does not.
+
+Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\2026-08-27-commander-final-review.md`
 
 ### Clean-slate re-audit revision
 

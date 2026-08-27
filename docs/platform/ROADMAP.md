@@ -5,6 +5,14 @@
 > gates, checkpoints, and the final scope of BK01, PS01, LK01, DC01, MT01, CM01, and HC01. This file
 > remains historical evidence and detailed prior context. Financial planning is outside the new
 > master plan and remains owner-controlled.
+>
+> **2026-08-27 revision 3 (Commander Final Review Gate):** the master plan now excludes usage and
+> demand as planning inputs (its §0), splits P0 into P0a/P0b, makes the single-heavy-track focus
+> gate binding, and adds the L0–L5 ladder for the one-time products. Two items in this roadmap are
+> P0a reconciliation work: §A1's BK01 "Done" wording predates the finding that BK01 has no
+> application test layer, and §A1 still carries CM01's superseded 2026-08-21 removal against the
+> 2026-08-27 seven-product lock. §A2's HC01 reference server and its passing tests exist on the
+> open PR, not on the default branch.
 
 **Status:** Historical portfolio roadmap; superseded for the locked seven-product engineering
 sequence and production gates by `PORTFOLIO_PRODUCTION_MASTER_PLAN.md`. It remains detailed prior

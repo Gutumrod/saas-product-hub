@@ -10,7 +10,7 @@
 
 **Date:** 2026-08-27
 
-**Status:** CEO-approved execution baseline — revision 2 after clean-slate re-audit
+**Status:** CEO-approved execution baseline — revision 3 after Commander Final Review Gate
 
 **Scope:** Engineering, security, operations, product delivery, and launch readiness only
 
@@ -25,6 +25,35 @@ Revision history:
 - **R2:** clean-slate re-audit added Hub as a gated dependency, executable baseline failures,
   supply-chain/identity/SLO gates, the V0–V5 verification protocol, a risk/decision register and
   billing-core least-privilege corrections. Evidence: `PORTFOLIO_REAUDIT_2026-08-27.md`.
+- **R3:** Commander Final Review Gate (2026-08-27) returned `REMEDIATE` and the CEO ordered the
+  remediated plan adopted as the project's execution route. R3 adds the §0 planning-input
+  constraint, the P0a/P0b split, the single-track focus gate, the one-time-product L-ladder, buyer
+  fulfillment as a first-class deliverable, the document-reconciliation worklist, the Hub
+  pre-existing-condition record, the dual-billing runbook obligation, and the billing-core database
+  placement decision. Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\
+  2026-08-27-commander-final-review.md`.
+
+---
+
+## 0. Planning-input constraint
+
+Three inputs may order this plan: **dependency order, engineering maturity, and risk.** Nothing
+else may.
+
+- **Financial inputs are excluded** by the owner boundary above. Price, revenue, budget, and
+  forecast belong to the CEO's separate plan.
+- **Usage and demand inputs are excluded** by the CEO order of 2026-08-27 recorded in
+  `D:\AI-Workspace\vault\00-System\Decisions\agent-iron-rules.md`: current or projected user counts
+  may not cut scope, lower a priority, or kill infrastructure and strategic work. Low or zero usage
+  today is not evidence against building something. A scope cut must be justified from the
+  long-term plan itself.
+
+A proposal such as "ship this one first because it reaches users soonest," "validate demand before
+building the next phase," or "defer this because nobody uses it yet" is out of order in this
+document regardless of how reasonable it sounds. The same proposal restated as a dependency,
+maturity, or risk fact — for example "this product has no billing-core dependency, so it does not
+contend for the critical path" — is in order. Reviewers must reject the first form and accept the
+second, and must not let the first form re-enter through a supplemental document.
 
 ---
 
@@ -131,6 +160,18 @@ Public asset uploads require magic-byte/content validation, active-content rejec
 headers, bounded decoding, quarantine/malware policy and orphan cleanup. A caller-declared MIME type
 alone is not sufficient evidence that a file is safe to publish.
 
+**Pre-existing condition — the Hub is already public.** `wstera.com` has been serving from
+Cloudflare Workers since 2026-08-25 with an empty catalog, so every product call-to-action renders
+as "coming soon" and no product currently emits `product_installations` events. This predates the
+plan and is not treated as a partial ship of it. Two consequences bind from R3 onward:
+
+- The live Hub is a production surface. Any change to it — catalog rows, destination URLs,
+  event contract, upload path, staff auth — follows the same gate and verification protocol as a
+  product release, and its evidence names the exact `hub-web` commit.
+- No product's destination URL or purchase path may be published on the Hub before that product's
+  own release checkpoint records a CEO `GO`. An accurate "not yet available" state is the required
+  behavior until then, never a link that appears live because it looks finished.
+
 ### 3.2 Subscription products
 
 - BK01 keeps its existing self-contained Stripe integration. Do not migrate it merely for symmetry.
@@ -148,7 +189,8 @@ alone is not sufficient evidence that a file is safe to publish.
 
 ### 3.3 One-time products
 
-- MT01, CM01, and HC01 are versioned source products, not hosted SaaS tenants.
+- MT01, CM01, and HC01 are versioned source products, not hosted SaaS tenants, and are governed by
+  the L0–L5 ladder in §4 in addition to the applicable G gates.
 - Deliverables must be produced from immutable tags with a checksum, changelog, license text,
   dependency inventory, installation guide, upgrade guide, security boundary, and support policy.
 - No WSTERA production secret, customer record, live endpoint credential, or internal-only path may
@@ -254,6 +296,10 @@ exact release commit.
   not corrupt tenant state.
 - On-call responsibility and escalation path are explicit, even if the CEO is the sole operator.
 - Legal/privacy/support artifacts required by the product are published.
+- For any subscription product, the incident and support runbooks state that the portfolio runs two
+  independent billing implementations permanently — BK01's inline Stripe integration and
+  billing-core — and route a provider-integration defect to both for triage. A runbook that names
+  only one implementation does not pass this gate.
 
 ### G7 — Real-world validation
 
@@ -265,6 +311,28 @@ exact release commit.
 - The final reviewer is independent from the implementation pass and reruns evidence rather than
   accepting an agent-authored report.
 - CEO records a final Go/No-Go decision.
+
+### One-time product release ladder (L0–L5)
+
+G0–G7 were written for a hosted service. MT01, CM01 and HC01 are versioned source products: the
+buyer operates them, so uptime, tenant SLOs and end-customer privacy obligations do not transfer,
+while a different body of evidence — which no product in this portfolio has ever produced — does.
+For those three products G0–G6 apply as written where they concern the source itself, G7 takes its
+one-time form, and the following ladder is mandatory in addition. A one-time product is not
+release-ready until every rung has evidence.
+
+| Gate | Name | Passes when |
+|---|---|---|
+| **L0** | Buyer and scope lock | Who buys it, what they can build with it, what ships and what explicitly does not, are written and current. HC01's `BRIEF.md` is an empty checklist and fails this gate today. |
+| **L1** | Clean-install proof | A person who did not write the code clones the default branch onto a clean machine, follows only the shipped instructions, and reaches a running, passing state with no undocumented step and no access to WSTERA repositories or secrets. |
+| **L2** | License and IP | The product has its own license and buyer-facing terms, and a full dependency-license audit shows nothing that forbids redistribution. CM01 has a license; MT01 and HC01 do not. |
+| **L3** | Packaging and versioning | An immutable tag, changelog, checksum, SBOM, compatibility matrix and a written post-purchase update policy exist for the exact released artifact. |
+| **L4** | Fulfillment path | A buyer can complete purchase and receive the artifact or repository access through a path that has been exercised end to end, including a failed and a repeated delivery. |
+| **L5** | Support boundary | What is supported, what is not, and the response commitment are published before the first sale, not after it. |
+
+L4 is the portfolio's largest untested surface for these products and is delivered under P1 as a
+Hub capability, not improvised per product. Its scope, ordering and gating are engineering
+decisions; the commercial terms it carries are not, and stay in the CEO's separate plan.
 
 ### Verification protocol applied to every release candidate
 
@@ -291,38 +359,90 @@ change invalidates the affected evidence and reruns the relevant stages.
 Phases describe dependency order, not financial timing. Parallel work is allowed only when it does
 not bypass an earlier gate or overload the same production trust boundary.
 
+#### Focus gate — binding, not advisory
+
+Seven products and two shared services are executed by one operator with agent assistance. The
+dominant failure mode is not a wrong technical decision; it is every product reaching roughly
+eighty percent while none reaches a release checkpoint, because attention moved before anything
+closed. Sequencing advice alone has never prevented this, so it is a gate:
+
+- At most **one heavy track** and **one bounded track** are open at a time. A heavy track is a
+  product advancing toward its own release checkpoint. A bounded track is scoped work with a
+  written exit condition that does not require sustained design attention.
+- A new heavy track may open only when the current one has recorded a CEO `GO`, `NO-GO` or
+  `CONDITIONAL` decision at its release checkpoint, **or** the CEO explicitly authorizes the
+  overlap in writing, naming what is being accepted.
+- A heavy track blocked by an external dependency is **paused, not replaced**: the blocker, its
+  owner and the resume condition are recorded, and the slot stays assigned to it unless the CEO
+  reassigns it.
+- Opening a track "because it is small" is the exact move this gate exists to stop. Size is not the
+  criterion; a recorded closing decision is.
+
+This gate constrains concurrency only. It never removes a product from scope, reorders by usage or
+demand, or downgrades anything for being early — see §0.
+
 ### Phase P0 — Establish the release system
 
-Deliverables:
+P0 is split. **P0a is portfolio-wide and blocks every product.** **P0b is per-repository and travels
+with that repository's own track** — it must be complete for a repository before that repository's
+first release checkpoint, and it does not hold a different product hostage. Bundling the two was a
+single front-loaded gate whose slowest repository stalled all seven.
+
+**P0a — portfolio foundation (blocks all product work):**
 
 1. Publish a repository map for the parent Hub, private `hub-web`, seven products and future
    `billing-core`: remote URL, canonical local path/casing, default branch, owner and release
    authority. Resolve `PawSpace`/`pawspace`, `DocCraft`/`doccraft` and hostname naming drift before
    automation depends on case-sensitive paths.
-2. Add a standard CI baseline to `hub-web` and each product: frozen install, typecheck, lint, test,
-   build, dependency/license audit, history-aware secret scan, SAST and artifact retention where
-   applicable.
-3. Close the known intake blockers: BK01 lint/build/test-entrypoint gaps, PS01 missing test runner,
-   DC01/MT01/CM01/HC01/Hub dependency findings and HC01's reproducible failing test.
-4. Pin Node/package-manager/runtime versions and document the lockfile update policy.
-5. Add repository-level `SECURITY.md`, release checklist, incident contacts, vulnerability policy,
-   license and release/version policy appropriate to each product.
-6. Define environment naming, required-variable validation, secret ownership, domain ownership,
+2. Define — not yet install everywhere — the standard CI baseline every repository must run: frozen
+   install, typecheck, lint, test, build, dependency/license audit, history-aware secret scan, SAST
+   and artifact retention where applicable. Publish it as a reusable definition, and prove it on
+   `hub-web` and one product before it is replicated.
+3. Pin the supported Node/package-manager/runtime matrix and document the lockfile update policy.
+4. Define environment naming, required-variable validation, secret ownership, domain ownership,
    RTO/RPO/SLO decision owner and external-provider inventory.
-7. Create a common evidence template containing commit, lockfile/artifact digest, environment,
+5. Create a common evidence template containing commit, lockfile/artifact digest, environment,
    commands, outputs, reviewer, known limitations and Go/No-Go result.
-8. Enable branch protection and required checks on every default branch; triage or close stale,
-   divergent and unmerged feature branches rather than merging them mechanically.
+6. Reconcile the documents that currently contradict the code, because a stale status document is
+   how a gate gets skipped by accident. At minimum: BK01 is recorded as feature-complete while
+   having no application test layer, so restate it as `feature complete, not production safe`;
+   PS01's `COMMERCIAL_READINESS.md` must separate "subscription lifecycle schema implemented" from
+   "payment collection absent" instead of denying both; `ROADMAP.md` describes an HC01 reference
+   server and its passing tests as if they exist on the default branch when they exist only on the
+   open PR; `ROADMAP.md` §A1 still carries CM01's superseded 2026-08-21 removal against the
+   2026-08-27 seven-product lock; and DC01's registry description still reports Phase 1–2 against a
+   Phase 4 head.
 
-Checkpoint **P0-C1 — Release foundation ready**:
+Checkpoint **P0a-C1 — Portfolio foundation ready**:
 
-- Eight CI pipelines (`hub-web` plus seven products) run on clean clones; billing-core joins the gate
-  when its repository/service skeleton is created.
-- No pipeline relies on an untracked local file.
-- All build/test commands are documented, reproducible and include the correct browser/runtime
-  installation step.
-- No unaccepted high/critical advisory or failing required check remains.
-- Initial threat model and release owner exist for every product.
+- The repository map, runtime matrix, environment/secret ownership, evidence template and CI
+  definition are published and unambiguous.
+- The CI definition runs green on `hub-web` and on the first product to adopt it, from clean clones,
+  with no reliance on an untracked local file.
+- Every document listed in P0a item 6 matches the code at a named commit.
+
+**P0b — per-repository release readiness (blocks that repository only):**
+
+1. Install the P0a CI baseline on the repository and prove it from a clean clone, including the
+   correct browser/runtime installation step.
+2. Close that repository's known intake blockers: BK01's lint failures, untracked-environment build
+   dependency and absent application test entrypoint; PS01's missing test runner and standard `test`
+   script; HC01's reproducible failing oversized-import test; and the high/critical dependency
+   findings recorded for Hub, BK01, DC01, MT01, CM01 and the HC01 feature server.
+3. Add `SECURITY.md`, release checklist, incident contacts, vulnerability policy, license and
+   release/version policy appropriate to that product.
+4. Enable branch protection and required checks on its default branch, and explicitly disposition
+   stale, divergent and unmerged feature branches rather than merging them mechanically.
+5. Record its initial threat model and named release owner.
+
+Checkpoint **P0b-C1 — Repository release-ready** (recorded once per repository):
+
+- Required checks pass on the default branch and are enforced.
+- No unaccepted high/critical advisory and no failing required check remains.
+- Threat model, release owner and security/release policy files exist.
+
+A repository has not entered its release track until its own P0b-C1 is recorded. `billing-core`
+records both checkpoints when its service skeleton is created.
 
 ### Phase P1 — Platform integration foundation
 
@@ -333,12 +453,18 @@ Deliverables:
 2. Execute `BILLING_CORE_PLAN.md` after its least-privilege amendment; do not create a competing
    billing service.
 3. Keep BK01 billing isolated from billing-core.
-4. Define a versioned contract for Hub installation summaries and one-time artifact fulfillment.
-5. Keep billing-core and analytics off LK01's redirect hot path and preserve DC01 local/offline
+4. Define a versioned contract for Hub installation summaries.
+5. Build the one-time product fulfillment path as a Hub capability in its own right, not as
+   metadata attached to something else. It must deliver an artifact or repository grant to a buyer,
+   be idempotent under repeated and retried delivery, fail visibly rather than silently, record who
+   received which immutable version, and support revocation and re-issue. This is the L4 rung for
+   MT01, CM01 and HC01, and it is built once and shared. It carries whatever commercial terms the
+   CEO's separate plan sets and defines none of them.
+6. Keep billing-core and analytics off LK01's redirect hot path and preserve DC01 local/offline
    access during a billing outage.
-6. Add durable event intake, audit, idempotency, reconciliation, replay tooling and operational
+7. Add durable event intake, audit, idempotency, reconciliation, replay tooling and operational
    dashboards to shared integrations.
-7. Record vendored-module upstream commit/checksum and add a drift/update test so fixes do not split
+8. Record vendored-module upstream commit/checksum and add a drift/update test so fixes do not split
    silently across `modules-hub`, billing-core and product copies.
 
 Checkpoint **P1-C1 — Shared boundary proven**:
@@ -349,10 +475,12 @@ Checkpoint **P1-C1 — Shared boundary proven**:
 - Billing-core cannot use its PawSpace credential to perform arbitrary project-wide Data API access.
 - Billing-core's three prescribed test approaches have been completed and reviewed together.
 - Shared-service failure behavior is documented for PS01, LK01 and DC01.
+- The fulfillment path has delivered, re-delivered and revoked a test artifact end to end.
 
 ### Phase P2 — First release candidates
 
-Run BK01 and CM01 as independent release tracks after P0-C1.
+Run BK01 as the heavy track and CM01 as the bounded track after P0a-C1 and each repository's own
+P0b-C1, subject to the focus gate above.
 
 Checkpoint **P2-C1**: CM01 buyer artifact passes clean-machine acceptance.
 
@@ -625,7 +753,7 @@ Release checkpoint **HC-L1**:
 This sequence minimizes dependency conflicts and starts with the most mature deliverables. It is
 not a financial prioritization:
 
-1. Portfolio P0 release foundation.
+1. P0a portfolio foundation, then P0b for each repository as its track opens.
 2. Hub event/upload hardening and BK01 production hardening; CM01 dependency/clean-buyer work may run
    as the bounded secondary track.
 3. Billing-core least-privilege amendment and centralized service execution.
@@ -636,7 +764,8 @@ not a financial prioritization:
 8. Portfolio P6 reconciliation and externally operable closure.
 
 Do not launch a product merely because it is earlier in the sequence. Its own release gate controls
-the decision.
+the decision. Equally, do not reorder this sequence because a product looks closer to users or to a
+first sale — that input is excluded by §0. Only a dependency, maturity or risk fact reorders it.
 
 ---
 
@@ -679,15 +808,17 @@ and reruns the relevant gates.
 | R1 | BK01 has no application regression suite and current clean lint/build gates fail | Critical | Close BK-A/B before production deployment or feature expansion |
 | R2 | Billing-core directly holding a PawSpace project-wide RLS-bypass key expands compromise blast radius | Critical | Narrow signed ingress or explicit time-bounded CEO risk acceptance |
 | R3 | Hub's shared HMAC secret lets one product signer impersonate another product | High | Per-product/asymmetric signer identity bound to product ID, timestamp and replay window |
-| R4 | Hub and products have no CI, release tags, and detected branch protection | High | P0-C1 required checks and protected release flow |
+| R4 | Hub and products have no CI, release tags, and detected branch protection | High | P0a-C1 CI definition and per-repository P0b-C1 required checks and protected release flow |
 | R5 | Known high/critical dependency findings can ship to operators or buyers | High | Remediate or record reachability-based exception with expiry before release |
-| R6 | Seven products plus shared services can remain partially complete through context switching | High | One heavy track plus one bounded track; phase exit evidence before opening the next wave |
+| R6 | Seven products plus shared services can remain partially complete through context switching | Critical | §5 focus gate as a binding concurrency limit — a recorded CEO decision or written overlap authorization is required before a second heavy track opens |
 | R7 | HC01's open branch can be mistaken for production-ready because it contains a server/tests | High | Independent PR disposition; fix failing test, auth/persistence and advisories before integration |
 | R8 | Stale/conflicting status documents can override current code evidence | High | Authority order, exact-commit evidence and same-change documentation updates |
 | R9 | LINE, Google, Stripe, Supabase, Cloudflare and storage failures cross operational boundaries | High | Per-provider timeout/retry/reconciliation/degraded-mode runbooks and alerts |
 | R10 | Naming/path case drift and unresolved PawSpace brand risk can force late migrations | Medium | Repository map, canonical path/hostname ADR and brand clearance before public rollout |
 | R11 | Hub stores cross-product customer PII beyond its minimal control-plane role | Medium | Data minimization, field purpose, access audit, retention and deletion verification |
 | R12 | Source products can expose WSTERA secrets, unsupported dependencies or unclear IP rights | High | Clean-room packaging, full-history secret scan, license audit, SBOM and buyer acceptance |
+| R13 | No product has a working fulfillment path, so a finished one-time product still cannot be delivered to a buyer | High | L4 built once as the P1 Hub capability with idempotent, revocable, recorded delivery proven at P1-C1 |
+| R14 | Billing-core has no approved database placement while blocking PS01, LK01 and DC01 | High | Close `BILLING_CORE_PLAN.md` P-1 as decision §10.9 before Phase P1 begins |
 
 Risk severity is engineering/operational impact, not a financial estimate. A risk stays open until its
 control has executable evidence or the CEO records a named, expiring acceptance.
@@ -700,7 +831,10 @@ control has executable evidence or the CEO records a named, expiring acceptance.
    the other nested repos on case-sensitive and case-insensitive systems.
 2. **Hostname convention:** reconcile descriptive hosts such as `booking.wstera.com` and
    `links.wstera.com` with reserved product-code hosts such as `bk01.wstera.com` before DNS and OAuth
-   redirect configuration becomes permanent.
+   redirect configuration becomes permanent. `ROADMAP.md` currently records both conventions in
+   different sections. This blocks the **first product DNS record**, not merely the eventual launch:
+   changing it later is a migration across Stripe redirect URLs, LINE callbacks and OAuth redirects
+   for every hosted product.
 3. **Hub event trust:** approve per-product HMAC keys or asymmetric signing; one shared product-event
    secret is not an acceptable production boundary.
 4. **PawSpace billing trust:** approve the narrow signed ingress design, or explicitly accept the
@@ -712,6 +846,13 @@ control has executable evidence or the CEO records a named, expiring acceptance.
    server before database/API work begins.
 8. **Operational targets:** approve SLO, RTO, RPO, supported browser/runtime matrix and retention
    requirements for each hosted product.
+9. **Billing-core database placement:** close `BILLING_CORE_PLAN.md` P-1 by selecting a separate
+   billing project, a dedicated `billing_core` schema inside the Hub project with its own narrow
+   Postgres role, or deferring the service. This is on the critical path for PS01, LK01 and DC01,
+   and no implementer may pick it silently. The engineering decision is the isolation boundary,
+   the credential model, the backup/restore proof and the future migration path; any provider plan
+   or cost implication of that choice belongs to the CEO's separate plan and is recorded there, not
+   resolved here.
 
 These decisions are intentionally limited to product/engineering behavior. Pricing, budgets,
 forecasts and revenue decisions stay in the CEO's separate financial plan.
@@ -728,7 +869,8 @@ The seven-product initiative is complete only when:
 - live Hub claims and links match actual product state;
 - subscription products have tested entitlement and failure behavior without redefining the CEO's
   financial plan;
-- one-time products have immutable, scanned, installable buyer artifacts;
+- one-time products pass L0–L5, including a clean-install proof performed by someone who did not
+  write the code and a fulfillment path exercised end to end;
 - tenant and product boundaries have executable negative tests;
 - exact release commits have protected CI, no unaccepted high/critical findings, immutable tags,
   SBOMs and artifact checksums;

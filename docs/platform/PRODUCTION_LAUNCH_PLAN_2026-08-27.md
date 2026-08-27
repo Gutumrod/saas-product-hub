@@ -10,6 +10,22 @@
 `PORTFOLIO_REAUDIT_2026-08-27.md` คือ intake evidence ล่าสุด; `BILLING_CORE_PLAN.md` คือแผนย่อย
 billing ที่แก้ trust boundary แล้ว เอกสารนี้ไม่แทนที่เอกสารใดในสามตัวนั้น
 
+> **VOID sections — Commander Final Review Gate, 2026-08-27.** ส่วนต่อไปนี้ **เพิกถอน ห้ามนำไปใช้**
+> เพราะจัดลำดับงานด้วย usage/demand ซึ่งขัดกฎเหล็ก CEO 2026-08-27 (`agent-iron-rules.md` — usage
+> น้อยหรือศูนย์ไม่ใช่เหตุผลตัดสโคป/ลด priority/kill งาน infra):
+> **(1) §4.4 DC-5 และ DC-6** ทั้งข้อ — "เก็บ metric จาก V1 เพื่อ validate ว่ามีคนอยากได้ cloud sync
+> ก่อนลงทุนสร้าง Phase 8" และ "DC-6 ทำก็ต่อเมื่อ DC-5 บอกว่าคุ้ม" คือการ gate งาน infra ด้วย demand
+> ตรงๆ Phase 7–8 ของ DC01 เดินตาม dependency order ใน master plan §5/§6.4 เท่านั้น
+> **(2) §4.4 ย่อหน้า "คำแนะนำเชิงกลยุทธ์ที่สำคัญที่สุดในเอกสารนี้"** — เหตุผล "ปล่อยฟรีเพื่อได้ผู้ใช้
+> จริง/feedback/พิสูจน์ว่าปล่อยของได้" เพิกถอน ข้อเท็จจริงที่ยังใช้ได้และถูกดูดเข้า master plan แล้วคือ
+> DC01 V1 เป็น local-first จึงไม่มี billing-core dependency ไม่แย่ง critical path — เป็นเหตุผลเชิง
+> dependency ไม่ใช่เชิง demand
+> **(3) §4.3 และ R10** ที่ให้เหตุผลว่า LK01 "ห่างรายได้ที่สุด" — ข้อสรุป (LK01 อยู่ท้ายลำดับ) ยังถูก
+> แต่เหตุผลที่ใช้ได้คือ zero application code + พึ่ง billing-core ให้เสถียรก่อน
+>
+> ทั้งสามข้อนี้เป็นเหตุผลที่ `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` §0 ปฏิเสธ input ประเภทนี้ไว้ชัดเจน
+> ห้ามดึงกลับเข้าแผนผ่านเอกสารเสริมนี้
+>
 > **CEO scope clarification applied 2026-08-27:** เนื้อหาเรื่องราคา รายได้ งบ forecast,
 > ช่องทางขาย หรือ effort ด้านล่างเป็นข้อความจาก independent draft เดิมและ **non-authoritative**
 > ทั้งหมด ห้ามนำไปใช้เป็น financial plan หรือ blocker ของ engineering plan ข้อสังเกตสถานะโค้ดที่ยัง
@@ -181,7 +197,7 @@ repo นี้มี `BUILD_QUEUE.md` ของตัวเองที่แบ
 
 **การตัดสินใจที่ต้องทำก่อน LK-2:** จุดขายหลักที่ทั้ง 4 ข้อเสนอ differentiation เห็นตรงกันคือ **channel-aware routing** (ลิงก์เดียว ปลายทางเปลี่ยนตามช่องทางที่กดมา) — ถ้าจะให้มันเป็นจุดขาย ต้องอยู่ใน Phase 2 (link/redirect core) ตั้งแต่แรก **ไม่ใช่ไปแปะทีหลังใน Phase 5** เพราะมันเปลี่ยน data model ของ link เอง ควรตัดสินใจข้อนี้ก่อนเขียนโค้ดบรรทัดแรก
 
-**ความเสี่ยงเฉพาะตัว:** นี่คือตัวที่ห่างจากรายได้มากที่สุดในกลุ่ม Subscribe (เอกสารล้วน) แต่ถูกจัดอยู่ใน active scope เดียวกับตัวที่เกือบเสร็จ **อย่าเอา LK01 มาแย่งเวลา wave 1 กับ BK01/PS01** ถ้าทำพร้อมกันจะไม่เสร็จสักตัว
+**ความเสี่ยงเฉพาะตัว (แก้เหตุผล 2026-08-27):** LK01 มี zero application code และต้องรอ billing-core contract เสถียรก่อน (master plan §5 P4) จึงอยู่ท้าย dependency order **อย่าเอา LK01 มาเปิดเป็น heavy track ทับ BK01/PS01** — ข้อสรุปเดิมถูก แต่เหตุผลเดิมที่ว่า "ห่างจากรายได้มากที่สุด" เพิกถอน (VOID §3 ด้านบน)
 
 ---
 
@@ -197,10 +213,10 @@ repo นี้มี `BUILD_QUEUE.md` ของตัวเองที่แบ
 | **DC-2** | Phase 5 (PromptPay QR) — brief เขียนไว้แล้ว (`BRIEF-phase5-promptpay-qr.md`) รอ Gate 3 | **M** | EMV payload + CRC test vectors ผ่าน |
 | **DC-3** | Phase 6 (MVP hardening + RC) | **M** | ตาม gate เดิม |
 | **DC-4** | **ปล่อย V1 ฟรี** — local-first ไม่ต้องมี billing/backend/PDPA ของข้อมูลผู้ใช้ (ข้อมูลอยู่บนเครื่องผู้ใช้) นี่คือทางลัดที่มีจริงในพอร์ต: **ได้ผู้ใช้จริงและ feedback จริงก่อนสร้าง Pro** | **S** | deploy เป็น static/Worker ได้, มีหน้าขายบน hub, มี privacy notice ที่บอกตรงว่าไม่เก็บข้อมูลอะไร |
-| **DC-5** | เก็บ metric จริงจาก V1 (`MVP_METRICS_AND_ANALYTICS.md` มีแผนแล้ว) เพื่อ validate ว่ามีคนอยากได้ cloud sync จริงไหม **ก่อน**ลงทุนสร้าง Phase 8 | **M** | มีข้อมูลผู้ใช้จริงพอที่จะตัดสินใจได้ |
-| **DC-6** | Phase 7–8 (auth + cloud sync + ต่อ billing-core แบบ pull) — **ทำก็ต่อเมื่อ DC-5 บอกว่าคุ้ม** | **XL** | ครบ S3–S7 |
+| **DC-5** ~~VOID~~ | ~~เก็บ metric จริงจาก V1 (`MVP_METRICS_AND_ANALYTICS.md` มีแผนแล้ว) เพื่อ validate ว่ามีคนอยากได้ cloud sync จริงไหม **ก่อน**ลงทุนสร้าง Phase 8~~ | ~~M~~ | **VOID — usage-gating ผิดกฎเหล็ก** |
+| **DC-6** ~~VOID as written~~ | Phase 7–8 (auth + cloud sync + ต่อ billing-core แบบ pull) — ~~ทำก็ต่อเมื่อ DC-5 บอกว่าคุ้ม~~ **เดินตาม dependency order ใน master plan §6.4 ไม่มีเงื่อนไข demand** | **XL** | ครบ S3–S7 |
 
-**นี่คือคำแนะนำเชิงกลยุทธ์ที่สำคัญที่สุดในเอกสารนี้:** DC01 เป็น product เดียวในพอร์ตที่ **ปล่อยของจริงให้คนใช้ได้เร็วที่สุดโดยแทบไม่ต้องพึ่ง platform track ใดเลย** (ไม่ต้องรอ billing-core, ไม่ต้องรอ legal เต็มรูป, ไม่ต้อง observability หนัก) การปล่อย V1 ฟรีเร็วๆ ให้ผลตอบแทนสูงกว่าที่คิด: ได้ผู้ใช้จริง ได้ feedback จริง ได้พิสูจน์ว่าพอร์ตนี้ปล่อยของได้จริง และได้ข้อมูลว่าควรสร้าง Pro ไหม — **โดยไม่ต้องเสี่ยงเรื่องเงินของลูกค้าเลย**
+**~~คำแนะนำเชิงกลยุทธ์~~ VOID:** ย่อหน้าเดิมเสนอให้ปล่อย DC01 V1 ฟรีเร็วๆ เพื่อ "ได้ผู้ใช้จริง ได้ feedback จริง และได้ข้อมูลว่าควรสร้าง Pro ไหม" — เพิกถอนทั้งย่อหน้า เป็น demand-validation reasoning ที่กฎเหล็ก 2026-08-27 ห้าม ข้อเท็จจริงที่เหลืออยู่และถูกดูดเข้า master plan แล้ว: **DC01 V1 เป็น local-first จึงไม่มี billing-core dependency และไม่แย่ง critical path** จึงเป็น bounded track ที่เดินขนานได้ภายใต้ focus gate — ด้วยเหตุผล dependency ล้วน ไม่ใช่เพราะเข้าถึงผู้ใช้เร็ว
 
 ---
 
@@ -335,7 +351,7 @@ CM-1 (owner ตัดสิน) ──> CM-2 ทั้งหมด
 | R7 | **PS01 ชื่อแบรนด์อาจชนของคนอื่น** | กลาง | GitHub Issue #2 ยังเปิด | PS-5 ก่อนออกไปหาลูกค้า ไม่ใช่หลัง |
 | R8 | **ยังไม่มีราคาที่อนุมัติสำหรับ 5 ใน 7 ตัว** | กลาง | `ROADMAP.md` §Owner decisions | §7 ข้างล่าง |
 | R9 | **Supabase free tier จำกัด 2 project** — บวก billing-core ที่ต้องการ project ใหม่ตามแผน LOCKED | กลาง | `BILLING_CORE_PLAN.md` §2 + `ROADMAP.md` (owner ตั้งใจอัป Pro หลังมีรายได้) | ต้องอัป Pro ก่อน P1 Phase 1 หรือหาทาง share project — ตัดสินใจก่อน Wave 1 |
-| R10 | **LK01 อยู่ active scope แต่ห่างรายได้ที่สุด** | กลาง | zero code, verified 2026-08-27 | อยู่ Wave 4 ไม่แย่งเวลา wave ต้น |
+| R10 | **LK01 มี zero application code และพึ่ง billing-core contract** | กลาง | zero code, verified 2026-08-27 | อยู่ท้าย dependency order (master plan P4) ไม่เปิดเป็น heavy track ทับตัวอื่น — เหตุผลเดิม "ห่างรายได้ที่สุด" VOID |
 
 ---
 
