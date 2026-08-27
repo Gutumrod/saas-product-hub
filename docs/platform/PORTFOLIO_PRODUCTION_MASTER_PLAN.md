@@ -99,7 +99,7 @@ The plan is based on direct inspection and executable checks recorded in
 | Product | Default branch and inspected head | Verified current state | Primary production gap |
 |---|---|---|---|
 | BK01 | `main` at `e99615d` | Two Next.js applications, 28 Supabase migrations, auth, tenant, quota, Stripe and Cloudflare scaffolding exist | Clean lint fails, clean build depends on untracked environment state, and there is no application test suite or CI |
-| PS01 | `master` at `97c9fd6` | Clean lint/build pass; Next.js application, Supabase migrations and operational flows exist | TypeScript phase tests lack a checked-in runner/standard `test` script; billing, operations, brand review and real-shop pilot remain open |
+| PS01 | `master` at `97c9fd6` | Clean lint/build pass; Next.js application, Supabase migrations and operational flows exist; public name is now Pawstia (§10 D8) | TypeScript phase tests lack a checked-in runner/standard `test` script; billing, operations, internal Pawstia rename, social-handle claim, formal TH trademark search and real-shop pilot remain open |
 | LK01 | `main` at `bf591e3` | Locked documentation and a retired prototype reference exist | No production application code exists |
 | DC01 | `master` at `2a8652e` | Clean typecheck, 118 unit tests, build and 32 browser tests pass | Gate 3 manual Chrome/Edge print acceptance is open; a critical test-tool advisory and all cloud/SaaS work remain |
 | MT01 | `master` at `92139cf` | Reference server typecheck and 13 tests pass | Server remains in-memory/demo-only; high/critical dependency findings, license, packaging and deployable product are open |
@@ -577,10 +577,10 @@ Release checkpoint **BK-L1**:
 - Cross-tenant and quota enforcement are proven against the release database.
 - No manual production step exists without a named owner and verification record.
 
-### 6.2 PS01 — `pawspace`
+### 6.2 PS01 — `pawspace` (public name: Pawstia)
 
-**Target:** production pet hotel/daycare operations SaaS with tenant isolation and resilient external
-integrations.
+**Target:** production pet boarding/daycare operations SaaS with tenant isolation and resilient
+external integrations. Public name is **Pawstia** (§10 D8); repo key stays `pawspace`.
 
 Work packages:
 
@@ -595,11 +595,12 @@ Work packages:
    and reconciliation, expired camera links and vendor outage recovery.
 5. **PS-E Privacy and operations** — retention/deletion, audit logs, access expiry, backup/restore,
    alerts and staff support runbooks.
-6. **PS-F Brand and namespace gate** — a name-collision check found a real collision (§10 open
-   item 1). `PawSpace` stays the internal working name; the final public name is a pending CEO
-   decision and a rename is expected. This gate is not closed until the CEO confirms the public
-   name and, if it changes, the rename is completed across repo, domain, legal copy, app-store and
-   social identity. No customer-facing rollout before then.
+6. **PS-F Brand and namespace gate** — public name is **Pawstia** (§10 D8); the `PawSpace` name hit
+   a live US trademark and was dropped. This gate closes when: the internal rename (`pawspace` →
+   `pawstia` in slug, UI copy, docs) is done — `product_id`/`PS01` unchanged, repo rename optional
+   and later; the `@pawstia` handles on IG/FB/X are claimed; and a formal Thai attorney trademark
+   search comes back clear. Engineering proceeds under the repo key `pawspace`; customer-facing
+   surfaces use Pawstia.
 7. **PS-G Real-shop pilot** — staff complete reservation, check-in, care reporting, visitor access,
    checkout and failure recovery using real operational accounts.
 
@@ -726,7 +727,7 @@ Release checkpoint **CM-L1**:
 ### 6.7 HC01 — `headless_commerce`
 
 **Target:** an integrated self-hostable commerce source product. HC01 is confirmed in scope as a
-product that will be sold, but per §10 open item 2 its shape — API skeleton, full commerce backend,
+product that will be sold, but per §10 open item 1 its shape — API skeleton, full commerce backend,
 or a Thailand-first order model — is a pending CEO decision. The CEO will add scope documentation.
 Database and API implementation (HC-C onward) does not start until that lands.
 
@@ -827,7 +828,7 @@ and reruns the relevant gates.
 | R7 | HC01's open branch can be mistaken for production-ready because it contains a server/tests | High | Independent PR disposition; fix failing test, auth/persistence and advisories before integration |
 | R8 | Stale/conflicting status documents can override current code evidence | High | Authority order, exact-commit evidence and same-change documentation updates |
 | R9 | LINE, Google, Stripe, Supabase, Cloudflare and storage failures cross operational boundaries | High | Per-provider timeout/retry/reconciliation/degraded-mode runbooks and alerts |
-| R10 | Naming/path case drift and confirmed PawSpace brand collision can force late migrations | Medium | Hostname settled (§10 D1); path casing settled all-lowercase (§10 D5, corrected under P0a); PawSpace brand collision confirmed and a rename is expected — no customer-facing use of the name until the CEO confirms the final public name |
+| R10 | Naming/path case drift and the PawSpace trademark collision can force late migrations | Low | Hostname settled (§10 D1); path casing all-lowercase (§10 D5); PawSpace renamed to Pawstia (§10 D8) after a clean collision screen — residual: internal rename, social-handle claim, formal TH trademark search before public launch (PS-F) |
 | R11 | Hub stores cross-product customer PII beyond its minimal control-plane role | Medium | Data minimization, field purpose, access audit, retention and deletion verification |
 | R12 | Source products can expose WSTERA secrets, unsupported dependencies or unclear IP rights | High | Clean-room packaging, full-history secret scan, license audit, SBOM and buyer acceptance |
 | R13 | No product has a working fulfillment path, so a finished one-time product still cannot be delivered to a buyer | High | L4 built once as the P1 Hub capability with idempotent, revocable, recorded delivery proven at P1-C1 |
@@ -892,14 +893,24 @@ control has executable evidence or the CEO records a named, expiring acceptance.
   matrix and retention windows are still set per product at its G0. These values are raised, never
   silently lowered, and any raise is recorded with its trigger.
 
+- **D8. PawSpace brand — renamed to Pawstia.** The `PawSpace` name collided with a live US
+  trademark application (PawSpace LLC, Serial 99182304, filed 2025-05-13, classes 009 downloadable
+  software and 035 online marketplace/business services). The public product name is now
+  **Pawstia**, full name **Pawstia — Pet Management System by WSTERA**, short form **Pawstia PMS**.
+  A 2026-08-27 brand-collision screen found Pawstia clean on trademark exact-name (no hit in classes
+  009/035/042), Google, pet/software company search, and `pawstia.com` (expired, no active
+  business); social handles `@pawstia` on IG/FB/X showed no indexed account but are not 100%
+  confirmed. `product_id` (`prd_c3a024781f4e4079815b2399cfe330e0`) and `product_code` (`PS01`) do
+  not change; the repository stays `Gutumrod/pawspace` until an internal rename, which does not
+  touch the product ID. Reviewer note: the "PMS" short form overlaps a well-known unrelated acronym
+  and the B2B "property/project management system" sense; recorded as the CEO's explicit choice.
+  Residual before public launch, tracked in PS-F: claim the `@pawstia` social handles, and obtain a
+  formal Thai trademark search from an attorney (this screen is a candidate-clearance screen, not a
+  legal clearance).
+
 ### Still open — block the affected work until the CEO decides
 
-1. **PawSpace brand.** A name-collision check has been completed and **found a real collision**.
-   `PawSpace` is retained as the internal/working name for now, but it is **not cleared for public
-   use**. A rename is expected. Public domain, legal copy, app-store and social identity, and any
-   customer-facing launch are blocked until the CEO confirms the final public name. Engineering may
-   proceed under the working name; nothing customer-facing may.
-2. **HC01 (Headless Commerce) product scope.** HC01 is confirmed as a product that will be sold, but
+1. **HC01 (Headless Commerce) product scope.** HC01 is confirmed as a product that will be sold, but
    what a buyer receives — API skeleton, full commerce backend, or a Thailand-first order model — is
    not yet decided. The CEO will add scope documentation. Until it lands, HC01's L0 stays open and
    no database or API implementation starts; PR #1 disposition and dependency/advisory cleanup may

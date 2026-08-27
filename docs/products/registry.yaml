@@ -495,16 +495,17 @@ products:
     product_id: "prd_c3a024781f4e4079815b2399cfe330e0"
     product_code: "PS01"
     delivery_model: "subscription_saas"
-    name: "PawSpace — Pet Hotel & Daycare OS"
-    slug: "pawspace"
+    name: "Pawstia — Pet Management System by WSTERA"
+    short_name: "Pawstia PMS"
+    slug: "pawstia"
     category: "Vertical SaaS — Pet Hospitality"
     tagline: "Pet Hotel OS จัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE โดยร้านเป็นเจ้าของข้อมูลเอง"
-    description: "Hosted subscription-SaaS target for pet hotel/daycare operations. Phase 13 subscription lifecycle schema/RPCs exist, but payment collection, standardized test runner, production deployment/operations, brand clearance, and a real-shop pilot remain open."
+    description: "Hosted subscription-SaaS target for pet boarding/daycare operations. Public name changed from PawSpace to Pawstia 2026-08-27 after a confirmed US trademark collision (PawSpace LLC, Serial 99182304, classes 009/035); Pawstia cleared a brand-collision screen (trademark exact-name, Google, social, domain) — see PORTFOLIO_PRODUCTION_MASTER_PLAN.md §10 D8. product_id and product_code (PS01) are unchanged; the repo key/path stay `pawspace` until an internal rename. Payment collection, standardized test runner, production deployment/operations, final social-handle claim, formal TH trademark search, and a real-shop pilot remain open."
     deployment_model: "shared_runtime_candidate"
     runtime_project: "Project B - admission and deployment review required"
     commercial_status: "beta"
     wave: 1
-    path: "products/PawSpace"
+    path: "products/pawspace"
     # corrected 2026-08-22: this entry said "No RPC/RLS/business-logic code written yet
     # ... implementation not started" - wrong, stale since before Phase 1 began (ground-truth
     # code + test-run scan, Claude). Real state as of this correction: Phase 1-10 implemented,

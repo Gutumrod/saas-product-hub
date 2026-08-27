@@ -84,12 +84,17 @@ plan; the demand-based reasoning does not.
   (daily backup). Exception: billing-core RPO 1h or better. Raised, never silently lowered, each
   raise recorded with its trigger.
 
+- **D8 PawSpace brand → Pawstia.** `PawSpace` collided with a live US trademark (PawSpace LLC,
+  Serial 99182304, classes 009/035). Public name is now **Pawstia** — full: *Pawstia — Pet
+  Management System by WSTERA*, short: *Pawstia PMS*. A 2026-08-27 collision screen found Pawstia
+  clean on trademark exact-name (009/035/042), Google, company search and `pawstia.com` (expired,
+  no active business); `@pawstia` social handles unclaimed but not 100% confirmed. `product_id` and
+  `PS01` unchanged; repo stays `Gutumrod/pawspace` until an internal rename. Reviewer note recorded
+  in §10 D8: the "PMS" short form overlaps a well-known unrelated acronym — CEO's explicit choice.
+  Residual (PS-F): claim social handles, formal Thai attorney trademark search before public launch.
+
 Still open at the CEO:
 
-- **PawSpace brand.** Collision check done — **a real collision was found.** `PawSpace` stays the
-  internal working name; a rename is expected; the final public name is a pending CEO decision. No
-  customer-facing use of the name (domain, legal copy, app-store, social, launch) until the CEO
-  confirms it. Engineering proceeds under the working name.
 - **HC01 (Headless Commerce) scope.** Confirmed as a product that will be sold, but its shape —
   API skeleton vs full commerce backend vs Thailand-first order model — is undecided. The CEO will
   add scope documentation. HC01's L0 stays open and no DB/API work starts until it lands; PR #1

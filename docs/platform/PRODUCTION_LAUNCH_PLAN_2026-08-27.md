@@ -364,8 +364,8 @@ CM-1 (owner ตัดสิน) ──> CM-2 ทั้งหมด
 > ไม่ใช่ account แยก (§10 D3 + 5 เงื่อนไข). Hub event signing = per-product HMAC key (§10 D2).
 > PawSpace billing trust = narrow ingress (§10 D4). path casing = lowercase (§10 D5).
 > CM01 = template อย่างเดียว (§10 D6). SLO/RTO/RPO = 99%/4h/24h, billing RPO ≤1h (§10 D7).
-> ที่ยังค้าง: ราคา (CEO/financial plan), จุดขาย LK01/HC01, PawSpace brand (ชนจริง — รอชื่อใหม่),
-> HC01 scope (รอ CEO เพิ่มเอกสาร)
+> PawSpace → **Pawstia** (§10 D8, เช็ค collision ผ่าน) — residual: internal rename + claim social + TH trademark search.
+> ที่ยังค้าง: ราคา (CEO/financial plan), จุดขาย LK01/HC01, HC01 scope (รอ CEO เพิ่มเอกสาร)
 
 1. ~~**DNS convention**~~ **RESOLVED** — `bk01.wstera.com` (code host) §10 D1
 2. ~~**Supabase Pro / billing-core project ที่ 3**~~ **RESOLVED** — billing_core = schema ใน Project A §10 D3
