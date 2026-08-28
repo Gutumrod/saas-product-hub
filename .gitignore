@@ -15,11 +15,17 @@
 /products/stripe-billing/
 /products/short-url-analytics/
 /products/ticket-tracking-relay/
+# MIXED-CASE ON PURPOSE — these match the directory names actually on disk today.
+# Master plan §10 D5 makes all-lowercase canonical and a rename is queued but NOT yet done.
+# WHEN THAT RENAME HAPPENS, THE MATCHING LINE BELOW MUST BE LOWERCASED IN THE SAME CHANGE
+# (PawSpace, DocCraft, and WSTERA-Link further down). These are nested independent repos;
+# if an ignore line stops matching, the whole nested repo silently appears as untracked in
+# this parent repo. core.ignorecase=true hides this locally on Windows — it will not hide it
+# on a case-sensitive filesystem or in CI.
 /products/PawSpace/
 /products/DocCraft/
 /products/OmniDesk/
 /products/RentMatrix/
-/products/wstera-link/
 /products/money-leak-buddy/
 
 # OS junk
@@ -48,4 +54,8 @@ __pycache__/
 # agent scratch work (evidence files, dispatch prompts) - not repo deliverables
 /I18N_PHASE*.md
 .agy-*.md
+# MIXED-CASE ON PURPOSE — see the note above the PawSpace/DocCraft lines. A duplicate
+# lowercase `/products/wstera-link/` entry was removed under P0a item 6 because it did not
+# match the on-disk directory. Lowercase THIS line in the same change that renames the
+# directory, or the nested repo goes untracked.
 /products/WSTERA-Link/

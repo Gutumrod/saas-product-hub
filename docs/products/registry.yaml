@@ -76,10 +76,10 @@ products:
     # modules: list removed 2026-08-18 — products/booking/ has no modules/ folder at
     # all; auth/tenant/billing were built inline instead of copied from modules-hub
     # (confirmed via full portfolio audit, Hermes+AGY, cross-checked against disk)
-    # will deploy under booking.wstera.com (subdomain) — the root wstera.com domain (acquired
-    # 2026-08-23, Cloudflare Registrar) belongs to the SaaS Product Hub itself (apps/hub-web),
-    # not to booking; corrected 2026-08-24 after being misrecorded here as booking's own domain
-    # earlier the same day. Cloudflare Workers deploy via @opennextjs/cloudflare scaffolded
+    # canonical technical host is bk01.wstera.com (product-code host, PORTFOLIO_PRODUCTION_MASTER_PLAN.md
+    # §10 D1) — the root wstera.com domain (acquired 2026-08-23, Cloudflare Registrar) belongs to
+    # the SaaS Product Hub itself (apps/hub-web), not to booking; a branded alias
+    # (booking.wstera.com) may be added later pointing at the same product. Cloudflare Workers deploy via @opennextjs/cloudflare scaffolded
     # (products/booking@e99615d, Worker names wstera-consumer/wstera-admin are brand naming, not
     # a claim on the root domain) but not deployed, subdomain not attached yet. commercial/
     # operations still gated until live; Phase 2 (Hub CTA handoff) blocked until then — see
@@ -495,6 +495,7 @@ products:
     product_id: "prd_c3a024781f4e4079815b2399cfe330e0"
     product_code: "PS01"
     delivery_model: "subscription_saas"
+    # canonical_host ps01.wstera.com reserved (docs-only, no DNS record created).
     name: "Pawstia — Pet Management System by WSTERA"
     short_name: "Pawstia PMS"
     slug: "pawstia"
@@ -602,6 +603,7 @@ products:
     product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
     product_code: "DC01"
     delivery_model: "subscription_saas"
+    # canonical_host dc01.wstera.com reserved (docs-only, no DNS record created).
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"
@@ -611,9 +613,9 @@ products:
     runtime_project: "TBD - hosted SaaS deployment validation required"
     commercial_status: "prototype"
     wave: 1
-    path: "products/DocCraft"
+    path: "products/doccraft"
     # V1 has no backend dependency. Cloud sync/auth/billing are explicitly post-MVP.
-    # Runtime/tooling locked in products/DocCraft/docs/SYSTEM_ARCHITECTURE.md.
+    # Runtime/tooling locked in products/doccraft/docs/SYSTEM_ARCHITECTURE.md.
     # description corrected 2026-08-23 (ground-truth code scan, Claude Mac): registry previously
     # only described the intended V1 shape with no implementation-status signal. Verified against
     # source: src/domain (calculation/tax/document) and src/ui/editor (DocCraftEditor + 7 section

@@ -60,8 +60,11 @@ plan; the demand-based reasoning does not.
 
 - **D1 hostname.** Canonical technical host = product code (`bk01.wstera.com`, `ps01.wstera.com`,
   …). This was already approved 2026-08-26 with `product_id`/`product_code` adoption; the review
-  wrongly re-listed it as open. `registry.yaml` already reserves each `canonical_host`. Branded
-  aliases may be layered on later. Only residual work: fix the one stale `ROADMAP.md` routing line.
+  wrongly re-listed it as open. `registry.yaml` records the `canonical_host` reservation as a
+  free-text comment for BK01 and LK01; the same comment convention was added for PS01 and DC01
+  under P0a-B4 (`docs/platform/PHASE_P0a_B4_EVIDENCE.md`). Branded
+  aliases may be layered on later. `ROADMAP.md`'s routing line was corrected in commit `4385017`;
+  no residual work remains there.
 - **D2 Hub event trust.** Per-product HMAC keys, one secret bound server-side to one product. The
   shared secret does not survive P1. Asymmetric signing stays a later option, not required now.
 - **D3 billing-core database.** `billing_core` is a dedicated schema inside the Hub project

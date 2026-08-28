@@ -65,7 +65,7 @@ doc-trust):
   that was *built waiting for* exactly this kind of external billing authority — it already exposes
   `SECURITY DEFINER` RPCs (`transition_shop_subscription`, `set_shop_commercial_package`) with a
   `'future_billing_event'` source literal and built-in idempotency, verified to exist in
-  `products/PawSpace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql`.
+  `products/pawspace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql`.
 - **`wstera_link`** is docs-only (zero app code) but had vendored its own independent copy of the
   billing modules in its spec — since nothing is built yet, this is a documentation correction, not
   a rewrite.
@@ -325,7 +325,7 @@ tested, paid plan-change actions remain disabled; this document does not choose 
   doc marked `LOCKED pre-build baseline` before editing (versioned changelog line, not silent edit).
   Its `04_PRICING_ENTITLEMENTS.md` plan table already maps cleanly onto the
   `EntitlementValue = boolean | number | string | null` shape with no gaps — no schema change needed.
-- `products/DocCraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` §2 — name billing-core as the intended
+- `products/doccraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` §2 — name billing-core as the intended
   Phase 8 backend, sketch entitlement fields (`cloud_sync_enabled`, `device_limit`,
   `customer_record_limit`, `catalog_record_limit`) in the same shape. Explicitly marked
   forward-looking; no code, no schema, Phase 8 stays Phase 8.
@@ -452,10 +452,10 @@ operations runbook and incident checklist.
 
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/subscription/core/{types,engine,service}.ts` — the two bug fixes + grace-period logic
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/payment/adapters/stripe-adapter.ts` — subscription-mode checkout support
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/PawSpace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql` — the existing privileged RPC surface called only by the new narrow PawSpace ingress after a fresh function/grant/advisor review
+- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/pawspace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql` — the existing privileged RPC surface called only by the new narrow PawSpace ingress after a fresh function/grant/advisor review
 - New in PawSpace: `supabase/functions/billing-entitlement-ingress/index.ts` (final name set by the PawSpace repo convention) — signed, timestamped, replay-bounded billing transition façade; Deno 2.1-compatible and independently tested
 - `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/multi-tenant-ai/server/src/routes/payment-demo.ts` and `server/src/app.ts` — the proven webhook-wiring pattern to port to Hono
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/wstera-link/docs/02_SYSTEM_ARCHITECTURE.md`, `products/DocCraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` — doc corrections
+- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/wstera-link/docs/02_SYSTEM_ARCHITECTURE.md`, `products/doccraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` — doc corrections
 - New: `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/services/billing-core/` — the service itself (structure: `vendor/modules/`, `src/{lib,repositories,routes,jobs}/`, `wrangler.jsonc`)
 
 ## Verification
@@ -469,8 +469,8 @@ cd modules-hub/modules/payment && npm test && npm run typecheck
 cd services/billing-core && npm run typecheck && npm test
 
 # PawSpace ingress and database security (exact commands resolved from current CLI --help)
-cd products/PawSpace && supabase functions serve
-cd products/PawSpace && supabase db advisors --local --type security --fail-on error
+cd products/pawspace && supabase functions serve
+cd products/pawspace && supabase db advisors --local --type security --fail-on error
 
 # Approach B — Stripe CLI, test-mode keys only
 stripe listen --forward-to localhost:8787/webhooks/stripe

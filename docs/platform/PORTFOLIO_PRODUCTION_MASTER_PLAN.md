@@ -846,12 +846,14 @@ control has executable evidence or the CEO records a named, expiring acceptance.
 - **D1. Hostname convention.** The canonical technical host for every product is its product code:
   `bk01.wstera.com`, `ps01.wstera.com`, `lk01.wstera.com`, `dc01.wstera.com`. This was approved on
   2026-08-26 with the `product_id`/`product_code` adoption (commit `45e6f23`); `registry.yaml`
-  already reserves each `canonical_host`. Stripe redirect URLs, OAuth callbacks and LINE callbacks
+  records the `canonical_host` reservation as a free-text comment for BK01 and LK01, and the same
+  free-text comment was added for PS01 and DC01 under P0a-B4 (`docs/platform/PHASE_P0a_B4_EVIDENCE.md`
+  item 8) — it is not a structured YAML field for any of the four, which is recorded as an open
+  question for the CEO. Stripe redirect URLs, OAuth callbacks and LINE callbacks
   point at the code host, because the code never changes even when a brand name does. A branded
   alias (`pawspace.wstera.com` → PS01) may be added later pointing at the same product and blocks
-  nothing. Residual work is documentation only: `ROADMAP.md`'s "Project B routing truth" table still
-  says `booking` deploys under `booking.wstera.com` — that line is stale and is corrected under P0a,
-  not treated as a live fork.
+  nothing. `ROADMAP.md`'s "Project B routing truth" table already reads `bk01.wstera.com` (corrected
+  in commit `4385017`); no residual documentation work remains on that line.
 - **D2. Hub event trust.** Per-product HMAC keys: each product-event signer holds its own secret,
   bound server-side to exactly one product. The current single shared secret is prohibited in
   production. Asymmetric signing remains a later upgrade option and does not need to be built now,

@@ -135,7 +135,7 @@ billing ที่แก้ trust boundary แล้ว เอกสารนี�
 
 **หมายเหตุ P1:** `BILLING_CORE_PLAN.md` ล็อกไว้แล้วว่า `booking` **ไม่** ย้ายมาใช้ billing-core ตั้งใจให้เป็นแบบนั้น อย่าไปเปลี่ยน แต่ผลข้างเคียงที่ต้องรับรู้คือ **พอร์ตจะมีระบบเก็บเงิน 2 ระบบถาวร** (booking inline + billing-core) ซึ่งแปลว่าเวลาแก้บั๊กเรื่องเงินต้องแก้ 2 ที่ ต้องเขียนไว้ใน runbook ให้ชัด ไม่งั้นอีก 6 เดือนจะลืม
 
-**หมายเหตุ P3 (RESOLVED 2026-08-27):** ~~convention ที่ต้องล็อก...~~ ตัดสินแล้ว — canonical host = `product_code` (`bk01.wstera.com`) ตาม master plan §10 D1 (การตัดสินใจนี้เกิดจริง 2026-08-26 พร้อม product_id/product_code adoption) ที่ค้างคือแก้ ROADMAP routing table บรรทัดเดียวที่ยังเขียน `booking.wstera.com` — เป็น P0a doc-fix ไม่ใช่ decision
+**หมายเหตุ P3 (RESOLVED 2026-08-27):** ~~convention ที่ต้องล็อก...~~ ตัดสินแล้ว — canonical host = `product_code` (`bk01.wstera.com`) ตาม master plan §10 D1 (การตัดสินใจนี้เกิดจริง 2026-08-26 พร้อม product_id/product_code adoption) **แก้แล้ว:** ROADMAP routing table แก้เป็น `bk01.wstera.com` ในคอมมิต `4385017` — ไม่มีงาน doc-fix ค้างในบรรทัดนี้อีกแล้ว
 
 ---
 
