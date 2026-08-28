@@ -122,9 +122,29 @@ plan; the demand-based reasoning does not.
   chat-first, no cart) is smaller than a full commerce build — estimate from a brief before
   committing.
 
-**§10 is fully resolved** — every decision is made (D1–D8) or deliberately deferred with a recorded
-trigger (D9). Nothing in §10 blocks P0a. Repository-map details (non-casing parts) are ordinary
-P0a work, not a blocking decision.
+- **D10 no dedicated Supabase project per product until its revenue funds one.** The portfolio's
+  Supabase footprint is the two free-tier slots: Project A (`coyelzlgukvpgguqpjdi`, Hub +
+  `billing_core` schema) and Project B (`gyleqrjdzwwlqierdwcy`, Shared SaaS Runtime, one schema per
+  admitted product). No product gets its own project — and a throwaway test/staging project also
+  counts as "a new project" and is not created. Consequences: **PS01 (Pawstia) → `pawspace` schema
+  in Project B**, first in the admission queue; its 12 migrations (currently `public`-scoped) must
+  be rewritten schema-scoped, and admission is blocked until Booking's Project B migration-history
+  reconciliation (the paused Stage 4 work) closes. `BILLING_CORE_PLAN.md` corrected — "PawSpace
+  keeps its own project" now reads "PawSpace's Project B schema"; the billing→PawSpace ingress is a
+  Project B Edge Function holding **Project B's** service-role key (blast radius includes Booking's
+  `local_service` — grants + `search_path` matter more). `ENVIRONMENT_AND_SECRETS_POLICY.md` (~L153,
+  ~L182) and `registry.yaml` `runtime_project` fields implying per-product projects are stale
+  against D10 — reconcile under P0a item 6 (not edited here to avoid colliding with the active P0a
+  sessions).
+
+**§10 is fully resolved** — every decision is made (D1–D8, D10) or deliberately deferred with a
+recorded trigger (D9). Nothing in §10 blocks P0a. Repository-map details (non-casing parts) are
+ordinary P0a work, not a blocking decision.
+
+**Consequence for the "get Pawstia login working" ask:** blocked. Pawstia's home is a `pawspace`
+schema in Project B that does not exist yet; local Supabase is unavailable (no Docker on the box);
+D10 forbids a throwaway project. The unblock path is either Docker fixed → local Supabase, or
+Booking's Stage 4 closes → Pawstia Project B admission (migration rewrite + admission review).
 
 Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\2026-08-27-commander-final-review.md`
 

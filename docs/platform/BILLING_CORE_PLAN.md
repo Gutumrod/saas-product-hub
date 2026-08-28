@@ -19,11 +19,13 @@ locked, but four implementation details below are corrected before build:
 1. A Supabase secret or legacy service-role key is not privilege-scoped. It authorizes the
    project-wide `service_role` and bypasses RLS. A separately named key narrows rotation impact, not
    database privilege.
-2. Billing-core therefore does not hold PawSpace's project-wide elevated key. It calls a narrow
-   PawSpace Edge Function ingress using a dedicated HMAC/asymmetric service credential; that
-   function alone holds the PawSpace elevated key and exposes only validated subscription
-   transitions. **CEO-approved 2026-08-27 (master plan §10 D4)** — the risk-acceptance alternative
-   is closed; the ingress is mandatory and is built and tested in Phase 0.5.
+2. Billing-core therefore does not hold PawSpace's elevated key. It calls a narrow Edge Function
+   ingress (deployed to Project B, where PawSpace's `pawspace` schema lives — §10 D10) using a
+   dedicated HMAC/asymmetric service credential; that function alone holds the elevated key — which
+   is **Project B's** service-role key — and exposes only validated subscription transitions, with
+   explicit grants and a fixed `search_path` bounding it to the `pawspace` schema. **CEO-approved
+   2026-08-27 (master plan §10 D4, placement per §10 D10)** — the risk-acceptance alternative is
+   closed; the ingress is mandatory and is built and tested in Phase 0.5.
 3. Cloudflare Cron uses the Worker's internal `scheduled()` handler. No public
    `/internal/cron/...` endpoint protected only by a shared header is created.
 4. LK01 redirect requests never synchronously call billing-core. Billing is checked/synchronized on
@@ -109,10 +111,10 @@ The gate closes only when all of the following are recorded and verified before 
    include explicit `REVOKE`/`GRANT`, fixed `search_path`, and `supabase db advisors` evidence.
 4. A restore rehearsal of the `billing_core` schema alone has succeeded in staging, with recovery
    time and data-loss observations recorded. **Dependency:** no staging environment exists anywhere
-   in the portfolio yet (P0a-C1 evidence, "Known limitations"). A billing-core staging target — a
-   second Supabase environment or a dedicated branch database, plus a preview Worker — must be
-   stood up in Phase 0 before this condition or the §5c rehearsals can be met. This is Phase 0
-   scope, not an assumption.
+   in the portfolio yet (P0a-C1 evidence, "Known limitations"). A billing-core staging target —
+   within Project A, not a new Supabase project (§10 D10): a separate `billing_core_staging` schema,
+   or a branch database if Project A is on Pro — plus a preview Worker, must be stood up in Phase 0
+   before this condition or the §5c rehearsals can be met. This is Phase 0 scope, not an assumption.
 5. Billing migrations are expand/contract and reviewed so a failed billing migration cannot break the
    live Hub storefront running in the same project.
 6. Recovery-point target: billing-core's **RPO is 1 hour or better** (master plan §10 D7) because a
@@ -122,10 +124,22 @@ The gate closes only when all of the following are recorded and verified before 
 
 Accepted residual risk: a Project-A outage also takes billing offline. Per §5c that means checkout
 fails — a lost sale, not data loss — which the CEO accepts. Reconfirm actual account/plan state when
-Phase 0 starts. PawSpace keeps its own project and is still reached only through the narrow signed
-ingress below; billing-core still never holds PawSpace's elevated key.
+Phase 0 starts.
 
-The CEO's separate financial plan owns the Supabase Pro upgrade timing and any cost decision.
+**PawSpace placement — corrected per master plan §10 D10.** PawSpace does **not** have its own
+Supabase project. Its authoritative subscription state (`shop_subscriptions` and the Phase 13 RPCs)
+lives in a **`pawspace` schema inside Project B** (`gyleqrjdzwwlqierdwcy`, the Shared SaaS Runtime),
+which PawSpace is first in the queue to be admitted into. Everywhere this document says "PawSpace's
+own project", read "PawSpace's Project B schema". The narrow signed ingress is a **Project B Edge
+Function**; the elevated key it holds is **Project B's** service-role key, whose blast radius
+includes Booking's `local_service` schema — so the function's explicit grants, fixed `search_path`,
+input validation and adversarial tests matter more, not less. billing-core still never holds that
+key. PawSpace's Project B schema admission is blocked until Booking's Project B migration-history
+reconciliation closes, and PawSpace's migrations must be rewritten schema-scoped (they currently
+target `public`) before admission.
+
+The CEO's separate financial plan owns any Supabase Pro / new-project timing and cost decision;
+per §10 D10 a product earns its own project only when its revenue funds one.
 
 **P-2. Stripe account/mode.** Confirm which Stripe account billing-core uses and that **test-mode
 keys are used for everything through Phase 3.** Live keys must not exist in any local `.env` or
@@ -214,8 +228,8 @@ tables are automatically exposed. Migrations include explicit function `REVOKE`/
 **Scheduler:** Cloudflare Cron Trigger (`wrangler.jsonc`, every 15 min) sweeps billing-core's own
 expired `grace_period` rows. For PawSpace, the same internal `scheduled()` handler sends a signed,
 replay-bounded `expire_due` command to the narrow PawSpace ingress; the PawSpace function selects
-and advances only eligible rows inside its own project. Billing-core never queries PawSpace with an
-elevated key. The job function is shared with tests/manual operator tooling; there is no public cron
+and advances only eligible rows inside its `pawspace` schema in Project B (§10 D10). Billing-core
+never queries PawSpace with an elevated key. The job function is shared with tests/manual operator tooling; there is no public cron
 HTTP route.
 
 **API surface:**
@@ -235,17 +249,20 @@ success. The webhook endpoint is the only public unauthenticated route and is bo
 rate/abuse controls and Stripe signature verification.
 
 **How each product gets entitlement updates — decided per product, not generic:**
-- **`pawspace`**: billing-core sends a versioned, timestamped, signed request to a narrow PawSpace
-  Edge Function such as `billing-entitlement-ingress`. The function binds the caller to the billing
-  service, enforces a short replay window, validates product/shop/event/transition fields, and calls
-  only the existing `transition_shop_subscription(...)` and
-  `set_shop_commercial_package(...)` RPCs. The function derives the RPC's UUID idempotency value
-  deterministically from the Stripe event ID as specified in §2b. Only the PawSpace function
-  environment holds its elevated project credential. That credential still has project-wide
-  RLS-bypass privilege and must be isolated, redacted, rotated and never returned to billing-core.
-  Review the existing `SECURITY DEFINER` functions, explicit
-  `REVOKE`/`GRANT`, `search_path` and deprecated `auth.role()` usage before release. `Plan.id` for
-  PawSpace plans remains equal to `commercial_packages.id`; only interval representation is mapped.
+- **`pawspace`**: billing-core sends a versioned, timestamped, signed request to a narrow Edge
+  Function such as `billing-entitlement-ingress`, **deployed to Project B** (where PawSpace's
+  `pawspace` schema lives — §10 D10). The function binds the caller to the billing service, enforces
+  a short replay window, validates product/shop/event/transition fields, and calls only the existing
+  `transition_shop_subscription(...)` and `set_shop_commercial_package(...)` RPCs. The function
+  derives the RPC's UUID idempotency value deterministically from the Stripe event ID as specified
+  in §2b. Only that function's environment holds an elevated credential — and it is **Project B's**
+  service-role key, which bypasses RLS across all of Project B, Booking's `local_service` schema
+  included. It must be isolated, redacted, rotated, never returned to billing-core, and the function
+  must narrow its reachable surface with explicit grants and a fixed `search_path` so a compromise
+  cannot touch schemas other than `pawspace`. Review the existing `SECURITY DEFINER` functions,
+  explicit `REVOKE`/`GRANT`, `search_path` and deprecated `auth.role()` usage before release.
+  `Plan.id` for PawSpace plans remains equal to `commercial_packages.id`; only interval
+  representation is mapped.
 - **`wstera_link`** (pre-build): authenticated control-plane writes and a scheduled reconciler pull
   subscription/entitlement state into a bounded local snapshot. Link creation/update and premium
   mutations fail closed when the snapshot is missing/expired. The redirect plane reads only the
@@ -349,9 +366,9 @@ tested, paid plan-change actions remain disabled; this document does not choose 
    before this evidence is approved.
 2. **Phase 0** — finish the `modules-hub` fixes/tests above and push them to that separate repo at a
    reviewed immutable commit; record how every consumer pins it. Also stand up the billing-core
-   **staging target** (a second Supabase environment or branch database for the `billing_core`
-   schema, plus a preview Worker) — nothing in P-1 conditions 4/6 or §5c can be met without it, and
-   no portfolio product has one today.
+   **staging target** within Project A (a `billing_core_staging` schema, or a branch DB if on Pro —
+   not a new Supabase project, §10 D10) plus a preview Worker — nothing in P-1 conditions 4/6 or §5c
+   can be met without it, and no portfolio product has one today.
 3. **Phase 0.5 — security contracts** — threat-model the Hub/billing/PawSpace boundary; implement
    and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
    ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
@@ -398,7 +415,7 @@ committed `.env`:
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...`, signature verification |
 | `BILLING_CORE_DATABASE_URL` | Dedicated database role limited to billing-core's schema |
 | `PAWSPACE_BILLING_INGRESS_KEY` | Per-environment credential for signed calls to the narrow ingress |
-| PawSpace elevated project key | PawSpace Edge Function environment only; never billing-core |
+| Project B service-role key | The Project B Edge Function environment only (never billing-core); grants + `search_path` bound its reach to the `pawspace` schema |
 
 Portfolio convention applies: real values live in the central vault
 (`.secrets/keys.txt`) and are read from it directly — never copied into repo files, docs, chat, or
@@ -406,11 +423,13 @@ agent output. When updating a secret, verify with a live call, not a dashboard s
 2026-08-20 DB-password rotation silently failed and looked successful — see `ROADMAP.md` gate 1).
 
 The ingress signature includes version, key ID, timestamp, nonce, method/path, and body digest. The
-PawSpace function enforces a short clock window and one-time nonce before any RPC. Rotation supports
-current and previous key IDs for a bounded overlap, then proves the old key is rejected. The
-function's elevated Supabase key remains project-wide and bypasses RLS; naming it separately does
-not narrow privilege. Keep it only inside PawSpace, and narrow the callable database surface with
-explicit function grants, fixed `search_path`, validated input, and adversarial tests.
+Project B ingress function enforces a short clock window and one-time nonce before any RPC. Rotation
+supports current and previous key IDs for a bounded overlap, then proves the old key is rejected.
+The function's elevated Supabase key is Project B's service-role key — project-wide, bypasses RLS
+across every Project B schema (Booking's `local_service` included); naming it separately does not
+narrow privilege. Keep it only inside that Edge Function, and narrow the callable database surface
+with explicit function grants, a fixed `search_path` pinned to `pawspace`, validated input, and
+adversarial tests that prove no other schema is reachable.
 
 ### 5b. Observability and alerting
 

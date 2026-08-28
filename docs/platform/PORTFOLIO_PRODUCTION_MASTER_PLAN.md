@@ -592,8 +592,16 @@ Work packages:
 1. **PS-A Evidence refresh** — rerun migrations, RLS/RPC tests, application build and phase suites;
    add `tsx` or an approved runner plus one standard `test` entrypoint; resolve differences between
    `COMMERCIAL_READINESS.md`, evidence documents and committed Phase 13 source.
-2. **PS-B CI and environments** — establish staging/production projects, deploy pipeline and secret
-   boundaries for Supabase, LINE, Google and camera access.
+1a. **PS-A2 Project B schema migration** — per §10 D10, PS01 runs as the `pawspace` schema inside
+   Project B (`gyleqrjdzwwlqierdwcy`), not its own project. Rewrite the 12 migrations from `public`
+   to a `pawspace` schema, keep `auth.users` references but authorize only through the product's own
+   membership table, and submit the schema contract / RLS matrix / grants / denial suite for Project
+   B admission (`SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §3, Phase 3). **Blocked until Booking's
+   Project B migration-history reconciliation closes** (the currently-paused Stage 4 work) — Project
+   B has one migration owner and will not accept a second product schema over unresolved drift.
+2. **PS-B CI and environments** — deploy pipeline and secret boundaries for Supabase (the Project B
+   schema and its Edge Functions), LINE, Google and camera access. Staging is a Project B branch
+   database, not a new Supabase project (§10 D10).
 3. **PS-C Billing-core connection** — implement only the contract locked in
    `BILLING_CORE_PLAN.md`; verify idempotent subscription transitions and fail-closed entitlements.
 4. **PS-D Integration resilience** — test LIFF identity, LINE report delivery, Google Sheets retry
@@ -915,6 +923,33 @@ control has executable evidence or the CEO records a named, expiring acceptance.
   Residual before public launch, tracked in PS-F: claim the `@pawstia` social handles, and obtain a
   formal Thai trademark search from an attorney (this screen is a candidate-clearance screen, not a
   legal clearance).
+
+- **D10. No dedicated Supabase project per product until that product's revenue funds one.**
+  The portfolio's Supabase footprint is exactly the two free-tier slots: **Project A**
+  (`coyelzlgukvpgguqpjdi`, Hub control plane + the `billing_core` schema per D3) and **Project B**
+  (`gyleqrjdzwwlqierdwcy`, the Shared SaaS Runtime). Every Subscribe product lives as **one Postgres
+  schema in Project B**, per `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md`'s one-product-one-schema model,
+  until that specific product earns enough to pay for its own project. This is a CEO-owned
+  cost/capacity policy; it cuts no product's scope — every product still ships — it sequences
+  infrastructure spend behind the revenue that funds it. A throwaway test/staging Supabase project
+  also counts as "a new project" and is not created under this rule; local Supabase (Docker) or a
+  Project B branch database is the testing path.
+
+  Consequences that override earlier wording:
+  - **PS01 (Pawstia) → `pawspace` schema in Project B**, first in the admission queue
+    (`pawspace` → `line_oa_ai` → `headless_commerce`, owner decision 2026-08-21). PS01's 12
+    migrations are currently written against `public` and reference `auth.users` directly; they
+    must be **rewritten schema-scoped** before admission, and admission is blocked until Booking's
+    Project B migration-history reconciliation (the currently-paused Stage 4 work) closes.
+  - `BILLING_CORE_PLAN.md`'s phrase "PawSpace keeps its own project" (§10 D4, §2, P-1) is
+    corrected: PawSpace's authoritative subscription state lives in its **Project B schema**. The
+    billing→PawSpace narrow ingress is a **Project B Edge Function**, and the elevated key it holds
+    is **Project B's** service-role key — whose blast radius includes Booking's `local_service`
+    schema. That makes the ingress's function-scoped grants, fixed `search_path`, and adversarial
+    tests more important, not less.
+  - `ENVIRONMENT_AND_SECRETS_POLICY.md` (lines ~153, ~182) and `registry.yaml`'s `runtime_project`
+    fields that imply a per-product Supabase project are stale against D10 — reconcile under P0a
+    item 6.
 
 - **D9. HC01 (Headless Commerce) — deferred, not cut.** HC01 stays a committed portfolio target
    (§11 still requires all seven). Its scope decision — API skeleton vs full commerce backend vs
