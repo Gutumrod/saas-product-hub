@@ -3,12 +3,15 @@
 **Status:** LOCKED — owner-approved 2026-08-27. This is the canonical architecture for portfolio
 billing going forward. Do not design a competing/parallel billing architecture without an explicit
 owner decision superseding this document.
-**Revision:** v3 (2026-08-27, same day) — v2 added
-§0 (hard prerequisites, incl. a real Supabase-project-quota blocker v1 missed), the concrete
-status-enum mapping, Stripe-customer/idempotency-key/backfill/proration specifics that v1 left to
-the implementer's improvisation, and operational sections (secrets, observability, rollback,
-explicit out-of-scope). v3 incorporates the independent clean-slate security review and removes
-financial-policy decisions from this engineering plan.
+**Revision:** v4 (2026-08-27, same day). v2 added §0 (hard prerequisites, incl. a real
+Supabase-project-quota blocker v1 missed), the concrete status-enum mapping,
+Stripe-customer/idempotency-key/backfill/proration specifics that v1 left to the implementer's
+improvisation, and operational sections (secrets, observability, rollback, explicit out-of-scope).
+v3 incorporated the independent clean-slate security review and removed financial-policy decisions
+from this engineering plan. v4 folds in the Commander Final Review Gate decisions (master plan §10):
+D3 closes P-1 as "dedicated schema in the Hub project", D4 makes the narrow PawSpace ingress
+mandatory, D7 sets billing-core RPO ≤ 1 hour; and it replaces the Mac-session absolute paths with
+workspace-relative paths and flags the missing-staging-environment dependency in P-1/§5c.
 
 **Security amendment — 2026-08-27 clean-slate review:** The centralized-service decision remains
 locked, but four implementation details below are corrected before build:
@@ -105,9 +108,17 @@ The gate closes only when all of the following are recorded and verified before 
 3. `billing_core` is not exposed to the Data API. The Hub's public/anon key cannot reach it. Migrations
    include explicit `REVOKE`/`GRANT`, fixed `search_path`, and `supabase db advisors` evidence.
 4. A restore rehearsal of the `billing_core` schema alone has succeeded in staging, with recovery
-   time and data-loss observations recorded.
+   time and data-loss observations recorded. **Dependency:** no staging environment exists anywhere
+   in the portfolio yet (P0a-C1 evidence, "Known limitations"). A billing-core staging target — a
+   second Supabase environment or a dedicated branch database, plus a preview Worker — must be
+   stood up in Phase 0 before this condition or the §5c rehearsals can be met. This is Phase 0
+   scope, not an assumption.
 5. Billing migrations are expand/contract and reviewed so a failed billing migration cannot break the
    live Hub storefront running in the same project.
+6. Recovery-point target: billing-core's **RPO is 1 hour or better** (master plan §10 D7) because a
+   lost payment record cannot be reconstructed from the product side. The backup/PITR configuration
+   selected for Project A must meet this for the `billing_core` schema specifically, and the restore
+   rehearsal in condition 4 must demonstrate it.
 
 Accepted residual risk: a Project-A outage also takes billing offline. Per §5c that means checkout
 fails — a lost sale, not data loss — which the CEO accepts. Reconfirm actual account/plan state when
@@ -148,7 +159,8 @@ own commit and push there. Deliberate disposition of the existing copied modules
 
 ### 1. Fix the shared bugs at the source (`modules-hub`)
 
-In `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/subscription/`:
+In `modules-hub/modules/subscription/` (the `modules-hub` repo checkout — a sibling of
+`saas-product-hub` in the AI-Workspace projects directory, path is machine-specific):
 - `core/types.ts` — add `gracePeriodEnd?: Date` to `Subscription`.
 - `core/engine.ts` (`resolvePlan`, ~line 23) — block entitlements on `past_due` immediately;
   `grace_period` only resolves while `gracePeriodEnd` hasn't passed (fail closed if
@@ -336,7 +348,10 @@ tested, paid plan-change actions remain disabled; this document does not choose 
    test-mode startup guard, and load only the owner-approved P-3 configuration. Phase 1 cannot start
    before this evidence is approved.
 2. **Phase 0** — finish the `modules-hub` fixes/tests above and push them to that separate repo at a
-   reviewed immutable commit; record how every consumer pins it.
+   reviewed immutable commit; record how every consumer pins it. Also stand up the billing-core
+   **staging target** (a second Supabase environment or branch database for the `billing_core`
+   schema, plus a preview Worker) — nothing in P-1 conditions 4/6 or §5c can be met without it, and
+   no portfolio product has one today.
 3. **Phase 0.5 — security contracts** — threat-model the Hub/billing/PawSpace boundary; implement
    and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
    ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
@@ -420,7 +435,9 @@ this is a required part of the build, not a follow-up:
 - Billing-core is deployed independently from every product. Every deployment records the immutable
   artifact/version, config revision, migration ID, and previous known-good rollback target.
 - Migrations are expand/contract and backward-compatible across at least the active and previous
-  Worker versions. Restore and rollback are rehearsed in staging before production.
+  Worker versions. Restore and rollback are rehearsed in staging before production, and the restore
+  rehearsal must demonstrate the §10 D7 target of RPO ≤ 1 hour for the `billing_core` schema. The
+  staging environment this depends on does not exist yet and is Phase 0 scope (see P-1 condition 4).
 - **Products must fail safe when billing-core is unreachable.** For entitlement reads, PawSpace is
   already safe by construction (it reads its own DB; billing-core being down means state simply
   stops updating). For LK01/DC01's pull model, an unreachable billing-core must **not** silently
@@ -450,13 +467,17 @@ operations runbook and incident checklist.
 
 ## Critical files
 
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/subscription/core/{types,engine,service}.ts` — the two bug fixes + grace-period logic
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/modules-hub/modules/payment/adapters/stripe-adapter.ts` — subscription-mode checkout support
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/pawspace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql` — the existing privileged RPC surface called only by the new narrow PawSpace ingress after a fresh function/grant/advisor review
-- New in PawSpace: `supabase/functions/billing-entitlement-ingress/index.ts` (final name set by the PawSpace repo convention) — signed, timestamped, replay-bounded billing transition façade; Deno 2.1-compatible and independently tested
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/multi-tenant-ai/server/src/routes/payment-demo.ts` and `server/src/app.ts` — the proven webhook-wiring pattern to port to Hono
-- `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/products/wstera-link/docs/02_SYSTEM_ARCHITECTURE.md`, `products/doccraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` — doc corrections
-- New: `/Users/wachirayachankhonkan/AI-Workspace/projects/saas-product-hub/services/billing-core/` — the service itself (structure: `vendor/modules/`, `src/{lib,repositories,routes,jobs}/`, `wrangler.jsonc`)
+Paths are relative to the AI-Workspace projects directory; `modules-hub` and `saas-product-hub` are
+sibling repo checkouts there (absolute prefix is machine-specific — do not copy a path from this doc
+verbatim, resolve it against the local checkout).
+
+- `modules-hub/modules/subscription/core/{types,engine,service}.ts` — the two bug fixes + grace-period logic
+- `modules-hub/modules/payment/adapters/stripe-adapter.ts` — subscription-mode checkout support
+- `saas-product-hub/products/pawspace/supabase/migrations/20260825141500_phase13_subscription_lifecycle.sql` — the existing privileged RPC surface called only by the new narrow PawSpace ingress after a fresh function/grant/advisor review
+- New in PawSpace: `saas-product-hub/products/pawspace/supabase/functions/billing-entitlement-ingress/index.ts` (final name set by the PawSpace repo convention) — signed, timestamped, replay-bounded billing transition façade; Deno 2.1-compatible and independently tested
+- `saas-product-hub/products/multi-tenant-ai/server/src/routes/payment-demo.ts` and `server/src/app.ts` — the proven webhook-wiring pattern to port to Hono
+- `saas-product-hub/products/wstera-link/docs/02_SYSTEM_ARCHITECTURE.md`, `saas-product-hub/products/doccraft/docs/MONETIZATION_AND_PAYMENT_FLOW.md` — doc corrections
+- New: `saas-product-hub/services/billing-core/` — the service itself (structure: `vendor/modules/`, `src/{lib,repositories,routes,jobs}/`, `wrangler.jsonc`)
 
 ## Verification
 
