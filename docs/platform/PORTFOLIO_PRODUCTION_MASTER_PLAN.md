@@ -521,10 +521,15 @@ Checkpoint **P4-C3**: load, recovery, staged rollout and production observation 
 Productize MT01 before building HC01 because HC01 currently lacks an integrated application and has
 the largest implementation surface.
 
+**HC01 scope is written here, at the start of P5, by the CEO (§10 D9)** — before that the CEO
+decides API skeleton vs full commerce backend vs Thailand-first order model, and HC-B locks the
+domain contract against it. HC-A (PR #1 disposition + advisory/test cleanup) is done earlier and is
+not gated by the scope decision.
+
 Checkpoint **P5-C1**: MT01 installs and operates as a complete starter kit.
 
-Checkpoint **P5-C2**: HC01 integrated commerce service passes concurrency, migration and buyer
-acceptance.
+Checkpoint **P5-C2**: HC01 meets its CEO-written scope and passes the concurrency, migration and
+buyer-acceptance gates applicable to that scope.
 
 Checkpoint **P5-C3**: both products have immutable, scanned, documented release artifacts.
 
@@ -726,18 +731,19 @@ Release checkpoint **CM-L1**:
 
 ### 6.7 HC01 — `headless_commerce`
 
-**Target:** an integrated self-hostable commerce source product. HC01 is confirmed in scope as a
-product that will be sold, but per §10 open item 1 its shape — API skeleton, full commerce backend,
-or a Thailand-first order model — is a pending CEO decision. The CEO will add scope documentation.
-Database and API implementation (HC-C onward) does not start until that lands.
+**Target:** an integrated self-hostable commerce source product. Per §10 D9, HC01 is a committed
+portfolio target but **deferred**: its scope (API skeleton vs full commerce backend vs
+Thailand-first order model) is decided when phase P5 opens, not now. Only HC-A is authorized before
+then. This section's HC-C onward is the shape the plan currently assumes and will be re-locked
+against the CEO's P5 scope.
 
 Work packages:
 
 1. **HC-A Branch and evidence disposition** — independently review open PR #1; fix its reproducible
    oversized-import `EPIPE` failure and high/critical runtime/tooling advisories. Treat the local
    reference server as reusable input only, then explicitly merge, rewrite or supersede it. This
-   work is valid under any scope and may proceed now.
-2. **HC-B Product and domain contract** — after the CEO's scope documentation lands, replace the
+   work is valid under any scope and **is the only HC01 work authorized before P5**.
+2. **HC-B Product and domain contract** — at P5, after the CEO writes the scope (§10 D9), replace the
    unfinished BRIEF with locked catalog, variant, inventory, reservation, order, payment, media,
    import/export, tenant and non-goal contracts. This is the L0 gate and blocks everything below it.
 3. **HC-C Application shell** — create root workspace, API runtime, authentication/authorization,
@@ -910,16 +916,26 @@ control has executable evidence or the CEO records a named, expiring acceptance.
   formal Thai trademark search from an attorney (this screen is a candidate-clearance screen, not a
   legal clearance).
 
-### Still open — block the affected work until the CEO decides
-
-1. **HC01 (Headless Commerce) product scope.** HC01 is confirmed as a product that will be sold, but
-   what a buyer receives — API skeleton, full commerce backend, or a Thailand-first order model — is
-   not yet decided. The CEO will add scope documentation. Until it lands, HC01's L0 stays open and
-   no database or API implementation starts; PR #1 disposition and dependency/advisory cleanup may
-   proceed because they are needed under any scope.
+- **D9. HC01 (Headless Commerce) — deferred, not cut.** HC01 stays a committed portfolio target
+   (§11 still requires all seven). Its scope decision — API skeleton vs full commerce backend vs
+   Thailand-first order model — is **deliberately parked until HC01's own phase (P5) opens**, and is
+   made then with the context available then, not now. This is a sequencing choice under the §5
+   focus gate, not a usage or demand judgment: HC01 is last in dependency/maturity order and the
+   operator's attention is committed ahead of it. Between now and P5, the only authorized HC01 work
+   is **HC-A** (review and dispose of PR #1, fix its 13/14 test and its dependency advisories) —
+   valid under any eventual scope. HC-B onward (the locked domain contract, database, API) does not
+   start until the CEO writes the scope at P5. A working note for that future decision: the
+   market-differentiated shape is the Thailand-first one (COD / PromptPay / Thai courier as native
+   order states); "API skeleton" and "neutral full commerce backend" both compete against free,
+   established alternatives. Reframing the Thai version as an *order-management* backend
+   (order → payment → shipping label, chat-first, no cart) is smaller than a full commerce build —
+   estimate it from a written brief before committing.
 
 These decisions are intentionally limited to product/engineering behavior. Pricing, budgets,
 forecasts and revenue decisions stay in the CEO's separate financial plan.
+
+**§10 status:** all decisions are now either made (D1–D9) or deliberately deferred with a recorded
+trigger (D9). No §10 item blocks P0a.
 
 ---
 

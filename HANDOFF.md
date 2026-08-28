@@ -96,13 +96,19 @@ plan; the demand-based reasoning does not.
   in §10 D8: the "PMS" short form overlaps a well-known unrelated acronym — CEO's explicit choice.
   Residual (PS-F): claim social handles, formal Thai attorney trademark search before public launch.
 
-Still open at the CEO:
+- **D9 HC01 (Headless Commerce) — deferred, not cut.** HC01 stays a committed portfolio target
+  (§11 still requires all seven). Its scope decision is deliberately parked until HC01's own phase
+  P5 opens and is made then with the context available then. Between now and P5 the only authorized
+  HC01 work is **HC-A** — dispose of PR #1, fix its 13/14 test and dependency advisories. HC-B
+  onward (domain contract, DB, API) waits for the CEO's P5 scope. Working note in §10 D9: the only
+  market-differentiated shape is Thailand-first (COD / PromptPay / Thai courier as native order
+  states), and reframing it as an order-management backend (order → payment → shipping label,
+  chat-first, no cart) is smaller than a full commerce build — estimate from a brief before
+  committing.
 
-- **HC01 (Headless Commerce) scope.** Confirmed as a product that will be sold, but its shape —
-  API skeleton vs full commerce backend vs Thailand-first order model — is undecided. The CEO will
-  add scope documentation. HC01's L0 stays open and no DB/API work starts until it lands; PR #1
-  disposition and advisory cleanup may proceed now.
-- Also open: repository map (the non-casing parts).
+**§10 is fully resolved** — every decision is made (D1–D8) or deliberately deferred with a recorded
+trigger (D9). Nothing in §10 blocks P0a. Repository-map details (non-casing parts) are ordinary
+P0a work, not a blocking decision.
 
 Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\2026-08-27-commander-final-review.md`
 
