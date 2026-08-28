@@ -934,8 +934,11 @@ control has executable evidence or the CEO records a named, expiring acceptance.
 These decisions are intentionally limited to product/engineering behavior. Pricing, budgets,
 forecasts and revenue decisions stay in the CEO's separate financial plan.
 
-**§10 status:** all decisions are now either made (D1–D9) or deliberately deferred with a recorded
-trigger (D9). No §10 item blocks P0a.
+**§10 status:** the decisions that gated the start of work are all made (D1–D8) or deliberately
+deferred with a recorded trigger (D9). Nothing in §10 blocks P0a. Smaller open questions surfaced by
+the P0a work — three CI tooling choices (license audit, secret scan, SAST; commit `27a06c8`) and
+whether `canonical_host` should become a structured `registry.yaml` field (D1) — are tracked in
+their P0a evidence docs, not here, and none blocks P0a-C1.
 
 ---
 
