@@ -20,6 +20,22 @@ Next authorized implementation checkpoint is **P0a-C1 — Portfolio foundation r
 repository's default-branch baseline and follow that repository's own AGENTS/CLAUDE instructions
 and approval gates.
 
+### In flight — 2026-08-28
+
+- **Booking (BK01) — PAUSED by CEO.** Subordinate agents are reviewing and completing Booking's
+  documentation before implementation resumes. Do not do Booking implementation work.
+- **billing-core Phase 0 item 1 — bounded track, CEO-authorized 2026-08-27.** Fix the two
+  `modules-hub` `subscription` bugs (`past_due` not blocked; billing period hardcoded to 30 days)
+  plus add `mode: 'subscription'` to the Stripe payment adapter, with tests. Brief:
+  `vault/90-Inbox/2026-08-27-codex-brief-billing-core-phase0-modules-hub.md`. Runs in the separate
+  `modules-hub` repo — zero overlap with the P0a sessions or Booking. This is the "one bounded
+  track" slot alongside the paused Booking heavy track under the §5 focus gate; it does not open a
+  second heavy track. Exit condition: both `modules-hub` module suites green + a pushed commit whose
+  hash billing-core will pin. Dispatched by the CEO to Codex.
+- **P0a-C1 — not yet passed**, blocked only on CI criterion 2. hub-web CI is green on a PR
+  (`feature/platform-control-plane`); `booking-ticket-module` CI is red on one flaky date test
+  (`retentionService.test.ts`). Owned by the active P0a sessions, not this track.
+
 ### Commander Final Review Gate — 2026-08-27 (revision 3 adopted)
 
 Claude (Commander) reviewed both production plans against the workspace iron rules and returned
