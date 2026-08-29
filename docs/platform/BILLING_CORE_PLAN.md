@@ -112,9 +112,11 @@ The gate closes only when all of the following are recorded and verified before 
 4. A restore rehearsal of the `billing_core` schema alone has succeeded in staging, with recovery
    time and data-loss observations recorded. **Dependency:** no staging environment exists anywhere
    in the portfolio yet (P0a-C1 evidence, "Known limitations"). A billing-core staging target —
-   within Project A, not a new Supabase project (§10 D10): a separate `billing_core_staging` schema,
-   or a branch database if Project A is on Pro — plus a preview Worker, must be stood up in Phase 0
-   before this condition or the §5c rehearsals can be met. This is Phase 0 scope, not an assumption.
+   within Project A: a separate **`billing_core_staging` schema** (§10 D10 — no new Supabase
+   project, and no Supabase Pro / branch databases; there is no budget for Pro until revenue funds
+   it, per the CEO). Isolation between `billing_core` and `billing_core_staging` is by schema plus
+   distinct scoped Postgres roles. Plus a preview Worker. This must be stood up in Phase 0 before
+   this condition or the §5c rehearsals can be met — Phase 0 scope, not an assumption.
 5. Billing migrations are expand/contract and reviewed so a failed billing migration cannot break the
    live Hub storefront running in the same project.
 6. Recovery-point target: billing-core's **RPO is 1 hour or better** (master plan §10 D7) because a
@@ -374,9 +376,9 @@ billing-core closes that gap by making the ID a hard precondition at its own bou
    before this evidence is approved.
 2. **Phase 0** — finish the `modules-hub` fixes/tests above and push them to that separate repo at a
    reviewed immutable commit; record how every consumer pins it. Also stand up the billing-core
-   **staging target** within Project A (a `billing_core_staging` schema, or a branch DB if on Pro —
-   not a new Supabase project, §10 D10) plus a preview Worker — nothing in P-1 conditions 4/6 or §5c
-   can be met without it, and no portfolio product has one today.
+   **staging target**: a `billing_core_staging` schema in Project A with its own scoped Postgres
+   role (§10 D10 — no new project, no Pro/branch DB) plus a preview Worker — nothing in P-1
+   conditions 4/6 or §5c can be met without it, and no portfolio product has one today.
 
    **Phase 0 status (2026-08-29):** the `modules-hub` module fixes are on branch
    `codex/billing-core-phase0`. Independent QA (Qwen, `QA_FIRST_PASS.md` at
@@ -404,10 +406,11 @@ billing-core closes that gap by making the ID a hard precondition at its own bou
 
    **Commander Final Review Gate: PASS — Phase 0 item 1 ACCEPTED (2026-08-29).** Two separate agents
    (Codex build, Qwen QA twice), raw reproducible evidence on disk, Commander independently re-ran
-   the suites and read both QA reports and the full diff directly. Vendor pin = `ecf03f9` (or its
-   evidence-only descendant `9554151`); **`c8fef32` must never be pinned.** `modules-hub` `main` is
-   branch-protected — the CEO merges branch `codex/billing-core-phase0` via a GitHub PR, then
-   billing-core pins the resulting `main` commit.
+   the suites and read both QA reports and the full diff directly. **Merged 2026-08-29** —
+   `modules-hub` PR #12 squash-merged to `main` (both required checks green); the review-rejected
+   `c8fef32` is not in `main` history. **Vendor pin = `modules-hub` `main` `3b6401a28e6f7e69b383277a200fca1986f49ede`**
+   (squash of `ecf03f9` + evidence). Its predecessors `ecf03f9` / `9554151` remain valid historical
+   SHAs; `c8fef32` must never be pinned.
 
    **Carry-forward from the re-review** (also in Phase 1 below): `SubscriptionBillingEvent.eventId`
    is optional in the module and the missing-eventId path has no deduplication — repeated
@@ -418,7 +421,10 @@ billing-core closes that gap by making the ID a hard precondition at its own bou
    and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
    ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
    Worker's internal `scheduled()` contract. No Stripe checkout work starts before this review
-   passes.
+   passes. **The reviewed design is `BILLING_CORE_PHASE_0_5_SECURITY_CONTRACTS.md`** (Commander,
+   2026-08-29); the ingress-implementation part of it is blocked until PawSpace is admitted to
+   Project B (Booking Stage 4), but the threat model, `/v1` auth contract, schema access model,
+   webhook intake contract, provenance policy and `scheduled()` contract are settled now.
 4. **Phase 1** — build the billing-core skeleton and wire PawSpace end to end only
    (`wstera_link`/`doccraft` routes return explicit `501` until their phases). Seed the service from
    the owner-approved configuration without redefining financial values here.

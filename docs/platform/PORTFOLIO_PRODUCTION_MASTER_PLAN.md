@@ -600,8 +600,9 @@ Work packages:
    Project B migration-history reconciliation closes** (the currently-paused Stage 4 work) — Project
    B has one migration owner and will not accept a second product schema over unresolved drift.
 2. **PS-B CI and environments** — deploy pipeline and secret boundaries for Supabase (the Project B
-   schema and its Edge Functions), LINE, Google and camera access. Staging is a Project B branch
-   database, not a new Supabase project (§10 D10).
+   schema and its Edge Functions), LINE, Google and camera access. Staging is a `pawspace_staging`
+   schema inside Project B with its own scoped role — not a new project, not a branch DB (§10 D10;
+   no Pro budget).
 3. **PS-C Billing-core connection** — implement only the contract locked in
    `BILLING_CORE_PLAN.md`; verify idempotent subscription transitions and fail-closed entitlements.
 4. **PS-D Integration resilience** — test LIFF identity, LINE report delivery, Google Sheets retry
@@ -931,9 +932,11 @@ control has executable evidence or the CEO records a named, expiring acceptance.
   schema in Project B**, per `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md`'s one-product-one-schema model,
   until that specific product earns enough to pay for its own project. This is a CEO-owned
   cost/capacity policy; it cuts no product's scope — every product still ships — it sequences
-  infrastructure spend behind the revenue that funds it. A throwaway test/staging Supabase project
-  also counts as "a new project" and is not created under this rule; local Supabase (Docker) or a
-  Project B branch database is the testing path.
+  infrastructure spend behind the revenue that funds it. There is no budget for Supabase Pro until
+  revenue funds it, so branch databases are not available either. A throwaway test/staging Supabase
+  project also counts as "a new project" and is not created under this rule. The testing path is
+  local Supabase (Docker) or a dedicated `*_staging` **schema** inside the same project with its own
+  scoped Postgres role — schema isolation, not project or branch isolation.
 
   Consequences that override earlier wording:
   - **PS01 (Pawstia) → `pawspace` schema in Project B**, first in the admission queue
