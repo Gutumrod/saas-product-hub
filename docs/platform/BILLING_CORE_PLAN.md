@@ -346,6 +346,14 @@ approved policy to Stripe primitives, treat Stripe webhook state as the synchron
 prove the resulting state transitions in contract/E2E tests. Until that mapping is approved and
 tested, paid plan-change actions remain disabled; this document does not choose the policy.
 
+#### 2e. Provider event ID is mandatory (added v4, from Phase 0 QA)
+
+The webhook handler must reject — audit-log and drop, never process — any event that reaches the
+transition layer without a provider event ID (`evt_...`). The shared `subscription` module treats
+`eventId` as optional and does not deduplicate the no-ID path (Phase 0 re-review, "Observation");
+billing-core closes that gap by making the ID a hard precondition at its own boundary, upstream of
+`saveForBillingEvent`.
+
 ### 3. Correct `wstera_link` and `doccraft` docs to point at billing-core
 
 - `products/wstera-link/docs/02_SYSTEM_ARCHITECTURE.md` — update the Billing Flow section to name
@@ -380,11 +388,32 @@ tested, paid plan-change actions remain disabled; this document does not choose 
    as the durable idempotency boundary, made `getByAccountId` return a clone so a rejected candidate
    cannot leak, and fires hooks only after the atomic save succeeds. Commander pre-review confirmed
    the diff is minimal and in-scope, re-ran both suites (subscription 39/39, payment 28/28,
-   typecheck clean), and confirmed the remediation addresses every point of the QA FAIL. **Awaiting
-   the independent re-review of `ecf03f9`** (brief SHA-256 `7f2d6c55…`) before Phase 0 item 1 is
-   accepted and the pin is locked. `c8fef32` must never be pinned; the pin will be `ecf03f9` (or its
-   evidence-only descendant `9554151`). `modules-hub` `main` is branch-protected — merge needs a
-   CEO-approved GitHub PR.
+   typecheck clean), and confirmed the remediation addresses every point of the QA FAIL.
+
+   **Independent re-review of `ecf03f9` — PASS (2026-08-29).** A separate reviewer (Qwen) ran a
+   fresh 36-case adversarial suite locked before reading existing tests, under `TZ=UTC` and
+   `TZ=Asia/Bangkok` (36/36 both), plus the existing suites (39/39, 28/28) and production typecheck
+   (both exit 0). Regression cases re-verified: `A→A`, `A→B→A`, `A→B→C then replay A/B`,
+   `payment_failed→cancelled→replay`, `payment_failed→expired→replay`, concurrent duplicate, and
+   same-event-ID-different-type. The reviewer disclosed a contamination limitation — it knew the
+   prior replay finding from conversation context — and compensated by re-testing the full
+   acceptance surface and adding cases round 1 did not run; it did not open the prior QA report or
+   builder evidence before locking its plan. Integrity audit clean (detached worktree, no source
+   edits, no merge/push). Report:
+   `agents/codex/qa-worktrees/modules-hub-billing-phase0-rereview-20260829/QA_FIRST_PASS.md`.
+
+   **Commander Final Review Gate: PASS — Phase 0 item 1 ACCEPTED (2026-08-29).** Two separate agents
+   (Codex build, Qwen QA twice), raw reproducible evidence on disk, Commander independently re-ran
+   the suites and read both QA reports and the full diff directly. Vendor pin = `ecf03f9` (or its
+   evidence-only descendant `9554151`); **`c8fef32` must never be pinned.** `modules-hub` `main` is
+   branch-protected — the CEO merges branch `codex/billing-core-phase0` via a GitHub PR, then
+   billing-core pins the resulting `main` commit.
+
+   **Carry-forward from the re-review** (also in Phase 1 below): `SubscriptionBillingEvent.eventId`
+   is optional in the module and the missing-eventId path has no deduplication — repeated
+   `payment_failed` with no event ID can extend grace. billing-core's webhook handler must never
+   invoke a subscription transition without the provider event ID; an event that arrives without one
+   is audit-logged and dropped, not processed.
 3. **Phase 0.5 — security contracts** — threat-model the Hub/billing/PawSpace boundary; implement
    and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
    ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
