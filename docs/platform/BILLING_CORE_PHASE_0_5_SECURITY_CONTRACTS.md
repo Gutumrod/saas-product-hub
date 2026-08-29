@@ -108,6 +108,39 @@ is scoped to that product and a compromise of it is bounded to that product's bi
 - `service_role` / `postgres` still reach the schema structurally — that is **T7**, an accepted
   residual, not something grants can close inside one project.
 
+### 3.1 Migration ownership and tooling — OPEN, resolve in the Phase 0.5 review
+
+Project A must have **one migration owner** at the process level (one person/role reviews and
+applies every schema change), same principle as Project B in `SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md`
+§4.
+
+Reality check: `apps/hub-web` does **not** use Supabase CLI migrations. It manages Project A's
+`public` schema with **Drizzle** — a TypeScript schema at `apps/hub-web/drizzle/schema.ts`,
+generated/applied via `drizzle-kit generate && drizzle-kit migrate` (`db:push` script), driven by
+`DATABASE_URL`. There is no `apps/hub-web/supabase/` directory and no `.sql` migration chain.
+
+`billing_core` needs a dedicated schema, dedicated Postgres roles, `REVOKE`/`GRANT`, and a fixed
+`search_path` — none of which Drizzle's schema DSL expresses. So the Phase 0.5 review must decide,
+and record, one of:
+
+- **(a) Raw SQL, separately applied.** `billing_core` is defined by hand-written `.sql` migration
+  files applied by the Project A owner via `psql`/`supabase db execute`, coexisting with hub-web's
+  Drizzle-managed `public` schema. Requires confirming that `drizzle-kit generate/migrate` (not
+  `push`) never touches a schema it doesn't model — Drizzle's default scope is `public` and
+  migration mode does not drop untracked objects, but this must be verified against the installed
+  `drizzle-kit@0.31.4` before relying on it.
+- **(b) Model `billing_core` in Drizzle too.** `drizzle-orm` supports `pgSchema("billing_core")`.
+  hub-web's Drizzle then owns the table DDL for both schemas; the role/grant/`search_path` statements
+  still ship as a small raw-SQL companion migration.
+- **(c) A distinct Supabase CLI chain for billing-core.** Explicitly discouraged — two migration
+  tools racing on one database is the failure mode the shared-runtime plan warns against.
+
+Default recommendation pending review: **(a)** — it keeps billing-core's schema self-contained and
+reviewable, and keeps hub-web's Drizzle workflow untouched, at the cost of one verified assumption
+about `drizzle-kit`'s blast radius. Whichever is chosen, every `billing_core` migration carries its
+own `REVOKE`/`GRANT`, fixed `search_path`, and `supabase db advisors` evidence, and is reviewed
+before apply.
+
 ---
 
 ## 4. Durable webhook intake contract
