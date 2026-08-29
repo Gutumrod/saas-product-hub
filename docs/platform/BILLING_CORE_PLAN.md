@@ -369,6 +369,22 @@ tested, paid plan-change actions remain disabled; this document does not choose 
    **staging target** within Project A (a `billing_core_staging` schema, or a branch DB if on Pro —
    not a new Supabase project, §10 D10) plus a preview Worker — nothing in P-1 conditions 4/6 or §5c
    can be met without it, and no portfolio product has one today.
+
+   **Phase 0 status (2026-08-29):** the `modules-hub` module fixes are on branch
+   `codex/billing-core-phase0`. Independent QA (Qwen, `QA_FIRST_PASS.md` at
+   `agents/codex/qa-worktrees/modules-hub-billing-phase0-20260829/`) rejected the first
+   implementation `c8fef32` with a HIGH finding — non-consecutive billing-event replay
+   (`payment_failed(A) → renewed/cancelled(B) → replay A`) was accepted because only the single
+   latest `lastProcessedEventId` was remembered, letting a cancelled subscription return to grace
+   and regain entitlement. Remediation `ecf03f9` introduced `SubscriptionRepository.saveForBillingEvent(subscription, eventId): Promise<boolean>`
+   as the durable idempotency boundary, made `getByAccountId` return a clone so a rejected candidate
+   cannot leak, and fires hooks only after the atomic save succeeds. Commander pre-review confirmed
+   the diff is minimal and in-scope, re-ran both suites (subscription 39/39, payment 28/28,
+   typecheck clean), and confirmed the remediation addresses every point of the QA FAIL. **Awaiting
+   the independent re-review of `ecf03f9`** (brief SHA-256 `7f2d6c55…`) before Phase 0 item 1 is
+   accepted and the pin is locked. `c8fef32` must never be pinned; the pin will be `ecf03f9` (or its
+   evidence-only descendant `9554151`). `modules-hub` `main` is branch-protected — merge needs a
+   CEO-approved GitHub PR.
 3. **Phase 0.5 — security contracts** — threat-model the Hub/billing/PawSpace boundary; implement
    and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
    ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
@@ -376,9 +392,16 @@ tested, paid plan-change actions remain disabled; this document does not choose 
    passes.
 4. **Phase 1** — build the billing-core skeleton and wire PawSpace end to end only
    (`wstera_link`/`doccraft` routes return explicit `501` until their phases). Seed the service from
-   the owner-approved configuration without redefining financial values here. Done when one real
-   PawSpace staging shop completes a Stripe test-mode checkout and its `shop_subscriptions` row
-   updates through the narrow ingress with end-to-end audit correlation.
+   the owner-approved configuration without redefining financial values here.
+   **Hard requirement carried from Phase 0:** billing-core's real `SubscriptionRepository`
+   implementation must satisfy the `saveForBillingEvent` contract with an actual database
+   transaction — a `processed_events` (or equivalent) ledger table with a UNIQUE constraint on the
+   provider event ID, and the subscription-state write, committed in one transaction; a duplicate
+   claim returns `false` and mutates nothing. The `modules-hub` mock proves the interface shape
+   only, not transactional or concurrent safety. `lastProcessedEventId` is metadata, never the
+   ledger.
+   Done when one real PawSpace staging shop completes a Stripe test-mode checkout and its
+   `shop_subscriptions` row updates through the narrow ingress with end-to-end audit correlation.
 5. **Phase 2 — self-test**: implementer smoke-checks every route locally before formal testing
    starts.
 6. **Phase 3 — three test rounds, reviewed together only after all three finish, not one at a
@@ -389,11 +412,14 @@ tested, paid plan-change actions remain disabled; this document does not choose 
      the real Stripe test API — closes the previously-flagged gap that the Stripe adapter had never
      been tested against real Stripe, only mocks. Manually cross-check Stripe's test Dashboard
      (Customers/Subscriptions/Events/Webhook delivery success rate).
-   - **C — adversarial/negative-path**: replayed webhook idempotency, tampered/expired PawSpace
-     ingress signature, wrong product/account binding, oversized body, out-of-order events,
-     concurrent-checkout race, queue retry exhaustion, webhook-to-Stripe reconciliation and live
-     grace-period-boundary sweep. Prove billing-core has no PawSpace Data API or elevated project
-     key.
+   - **C — adversarial/negative-path**: replayed webhook idempotency **including the
+     non-consecutive `A → B → A` replay and the cancelled-then-replay-old-event case** (the HIGH
+     defect Phase 0 QA found in the module) run against the **real database repository**, not the
+     mock; concurrent duplicate delivery of the same provider event ID (must apply once); tampered/
+     expired PawSpace ingress signature, wrong product/account binding, oversized body, out-of-order
+     events, concurrent-checkout race, queue retry exhaustion, webhook-to-Stripe reconciliation and
+     live grace-period-boundary sweep. Prove billing-core has no PawSpace Data API or elevated
+     project key.
 7. **Phase 4** — finish the remaining PawSpace routes and internal cron wiring; correct
    `wstera_link`/`doccraft` docs; remove obsolete LK01 vendored billing copies; activate the
    monitoring/alerting/rollback controls in §5. Nothing is done until PawSpace's full staging gate,
