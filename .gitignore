@@ -59,3 +59,4 @@ __pycache__/
 # match the on-disk directory. Lowercase THIS line in the same change that renames the
 # directory, or the nested repo goes untracked.
 /products/WSTERA-Link/
+/products/WSM/
