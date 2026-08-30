@@ -1,5 +1,30 @@
 # Handoff — saas-product-hub
 
+## 2026-08-30 — Session handoff (Commander)
+
+Compact session record: `vault/06-Agent-Logs/SaaS-Product-Hub/2026-08-30-session-handoff.md`
+(full log: `2026-08-27-commander-final-review.md`, addenda 1–10).
+
+**Done this session:** master plan → **revision 3** (§0 excludes usage/demand as planning inputs;
+P0a/P0b split; binding focus gate; L0–L5 ladder). CEO decisions **D1–D10** locked (§10). billing-core
+**Phase 0 item 1 merged** — `modules-hub` main `3b6401a` is the vendor pin (`c8fef32` forbidden).
+billing-core **Phase 0.5 design reviewed + reconciled to rev 2**
+(`docs/platform/BILLING_CORE_PHASE_0_5_SECURITY_CONTRACTS.md` + `docs/platform/billing-core/`).
+
+**Blocked / next:**
+- **R15** (master-plan risk, High): `apps/hub-web` runtime uses the Project A `postgres` **owner**
+  `DATABASE_URL` — needs a scoped `hub_web_app` role. **Pre-data gate** and a standing hub-web
+  security fix. Needs a CEO-authorized Codex dispatch.
+- billing-core Phase 0.5 ingress + Phase 1 are blocked on **PawSpace/Pawstia Project B admission**,
+  which is blocked on **Booking Stage 4** (migration drift, CEO-paused).
+- PS01 is now publicly **Pawstia** (D8, trademark collision). `product_id`/`PS01`/repo unchanged.
+- draft `docs/platform/billing-core/migrations/0001_billing_core_schema.sql` awaits a Qwen QA pass
+  before the apply queue — not urgent.
+
+Do not re-run the Commander Final Review Gate or re-open §10 D1–D10 — both are done.
+
+---
+
 ## 2026-08-27 — Seven-product production master plan
 
 CEO approved the engineering-only production plan for the final seven products: subscription SaaS
