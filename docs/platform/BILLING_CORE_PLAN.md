@@ -421,10 +421,16 @@ billing-core closes that gap by making the ID a hard precondition at its own bou
    and test the narrow PawSpace Edge Function ingress; lock `/v1/*` authentication/account
    ownership, private-schema/Data API grants, durable webhook intake, vendor provenance, and the
    Worker's internal `scheduled()` contract. No Stripe checkout work starts before this review
-   passes. **The reviewed design is `BILLING_CORE_PHASE_0_5_SECURITY_CONTRACTS.md`** (Commander,
-   2026-08-29); the ingress-implementation part of it is blocked until PawSpace is admitted to
-   Project B (Booking Stage 4), but the threat model, `/v1` auth contract, schema access model,
-   webhook intake contract, provenance policy and `scheduled()` contract are settled now.
+   passes. **The reviewed design is `BILLING_CORE_PHASE_0_5_SECURITY_CONTRACTS.md`** — rev 2
+   (2026-08-30) after an independent review (`docs/platform/billing-core/REVIEW-PHASE-0-5-2026-08-29.md`,
+   verdict CHANGES REQUIRED) that the Commander reconciled. The design contracts are settled; the
+   draft schema migration (`docs/platform/billing-core/migrations/0001_billing_core_schema.sql`) and
+   `APPLY-RUNBOOK.md` exist but nothing is applied. Two things carried out of the review:
+   **(i) master-plan R15** — hub-web's runtime uses the Project A `postgres` owner `DATABASE_URL`;
+   this must move to a scoped `hub_web_app` role **before any billing data exists**;
+   **(ii)** the webhook contract is now a transactional outbox (`processed_events` state +
+   `delivery_jobs`), not a presence-only ledger. The ingress-implementation part is still blocked
+   until PawSpace is admitted to Project B (Booking Stage 4).
 4. **Phase 1** — build the billing-core skeleton and wire PawSpace end to end only
    (`wstera_link`/`doccraft` routes return explicit `501` until their phases). Seed the service from
    the owner-approved configuration without redefining financial values here.
