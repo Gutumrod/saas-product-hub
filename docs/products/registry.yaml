@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # SaaS Product Hub — Product Portfolio Registry
 # ==============================================================================
 # Product catalog and declared target configuration. Once the owner declares it,
@@ -6,9 +6,14 @@
 # locked seven-product engineering sequence and production gates; ROADMAP.md remains
 # historical portfolio context. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
-# Last Updated: 2026-08-27
+# Last Updated: 2026-09-02
 #
-# product_id / product_code: owner-approved 2026-08-26, full-portfolio adoption
+# WSM / WS01 status note (2026-09-02): Gutumrod/wsm now exists as a standalone
+# product repository and its documentation has independent review PASS. It is
+# intentionally NOT added to the catalog list below yet because the owner has not
+# declared its permanent parent-registry identity/product_id/adoption here. Track
+# current engineering state in docs/CURRENT_STATUS.md; do not invent a product_id.
+## product_id / product_code: owner-approved 2026-08-26, full-portfolio adoption
 # — see docs/platform/PRODUCT_ID_HOSTNAME_NAMESPACE_PROPOSAL.md for the model and
 # decision log. product_id is a permanent internal identity (never reused, never
 # displayed to customers). product_code is a permanent short portfolio code
