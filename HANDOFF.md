@@ -1,5 +1,24 @@
 # Handoff — saas-product-hub
 
+## 2026-08-31 — Dependency reconciliation checkpoint
+
+Booking Stage 4 Option A migration-history reconciliation is **complete** at Booking commit
+`836943a`: 26 migration pairs were reconciled, the named Phase A migration hash matched, the demo
+seed is `SELECT 1`, and the dry-run reports only the two intentionally pending migrations. Do not
+reopen or redo Stage 4.
+
+This closes Booking as the upstream prerequisite for PS01's Project B work, but it does **not**
+constitute Pawstia admission. PS-A2 is now unblocked to perform the `pawspace` schema rewrite and
+submit its schema contract / RLS matrix / grants / denial suite for explicit Project B admission.
+Billing-core's Project B ingress and end-to-end Pawstia wiring remain blocked until that admission
+is actually authorized.
+
+Other open gates are unchanged: **R15** still needs a scoped `hub_web_app` runtime role plus positive
+and cross-schema denial evidence; `0001_billing_core_schema.sql` still awaits independent QA and must
+not be applied; **P0a-C1 remains NOT PASSED** because hub-web CI is green but the first-adopter
+`booking-ticket-module` CI run at `ff15819` is red (2 test failures: retention date handling and case
+history received-date filtering).
+
 ## 2026-08-30 — Session handoff (Commander)
 
 Compact session record: `vault/06-Agent-Logs/SaaS-Product-Hub/2026-08-30-session-handoff.md`

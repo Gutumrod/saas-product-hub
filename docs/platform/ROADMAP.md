@@ -6,7 +6,8 @@
 > remains historical evidence and detailed prior context. Financial planning is outside the new
 > master plan and remains owner-controlled.
 >
-> **2026-08-27 revision 3 (Commander Final Review Gate):** the master plan now excludes usage and
+> **2026-09-02 current-state pointer:** use `docs/CURRENT_STATUS.md` for current gate/branch state. Current critical facts: P0a-C1 remains open on CM01 CI (59/61); Booking Stage 4 is closed; Pawstia admission and Phase 13 closure are still separate open gates; R15 is open; DocCraft Gate 3/4 are closed locally. This historical roadmap must not override those newer verified facts or the revision-3 Master Plan.
+>> **2026-08-27 revision 3 (Commander Final Review Gate):** the master plan now excludes usage and
 > demand as planning inputs (its §0), splits P0 into P0a/P0b, makes the single-heavy-track focus
 > gate binding, and adds the L0–L5 ladder for the one-time products. Three items flagged here as P0a
 > reconciliation work are corrected as of P0a-B4 (`docs/platform/PHASE_P0a_B4_EVIDENCE.md`): §A1's
@@ -103,6 +104,8 @@ development, standalone products, or module hardening.
 3. ~~`pawspace`~~ — not in the shared-runtime plan's original 10-product scope (registered after that plan was written); added deliberately because its PRD/architecture is unusually rigorous (concurrency, idempotency, RLS boundaries already fully specified). **This "zero business-logic code" framing is now stale — corrected 2026-08-22 below.** Needs its own fresh admission review before Phase 3+ treatment, same policy as any other product.
 
 **Owner decision 2026-08-21 — `pawspace` moved ahead of `line_oa_ai`. New order: `pawspace` → `line_oa_ai` → `headless_commerce`.** At decision time no code work had landed on either product's Project B admission — a pure reordering, no rework caused. **Reality changed fast after this decision:** by 2026-08-22, `pawspace` has Phase 1–10 implemented, independently reviewed, and committed to its own `master` (schema/RLS/RPC hardening, auth+tenant, booking backend, LINE LIFF identity claim, Daily Report LINE delivery, Google Sheets sync, public visitor camera access, Owner/Manager dashboard + Starter/Pro/Enterprise/Founding-Member entitlement representation, live staff Operations UI, and a real Playwright browser/HTTP E2E harness — 8/8 passing). A visual design pass and a Phase 11 customer self-service booking flow (LINE LIFF, request-first: customer submits, staff confirms/declines) are implemented and reviewer-gate-passed but not yet committed. No payment/billing collection exists anywhere by design. No real pilot shop has run the operational loop yet. See `docs/products/registry.yaml`'s pawspace entry for the full, current correction (no `registry.yaml` file exists inside `products/pawspace` itself). This makes the "pawspace admission review" referenced above much closer to actionable than it was at decision time — the admission review can now evaluate real shipped code, not just a spec.
+
+**Dependency reconciliation 2026-08-31:** Booking Stage 4 Option A migration-history reconciliation is complete at commit `836943a`, so that upstream prerequisite no longer blocks Pawstia. The next valid state is **PS-A2 admission work authorized to proceed when dispatched**, not "Pawstia admitted": schema-scoped migrations plus the schema contract / RLS matrix / grants / denial suite and explicit Project B admission are still required.
 
 Reason, recorded 2026-08-21: `pawspace` "ดูมีแววกว่า" (owner's read: stronger upside) — consistent with the
 2026-08-20 finding above that its PRD/architecture is the most rigorous spec in the portfolio, even

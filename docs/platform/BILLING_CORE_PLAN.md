@@ -49,6 +49,41 @@ seven-product execution authority and this document is its billing implementatio
 `PRODUCTION_LAUNCH_PLAN_2026-08-27.md` is retained only as a supplemental independent review; it
 does not create a second sequence or financial authority.
 
+## 2026-09-01 payment-rail / orchestrator reconciliation
+
+**Authority:** owner-reviewed LLM Council evidence in `docs/council-payment-core-2026-09-01/`. This is an addendum to this plan, **not** a replacement architecture and **not** a new product/service competing with billing-core.
+
+### Locked direction
+
+- Keep the existing centralized **billing-core** and its reviewed `modules-hub` subscription/payment/webhook/audit foundations.
+- Add only a **thin host-level billing orchestrator** for product policy, provider normalization and scheduled coordination. Product/tenant/account identity remains explicit at every boundary.
+- **Stripe card / Stripe Subscription is the recurring rail.** It owns automatic recurring collection for subscription products using billing-core.
+- **PromptPay is a manual/non-auto-renew payment rail.** It must not become a second subscription state machine and must not silently emulate recurring billing.
+- **Reconciliation is mandatory before PromptPay is activated.** A successful entitlement/payment transition may not rely on webhook delivery alone; the service must be able to poll/re-fetch provider truth, match product/account/amount/currency to the expected payment, then apply an idempotent state transition.
+- Existing atomic provider-event/idempotency/outbox rules remain the correctness spine. PromptPay inherits them; it does not weaken them.
+- Internal-first: use the shared core inside WSTERA, prove it over real billing cycles, then consider a separately gated Billing-as-a-Service productization. Self-serve tenant onboarding/Connect/compliance/support scope is **not** part of the current billing-core build.
+
+### Owner operating policy for the internal-first phase
+
+- PromptPay-only renewal customers receive expiry reminders; exact lead time is product configuration within the owner-approved reminder window, not a hard-coded shared-module constant.
+- Where a product has a Free tier, an unpaid PromptPay renewal may enter the approved post-expiry grace window and then downgrade to Free while preserving account/history.
+- Where no Free tier exists, notify before expiry and after expiry, then end paid entitlement while preserving account/history for later reactivation.
+- Refund handling in the current internal-first phase is a support-ticket/manual-operator process; no automated refund subsystem is implied by this addendum.
+
+### Build-order interpretation
+
+The council's Phase 0-6 labels describe **money-correctness order**, not a second phase system. Map them into this document's existing Phase 0 / 0.5 / 1+ gates:
+
+1. **Provider preflight:** verify the selected Stripe account is a Thailand account eligible for PromptPay, enable/test PromptPay in test mode, pin an explicit Stripe API version, and prove basic card subscription + PromptPay test flows before live authorization.
+2. **Correctness spine:** accepted `modules-hub` fixes, atomic processed-event ledger, real DB transaction boundary and grace-expiry scheduler.
+3. **Card recurring E2E:** first complete money loop through Stripe Subscriptions.
+4. **Reconciliation:** scheduled provider re-fetch/drift repair and pending-payment recovery before PromptPay release.
+5. **PromptPay adapter:** implement against the same payment-provider boundary and idempotency/audit contracts.
+6. **Multi-product proof + production cutover:** prove product/account isolation with a second product, then pass the existing production/security/recovery gates before live keys.
+
+Do not implement PromptPay ahead of the reconciliation/correctness gates merely because the adapter itself is small.
+
+---
 ## Context
 
 The owner locked the portfolio's active scope to 7 products split by commercial model: 4 Subscribe
@@ -136,15 +171,17 @@ own project", read "PawSpace's Project B schema". The narrow signed ingress is a
 Function**; the elevated key it holds is **Project B's** service-role key, whose blast radius
 includes Booking's `local_service` schema — so the function's explicit grants, fixed `search_path`,
 input validation and adversarial tests matter more, not less. billing-core still never holds that
-key. PawSpace's Project B schema admission is blocked until Booking's Project B migration-history
-reconciliation closes, and PawSpace's migrations must be rewritten schema-scoped (they currently
-target `public`) before admission.
+key. Booking Stage 4's Project B migration-history prerequisite is **CLOSED** at Booking commit
+`836943a`. Pawstia is next in the Project B admission queue, but its migrations still must be rewritten
+schema-scoped (they currently target `public`) and its schema contract / RLS matrix / grants / denial
+suite must receive explicit admission authorization before ingress work begins.
 
 The CEO's separate financial plan owns any Supabase Pro / new-project timing and cost decision;
 per §10 D10 a product earns its own project only when its revenue funds one.
 
 **P-2. Stripe account/mode.** Confirm which Stripe account billing-core uses and that **test-mode
-keys are used for everything through Phase 3.** Live keys must not exist in any local `.env` or
+keys are used for everything through Phase 3.**
+Because PromptPay is now an owner-approved internal payment rail, Phase 0 preflight must also verify that the selected Stripe account is Thailand-based/PromptPay-eligible, PromptPay can be exercised in test mode, and the Stripe API version is explicitly pinned before adapter/E2E evidence is accepted. Live keys must not exist in any local `.env` or
 Worker secret until the owner explicitly authorizes go-live. Guard: billing-core refuses to boot if
 `STRIPE_SECRET_KEY` starts with `sk_live_` unless `BILLING_CORE_ALLOW_LIVE=true` is also set —
 implement this check in `src/lib/config.ts` as a startup assertion, not a comment.
@@ -429,8 +466,10 @@ billing-core closes that gap by making the ID a hard precondition at its own bou
    **(i) master-plan R15** — hub-web's runtime uses the Project A `postgres` owner `DATABASE_URL`;
    this must move to a scoped `hub_web_app` role **before any billing data exists**;
    **(ii)** the webhook contract is now a transactional outbox (`processed_events` state +
-   `delivery_jobs`), not a presence-only ledger. The ingress-implementation part is still blocked
-   until PawSpace is admitted to Project B (Booking Stage 4).
+   `delivery_jobs`), not a presence-only ledger. Booking Stage 4 is no longer the blocker: Option A
+   migration-history reconciliation is complete at Booking commit `836943a`. The ingress-
+   implementation part remains blocked until Pawstia completes its own PS-A2 schema-scoping,
+   contract/RLS/grants/denial review and receives explicit Project B admission authorization.
 4. **Phase 1** — build the billing-core skeleton and wire PawSpace end to end only
    (`wstera_link`/`doccraft` routes return explicit `501` until their phases). Seed the service from
    the owner-approved configuration without redefining financial values here.

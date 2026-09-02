@@ -19,11 +19,15 @@ event-ID ledger; provider event ID mandatory).
 **Scope of Phase 0.5:** the threat model, the `/v1/*` authentication and account-ownership contract,
 the `billing_core` schema access model, the durable webhook intake contract, the vendor provenance
 and pin policy, and the Worker `scheduled()` contract. No Stripe checkout work starts until this is
-reviewed and, where it touches Project B, until PawSpace is admitted to Project B (blocked on
-Booking Stage 4).
+reviewed and, where it touches Project B, until Pawstia is admitted to Project B. Booking Stage 4 is
+no longer the upstream blocker: Option A migration-history reconciliation is complete at Booking
+commit `836943a`; Pawstia still needs its own PS-A2 admission evidence and explicit authorization.
 
 ---
 
+### Payment-rail inheritance - 2026-09-02
+
+The 2026-09-01 Payment Council adds PromptPay as a manual/non-auto-renew rail but does not create a weaker security path. Any PromptPay adapter/intake/polling path must inherit this contract's signer/product binding, idempotency ledger, durable outbox/retry responsibility, bounded retries, audit redaction and out-of-order handling. Before a payment can grant/restore entitlement, reconciliation must re-fetch provider truth and verify the expected product/account/amount/currency association; webhook/redirect body alone is insufficient authority. Card subscription remains the recurring rail. PromptPay implementation is blocked until the existing correctness/reconciliation gates are ready.
 ## 1. Trust boundaries and threat model
 
 ### 1.1 Components and what each holds
@@ -306,7 +310,9 @@ These belong to Phase 1 / the apply window, not to accepting the contracts:
 - `/v1/*` authentication + the account-bound assertion for `/v1/portal` are implemented and tested
   independently of Stripe.
 - The Project B ingress Edge Function is implemented and its adversarial tests pass **(blocked until
-  PawSpace is admitted to Project B — Booking Stage 4)**.
+  Pawstia is admitted to Project B)**. Booking Stage 4's migration-history prerequisite is already
+  closed at Booking commit `836943a`; remaining unblock conditions are Pawstia's own PS-A2 admission
+  evidence and explicit Project B authorization.
 - `services/billing-core/vendor/PROVENANCE.md` + the `vendor-drift` CI stage exist, pin = `3b6401a`.
 - The `scheduled()` contract and its jobs are implemented with idempotency tests.
 - Retention/partitioning/archival authority defined for `processed_events`, `delivery_jobs`,

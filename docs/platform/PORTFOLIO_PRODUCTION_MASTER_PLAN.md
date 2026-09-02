@@ -33,8 +33,20 @@ Revision history:
   placement decision. Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\
   2026-08-27-commander-final-review.md`.
 
----
+## Current execution checkpoint - 2026-09-02
 
+> **Status overlay, not revision 4.** Revision 3 and CEO decisions D1-D10 remain the execution authority. This section updates only verified gate/dependency state; it does not reopen scope, sequencing rules or owner decisions.
+
+- **P0a-C1 = NOT PASSED.** Hub CI is green at `hub-web@b576d59`; the first-adopter `booking-ticket-module@ff15819` owning CI is red (59/61 tests). Until CM01 produces a fresh green owning CI run, P0a-C1 remains open.
+- **Booking Stage 4 prerequisite = CLOSED** at `836943a`. PS-A2 is unblocked from that upstream dependency, but Pawstia is **not** admitted until its schema-scoped migration/RLS/grants/denial package is independently reviewed and explicit Project B admission is authorized.
+- **Pawstia Phase 13 = NOT CLOSED.** Verification branch `c063592` / Draft PR #4 has clean migration replay + DB lint evidence but the matrix stopped at the historical Phase 1 isolation regression; final evidence and independent PASS do not exist yet.
+- **R15 = OPEN / pre-data gate.** `apps/hub-web` runtime database access must move off the Project A `postgres` owner identity to scoped `hub_web_app` and prove billing-schema denial before billing data exists.
+- **DC01 Gate 3/Gate 4 = CLOSED locally.** Phase 4.1 is product-gate unblocked for mandatory intake only; P0a-C1 still governs opening the implementation track.
+- **Payment rail addendum:** the 2026-09-01 council does not create another billing service. `BILLING_CORE_PLAN.md` remains canonical and now records card subscription as the recurring rail, PromptPay as a manual/non-auto-renew payment rail, and reconciliation as mandatory before PromptPay activation.
+
+Operational status index: `docs/CURRENT_STATUS.md`.
+
+---
 ## 0. Planning-input constraint
 
 Three inputs may order this plan: **dependency order, engineering maturity, and risk.** Nothing
@@ -596,9 +608,12 @@ Work packages:
    Project B (`gyleqrjdzwwlqierdwcy`), not its own project. Rewrite the 12 migrations from `public`
    to a `pawspace` schema, keep `auth.users` references but authorize only through the product's own
    membership table, and submit the schema contract / RLS matrix / grants / denial suite for Project
-   B admission (`SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §3, Phase 3). **Blocked until Booking's
-   Project B migration-history reconciliation closes** (the currently-paused Stage 4 work) — Project
-   B has one migration owner and will not accept a second product schema over unresolved drift.
+   B admission (`SHARED_SAAS_RUNTIME_PROJECT_B_PLAN.md` §3, Phase 3). **Booking's Project B
+   migration-history prerequisite is closed** by Stage 4 Option A reconciliation at Booking commit
+   `836943a` (26 migration pairs reconciled; dry-run shows only the two intentionally pending
+   migrations). PS-A2 is therefore unblocked to perform Pawstia's own schema rewrite, contract/RLS/
+   grants/denial review and explicit admission authorization; this does **not** mean Pawstia is
+   already admitted to Project B.
 2. **PS-B CI and environments** — deploy pipeline and secret boundaries for Supabase (the Project B
    schema and its Edge Functions), LINE, Google and camera access. Staging is a `pawspace_staging`
    schema inside Project B with its own scoped role — not a new project, not a branch DB (§10 D10;
@@ -943,8 +958,10 @@ control has executable evidence or the CEO records a named, expiring acceptance.
   - **PS01 (Pawstia) → `pawspace` schema in Project B**, first in the admission queue
     (`pawspace` → `line_oa_ai` → `headless_commerce`, owner decision 2026-08-21). PS01's 12
     migrations are currently written against `public` and reference `auth.users` directly; they
-    must be **rewritten schema-scoped** before admission, and admission is blocked until Booking's
-    Project B migration-history reconciliation (the currently-paused Stage 4 work) closes.
+    must be **rewritten schema-scoped** before admission. Booking's Project B migration-history
+    prerequisite is now closed by Stage 4 Option A reconciliation at commit `836943a`; Pawstia is
+    next in the queue but still requires its own schema contract / RLS matrix / grants / denial suite
+    and explicit admission authorization before it is considered admitted.
   - `BILLING_CORE_PLAN.md`'s phrase "PawSpace keeps its own project" (§10 D4, §2, P-1) is
     corrected: PawSpace's authoritative subscription state lives in its **Project B schema**. The
     billing→PawSpace narrow ingress is a **Project B Edge Function**, and the elevated key it holds
