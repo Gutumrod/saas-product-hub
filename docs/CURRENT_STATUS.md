@@ -52,7 +52,7 @@ tolerates that is a gate decision, not an implementation fact.
 |---|---|---|
 | BK01 | Booking | BK-A remediation queued after P0a-C1; Stage 4 closed; CONT-03/DB gates still open |
 | PS01 | Pawstia | Phase 13 verification not closed; Project B admission not yet authorized |
-| LK01 | WSTERA Link | Pre-build; hybrid billing/PromptPay documentation reconciliation in progress; implementation hold |
+| LK01 | WSTERA Link | Pre-build; hybrid billing/PromptPay documentation reconciliation **complete** at `docs/hybrid-billing-promptpay @ 0bb1ee8` (pushed); Phase P4 product, implementation hold |
 | DC01 | DocCraft | Gate 3/4 closed locally; Phase 4.1 mandatory intake next only after portfolio gate |
 | MT01 | Multi-Tenant AI | Reference server only; deferred to P5/L0-L5 productization |
 | CM01 | Booking Ticket Module | Owning CI green on `main @ aeaa750` (63/63); no longer the P0a-C1 blocker. Remaining CM-D lint debt is P0b |
@@ -80,6 +80,11 @@ Every product repo now has:
 CM01 additionally has `docs/daily/2026-09-03.md` and a refreshed `docs/CURRENT_STATUS.md` at
 `main @ 6202108`; the 2026-09-02 pass had left `$branch` / `$head` template placeholders
 unsubstituted in that file.
+
+LK01 additionally has `docs/daily/WORK-BRIEF-2026-09-03.md` at
+`docs/hybrid-billing-promptpay @ 0bb1ee8`; the same unsubstituted `$branch` / `$head` placeholders
+and a stale "uncommitted amendments" state were corrected there in the same commit. The template
+defect therefore hit at least two repositories in the 2026-09-02 pass.
 
 `apps/hub-web` has the equivalent current status and daily/brief under `docs/control-plane/`.
 
