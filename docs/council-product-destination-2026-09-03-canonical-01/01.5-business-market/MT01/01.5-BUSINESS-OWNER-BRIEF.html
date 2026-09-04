@@ -1,0 +1,119 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>01.5 Business Owner Brief - MT01</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>01.5 Business Owner Brief - MT01</h1><p class="muted">Source: 01.5-BUSINESS-OWNER-BRIEF.md · SHA256 02dac4726e22… · Decisions: 0</p><div class="grid"><div class="gate"><b>Business/Market Gate</b><span class="badge pass">PASS</span></div></div></section>
+<section class="card"><h1>01.5 Business Owner Brief - MT01</h1>
+<p>วันที่: 2026-09-04</p>
+<p>Gate: Business / Market</p>
+<p>Verdict: <span class="badge pass">PASS</span></p>
+<p>Confidence: 78/100</p>
+<h2>สรุปสั้น</h2>
+<p>หลัง apply Owner decisions D1-D4 แล้ว MT01 ผ่าน Business/Market Gate แบบ targeted remediation</p>
+<p>ความหมายของ <span class="badge pass">PASS</span> นี้แคบมาก: ผ่านในแง่ market path และ commercial decision ระดับเอกสารเท่านั้น ไม่ใช่ approval ให้ build, launch, sell, package, license, checkout หรือ release</p>
+<p class="consensus">ตลาด one-time source product มีหลักฐานน่าเชื่อถือจาก expert consensus เดิม และตอนนี้คำถามที่เคยเปิดค้างใน Business/Market ถูกล็อกแล้ว: beachhead, pricing posture, update model, refund posture</p>
+<h2>สิ่งที่ยืนยันแล้ว</h2>
+<ul>
+<li>3/3 candidates เห็นตรงกันว่าตลาด paid one-time SaaS starter kit มีจริง</li>
+<li>3/3 เห็นตรงกันว่า payer ที่เหมาะคือ technical buyer เช่น indie builder, developer, small technical team, หรือ agency</li>
+<li>3/3 เห็นตรงกันว่า one-time model เหมาะกว่า subscription</li>
+<li>3/3 เห็นตรงกันว่าเหตุผลที่ลูกค้าจะจ่ายคือประหยัดเวลาและลดความเสี่ยงจากการประกอบระบบ multi-tenant + AI + billing + entitlement + webhook เอง</li>
+<li>3/3 เห็นตรงกันว่า MT01 ปัจจุบันยังไม่ควรวางตัวเป็น full-stack production-ready starter kit</li>
+<li>3/3 เห็นตรงกันว่า demand ของ MT01 เองยังไม่ได้พิสูจน์ มีแต่ category evidence</li>
+</ul>
+<h2>Owner Decisions ที่ apply แล้ว</h2>
+<p>D1 - Commercial path:</p>
+<ul>
+<li>เลือก low-priced backend blueprint / starter-kit validation path</li>
+<li>initial price: single developer USD 149-199</li>
+<li>ยังไม่เปิด Team tier จนกว่าจะมี demand evidence และ packaging/support พร้อม</li>
+<li>ไม่เพิ่ม production persistence/deployment scope แค่เพื่อดันราคา V1</li>
+<li>ก่อนเปิดขายต้องปิด minimum commercial blockers: license, module provenance, 6-vs-7 module documentation drift, clean-install proof, packaging/docs consistency</li>
+</ul>
+<p>D2 - Beachhead payer:</p>
+<ul>
+<li>Primary = Agency / technical agency building SaaS backends for clients</li>
+<li>Secondary = advanced indie builder, small technical team</li>
+<li>GTM และ positioning ต้อง anchor agency ก่อน</li>
+</ul>
+<p>D3 - Update model:</p>
+<ul>
+<li>ลูกค้าใช้ purchased version ได้ตลอด</li>
+<li>รวม updates 12 เดือน</li>
+<li>ไม่สัญญา lifetime updates</li>
+<li>หลัง 12 เดือน ลูกค้ายังใช้ version ที่ซื้อได้ต่อ</li>
+<li>future major-version/update entitlement หรือ paid renewal/upgrade ยกไป Launch/Operations/Business iteration</li>
+</ul>
+<p>D4 - Refund posture:</p>
+<ul>
+<li>ใช้ 14-day limited refund policy</li>
+<li>ก่อน source access/download: refund ตาม policy</li>
+<li>หลัง source access/download: refund เฉพาะ material defect หรือ delivery materially differs from advertised scope และ support แก้ไม่ได้</li>
+<li>ไม่ใช้ blanket no-refund</li>
+<li>final legal wording / jurisdiction compliance ยกไป Legal/Launch</li>
+</ul>
+<h2>Recommendation</h2>
+<p>ให้ Business/Market Gate เป็น <span class="badge pass">PASS</span> หลัง targeted remediation</p>
+<p>Commercial shape ที่ล็อกแล้ว:</p>
+<ul>
+<li>Positioning: backend-only, framework-agnostic, copy-in Multi-Tenant AI SaaS Backend Kit</li>
+<li>Primary payer: agency / technical agency ที่สร้าง SaaS backend ให้ลูกค้า</li>
+<li>Secondary payer: advanced indie builder และ small technical team</li>
+<li>Price: USD 149-199 single developer</li>
+<li>No Team tier ใน V1 จนกว่าจะมี demand evidence และ packaging/support พร้อม</li>
+<li>Update: perpetual use ของ purchased version + 12 months updates</li>
+<li>Refund: 14-day limited refund ตาม D4</li>
+<li>ห้ามสื่อสารว่าเทียบเท่า ShipFast / Supastarter / MakerKit / Pegasus แบบ full-stack production-ready kit</li>
+</ul>
+<h2>Remaining Blockers Classified By Gate</h2>
+<p>Business/Market:</p>
+<ul>
+<li>ไม่มี blocker เหลือหลัง apply D1-D4</li>
+<li>ความเสี่ยงที่ยังต้อง track: MT01-specific demand ยังไม่พิสูจน์, backend-only willingness to pay ยังเป็น hypothesis, distribution/channel evidence ยังไม่มี</li>
+</ul>
+<p>Pre-Build/Launch:</p>
+<ul>
+<li>license</li>
+<li>module provenance</li>
+<li>6-vs-7 module documentation drift</li>
+<li>clean-install proof</li>
+<li>packaging/docs consistency</li>
+<li>production persistence adapter หรือ explicit non-production persistence boundary</li>
+<li>deployment path, compatibility matrix, architecture hardening</li>
+</ul>
+<p>Launch/Operations:</p>
+<ul>
+<li>fulfillment</li>
+<li>checkout</li>
+<li>release packaging</li>
+<li>support boundaries และ support capacity</li>
+<li>future major-version/update entitlement</li>
+<li>paid renewal/upgrade economics หลัง 12-month update window</li>
+</ul>
+<p>Legal/Launch:</p>
+<ul>
+<li>final license wording</li>
+<li>final refund policy wording</li>
+<li>jurisdiction compliance</li>
+<li>dependency redistribution terms</li>
+</ul>
+<h2>Verdict</h2>
+<p><span class="badge pass">PASS</span></p>
+<p>หนึ่งบรรทัด: Owner decisions D1-D4 ล็อก commercial path แล้ว และ blocker ที่เหลือเป็น Pre-Build/Launch, Launch/Operations, Legal/Launch หรือ later Business iteration ไม่ใช่เหตุให้ Business/Market fail</p></section>
+</main></body></html>
