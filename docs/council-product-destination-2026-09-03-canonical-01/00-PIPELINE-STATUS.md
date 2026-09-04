@@ -1,8 +1,8 @@
 # PIPELINE STATUS
 
 Council: WSTERA Product Destination Council — Canonical Run 01
-Current gate: Business / Market Gate (Release 1B) — MT01 complete
-Current status: **MT01 BUSINESS/MARKET GATE = PASS (after Owner D1-D4 remediation) — STOP FOR OWNER REVIEW**
+Current gate: Business / Market Gate (Release 1B) — MT01 complete, DC01 complete
+Current status: **MT01 = PASS; DC01 = PASS (after Owner D1-D2 remediation) — STOP FOR OWNER REVIEW**
 
 Experts: `agent-claude`, `agent-agy`, `agent-qwen`
 Synthesizer: `agent-codex`
@@ -49,6 +49,16 @@ Owner approved Release 1B on 2026-09-04. Dispatch is per-product, one at a time.
 - No evidence yet that any WSTERA SaaS product uses MT01 as bootstrap baseline (some modules used from modules-hub, but no real product bootstraps from the 7-module composition).
 - Carry to Architecture/Pre-Build: (1) evaluate MT01 as internal bootstrap/reference standard; (2) new SaaS should pass MT01 Bootstrap Check + Module Reuse Check before implementation; (3) ≥1 real internal dogfood proof before commercial launch; (4) do not retrofit old products to fabricate evidence; (5) Central Platform billing/entitlement must not be duplicated per-product — MT01 defines integration boundary with central platform.
 - Does NOT change MT01 Business/Market PASS. Recorded at `01.5-business-market/MT01/MT01-DOGFOOD-CARRY-FORWARD.md`.
+
+### DC01 Business/Market Gate — PASS (2026-09-04, after Owner D1-D2 remediation)
+
+- Expert completion: 3/3 (Claude, AGY, Qwen) — raw answers persisted at `01.5-business-market/DC01/raw/`. Qwen run 455 timed out; retried as run 456 completed.
+- Codex synthesis: `01.5-business-market/DC01/BUSINESS-MARKET-SYNTHESIS.md` — initial verdict REMEDIATE (confidence 61/100)
+- Owner decisions D1-D2 applied via targeted Codex remediation (t_995d5219): D1 no-login/local-first, free Public Pilot first, one-time unlock THB 299-599 after sellable feature set, subscription NOT V1; D2 minimal anonymous+consented telemetry (event list, no sensitive data, refusal does not reduce core function)
+- Updated verdict: **PASS** (confidence 72/100) — no Business/Market blockers remain
+- Remaining blockers classified to downstream gates: checkout/unlock + telemetry impl → Architecture/Pre-Build; Phases 4.1/5/6 + print fidelity → Product/Launch; local-storage trust → Product/Risk/Launch; legal/accounting disclaimer → Risk/Launch
+- This PASS is document-level only — NOT launch/build approval
+- Artifacts: `01.5-business-market/DC01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, INDEX.html, raw/, candidates, manifests)
 
 ## Not released
 
