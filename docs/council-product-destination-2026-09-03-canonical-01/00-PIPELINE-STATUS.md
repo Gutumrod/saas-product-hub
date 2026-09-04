@@ -1,8 +1,8 @@
 # PIPELINE STATUS
 
 Council: WSTERA Product Destination Council — Canonical Run 01
-Current gate: Business / Market Gate (Release 1B) — MT01 complete, DC01 complete
-Current status: **MT01 = PASS; DC01 = PASS (after Owner D1-D2 remediation) — STOP FOR OWNER REVIEW**
+Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01 complete
+Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 / WS01 / LK01 / CM01 = not dispatched**
 
 Experts: `agent-claude`, `agent-agy`, `agent-qwen`
 Synthesizer: `agent-codex`
@@ -60,10 +60,23 @@ Owner approved Release 1B on 2026-09-04. Dispatch is per-product, one at a time.
 - This PASS is document-level only — NOT launch/build approval
 - Artifacts: `01.5-business-market/DC01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, INDEX.html, raw/, candidates, manifests)
 
+### BK01 Business/Market Gate — PASS (2026-09-04, after Owner OD-001/002/003/004/006 remediation)
+
+- Expert completion: 3/3 (Claude, AGY, Qwen) — raw answers persisted at `01.5-business-market/BK01/raw/`. Qwen run 462 timed out; retried as run 463 completed.
+- Codex synthesis: `01.5-business-market/BK01/BUSINESS-MARKET-SYNTHESIS.md` — initial verdict REMEDIATE (confidence 68/100)
+- Owner decisions OD-001/002/003/004/006 applied via targeted Codex remediation: preserve auto-slip as required for Pro with downstream provider/economics/reliability/failure-path verification; Trial/Basic/Pro remain pilot/reference prices only; V1 LINE model is merchant-owned LINE OA/message cost; cancel/reschedule windows require merchant onboarding configuration before publish/go-live; customer-facing blacklist deferred post-V1
+- Updated verdict: **PASS** (confidence 74/100) — no Business/Market blockers remain under the frozen gate contract
+- Corrected evidence classification: missing BK01 pilot WTP, conversion, retention, no-show reduction, recovered revenue, notification consumption, support load, and CAC/payback are preserved as Pilot / Launch / Operations validation requirements, not prerequisites for this pre-build market-direction PASS
+- Corrected provenance: effective BK01 Product Gate = PASS; historical Product Gate REMEDIATE is pre-meta-audit provenance only
+- Corrected expert-vote language: experts did not issue gate verdicts; differentiation evidence is 1/3 more confident and 2/3 execution-thin/unproven, not a majority
+- Recommended revenue model: merchant-paid recurring subscription (Trial ฿0/14d → Basic ฿490/mo → Pro ฿990/mo as pilot/reference prices); Pro not publicly sellable until auto-slip verification is complete; no commission/transaction fee in V1
+- Carry-forward: public Pro sale blocked until OD-001 downstream verification; final public prices after pilot/unit-economics evidence; merchant-owned LINE setup/support and cost disclosure; cancel/reschedule implementation; V1-facing blacklist claims/copy removal; DB-backed gates BLOCKED_ENVIRONMENT; V1 not sellable
+- Artifacts: `01.5-business-market/BK01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, INDEX.html, raw/, candidates, manifests)
+
 ## Not released
 
 Module Hub Scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay, and implementation are NOT RELEASED.
-Business/Market Gate for DC01, BK01, PS01, WS01, LK01, CM01 is NOT yet dispatched (MT01 first, then STOP for Owner review).
+Business/Market Gate for PS01, WS01, LK01, CM01 is NOT yet dispatched. MT01, DC01, and BK01 Business/Market gates have completed document-level PASS artifacts. No later gate, Agent Relay, Product #4 dispatch, implementation, launch, or deployment is released by these PASS results.
 
 ## MT01 procedure deviation (resolved)
 

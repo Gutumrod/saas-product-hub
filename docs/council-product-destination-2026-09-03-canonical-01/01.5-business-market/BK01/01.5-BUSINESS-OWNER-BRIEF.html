@@ -1,0 +1,118 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>สรุป Owner Brief - BK01 Business/Market Gate</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>สรุป Owner Brief - BK01 Business/Market Gate</h1><p class="muted">Source: 01.5-BUSINESS-OWNER-BRIEF.md · SHA256 ebc8cdcd618f… · Decisions: 0</p><div class="grid"><div class="gate"><b>Product Gate</b><span class="badge pass">PASS</span></div><div class="gate"><b>Business/Market Gate</b><span class="badge pass">PASS</span></div></div></section>
+<section class="card"><h1>สรุป Owner Brief - BK01 Business/Market Gate</h1>
+<p>วันที่: 2026-09-04</p>
+<p>สินค้า: BK01 Booking by WSTERA</p>
+<p>Gate: Business/Market</p>
+<p>Verdict: <span class="badge pass">PASS</span></p>
+<p>Confidence: 74/100</p>
+<p>Scope: targeted document-level remediation เท่านั้น ไม่ใช่อนุมัติ launch/build/sell Pro</p>
+<h2>Verdict</h2>
+<p>หลังใส่ Owner Decisions OD-001/002/003/004/006 และแก้ classification แล้ว BK01 ควรให้ <strong><span class="badge pass">PASS</span></strong> สำหรับ Business/Market Gate นี้</p>
+<p>เหตุผลสั้น ๆ: gate นี้ถามว่า BK01 มีตลาดจ่ายรายเดือนที่ credible ไหม ไม่ได้ถามว่า BK01 มี pilot PMF ครบแล้วหรือพร้อมขาย public หรือยัง. หลักฐานจาก candidate ทั้งสามชี้ตรงกันว่าตลาด Thai booking/LINE/deposit appointment operations มีคู่แข่งเก็บเงินรายเดือนจริง, payer ชัดคือเจ้าของร้าน/ผู้จัดการร้าน, pain เกิดซ้ำ และ Trial / Basic / Pro เป็น revenue ladder ที่ direction ถูกทาง.</p>
+<p><span class="badge pass">PASS</span> นี้เป็น document-level เท่านั้น. ไม่ใช่อนุมัติ launch, build, deploy, ขาย Pro, dispatch Product #4, หรือเปิด gate ถัดไป.</p>
+<h2 class="consensus">Consensus / Evidence</h2>
+<table>
+<thead><tr><th>ประเด็น</th><th>สัดส่วน</th><th>สรุป</th></tr></thead>
+<tbody>
+<tr><td>ตลาดจ่ายรายเดือนมีจริง</td><td>3/3</td><td>ทุก candidate เห็นตรงกันว่า category นี้มีตลาดและมีคู่แข่งเก็บเงินรายเดือนแล้ว</td></tr>
+<tr><td>BK01-specific WTP ยังไม่พิสูจน์</td><td>3/3</td><td>ต้องเก็บ pilot evidence ก่อน final public pricing และก่อน scale</td></tr>
+<tr><td>Trial / Basic / Pro direction ถูกทาง</td><td>3/3</td><td>โครงสร้าง manual slip -&gt; auto-slip สอดคล้องกับ value ladder</td></tr>
+<tr><td>ราคา ฿490/฿990 พร้อม lock เป็น final</td><td>0/3</td><td>ไม่มี candidate เห็นว่าควร lock final ตอนนี้; OD-002 ระบุว่าเป็น pilot/reference price เท่านั้น</td></tr>
+<tr><td>Auto-slip economics สำคัญต่อ Pro</td><td>3/3</td><td>ต้อง verify provider, unit economics, allowance/overage, reliability, failure path ก่อนขาย Pro</td></tr>
+<tr><td>LINE OA cost เป็น risk จริง</td><td>3/3</td><td>OD-003 ปิด policy สำหรับ V1: merchant จ่าย LINE OA/message เอง, WSTERA support setup</td></tr>
+<tr><td>คู่แข่งกดราคาหนัก</td><td>3/3</td><td>มีคู่แข่งไทย ฿299-990 และบางรายมี free tier</td></tr>
+<tr><td>Differentiation confidence</td><td>1/3 confident, 2/3 execution-thin/unproven</td><td>1/3 ไม่ใช่ majority; ต้องเขียนว่าเป็น hypothesis ที่ต้อง validate</td></tr>
+<tr><td>Expert gate votes</td><td><span class="badge na">N/A</span></td><td>brief สั่ง expert ไม่ให้ออก gate verdict; Codex เป็นคนออก verdict เท่านั้น</td></tr>
+</tbody></table>
+<h2>Verified Facts</h2>
+<ul>
+<li>Payer คือเจ้าของร้านหรือผู้จัดการร้าน ไม่ใช่ลูกค้าปลายทาง</li>
+<li>First segment คือร้าน hair/barber/beauty/nail แบบ single-location, 1-10 providers, ใช้ LINE เป็นหลัก</li>
+<li>คู่แข่งไทยมีหลายรายและราคาอยู่ในช่วงประมาณ ฿299-1,990/เดือน</li>
+<li>ตัวอย่างคู่แข่ง: OneRun ฿299, Onque ฿299, MeQueue ฿399, JongQ ฿499, EikQueue ฿590, Suriya ฿499, Bookio/QueueBooking/SeeU ฿990+, ZERVA free</li>
+<li>LINE OA Thailand: Free 300 broadcast messages/mo, Basic ฿1,280/15k, Pro ฿1,780/35k</li>
+<li>Reply API message มี evidence ว่า free; push/broadcast ใช้ quota</li>
+<li>SlipOK auto-slip มีต้นทุนจริงประมาณ ฿0.30-0.70 ต่อ verification overage และ package เช่น ฿600/mo for 1,000 slips</li>
+<li>ราคา BK01 ตอนนี้เป็น pilot/reference: Trial ฿0/14d, Basic ฿490/mo, Pro ฿990/mo</li>
+<li>Product Gate canonical effective status = <span class="badge pass">PASS</span> ตาม <code>01-product/BK01/EFFECTIVE-PRODUCT-GATE-STATUS.md</code>; <span class="badge remediate">REMEDIATE</span> เดิมเป็น historical provenance เท่านั้น</li>
+<li>ยังไม่มี pilot WTP, retention, no-show reduction, recovered revenue, notification consumption, support load, CAC/payback evidence ของ BK01 เอง; ทั้งหมดนี้ต้อง carry forward ไป Pilot / Launch / Operations</li>
+</ul>
+<h2>Owner Decisions Applied</h2>
+<table>
+<thead><tr><th>Decision</th><th>ผลที่ใช้ใน gate นี้</th></tr></thead>
+<tbody>
+<tr><td>OD-001 auto-slip</td><td>คง auto-slip เป็น required สำหรับ Pro แต่ห้ามขาย Pro public จนกว่า provider, unit economics, allowance/overage, reliability, failure path verified downstream. ถ้า auto-slip fail ต้อง fallback ไป manual review และห้าม false confirm payment</td></tr>
+<tr><td>OD-002 pricing</td><td>Trial ฿0/14d, Basic ฿490/mo, Pro ฿990/mo เป็น pilot/reference price เท่านั้น ไม่ใช่ final public price. Final price ตัดสินใจหลัง pilot WTP + real unit economics. คำถาม final price ไม่ใช่ blocker ใน gate นี้แล้ว</td></tr>
+<tr><td>OD-003 LINE cost</td><td>V1 paid production ให้ merchant แบก LINE OA/message cost เอง. WSTERA integrate กับ merchant-owned LINE OA และช่วย docs/setup. ยังไม่ bundle WSTERA-managed LINE allowance ใน V1</td></tr>
+<tr><td>OD-004 cancel/reschedule</td><td>merchant ต้อง config window ตอน onboarding ก่อน publish/go-live. ไม่มี universal default และห้ามปล่อย nullable fail-closed เงียบ ๆ จน self-service ใช้ไม่ได้</td></tr>
+<tr><td>OD-006 blacklist</td><td>defer customer-facing blacklist ไป post-V1. เอา V1-facing blacklist claims/copy ออก. Dormant schema/internal fields ไม่ต้องลบทิ้งเพียงเพราะ decision นี้ แต่ห้ามเกิด active V1 booking behavior ถ้าไม่ได้ authorize/verify downstream</td></tr>
+</tbody></table>
+<h2>Recommendation</h2>
+<p>เดินต่อด้วย recurring subscription model:</p>
+<ul>
+<li>Trial ฟรี 14 วันเพื่อพิสูจน์ first value</li>
+<li>Basic รายเดือนสำหรับ booking operation + manual slip</li>
+<li>Pro รายเดือนสำหรับร้านที่มี volume/ทีมมากขึ้น และต้องการ auto-slip หลัง downstream verification เท่านั้น</li>
+<li>ไม่ทำ commission/transaction fee ใน V1</li>
+<li>ไม่ขาย Pro public จนกว่า OD-001 downstream verification ผ่าน</li>
+<li>ไม่ lock final public price จนกว่าจะมี pilot WTP และ real unit economics</li>
+</ul>
+<h2>Why <span class="badge pass">PASS</span></h2>
+<p>ตลาดมีจริง เพราะมีคู่แข่งไทยเก็บเงินรายเดือนอยู่แล้ว ร้านไทยใช้ LINE เป็นช่องหลัก และปัญหา manual booking/no-show/deposit เป็น pain ที่เกิดซ้ำ.</p>
+<p>ของที่เคยทำให้ <span class="badge remediate">REMEDIATE</span> หลายข้อเป็นหลักฐานหลัง pilot/launch เช่น WTP, conversion, retention, no-show reduction, recovered revenue, actual support load และ CAC/payback. ของพวกนี้ต้องเก็บจริง แต่ frozen Business/Market Gate ไม่ได้ require ให้มีผลลัพธ์หลัง build ก่อนถึงจะ <span class="badge pass">PASS</span> pre-build market direction.</p>
+<p class="risk">ดังนั้น blocker เชิง Business/Market ที่แท้จริงถูกปิดด้วย Owner Decisions แล้ว ส่วน risk ที่เหลือต้อง carry forward แบบชัด ๆ ไม่ลบทิ้ง.</p>
+<h2>Rejected Alternatives</h2>
+<table>
+<thead><tr><th>ทางเลือก</th><th>สถานะ</th><th>เหตุผล</th></tr></thead>
+<tbody>
+<tr><td>Keep <span class="badge remediate">REMEDIATE</span></td><td>Reject after remediation</td><td>หลัง OD และแก้ classification แล้วไม่มี blocker ที่เหลือใน frozen Business/Market contract</td></tr>
+<tr><td><span class="badge block">BLOCK</span></td><td>Reject</td><td>ไม่ใช่ตลาดปลอม มีคู่แข่งเก็บเงินอยู่จริง</td></tr>
+<tr><td>Treat ฿490/฿990 as final</td><td>Reject</td><td>OD-002 บอกชัดว่าเป็น pilot/reference เท่านั้น</td></tr>
+<tr><td>One-time setup fee only</td><td>Reject</td><td>Value เป็น operation รายเดือน ไม่ใช่ setup ครั้งเดียว</td></tr>
+<tr><td>Commission/transaction model</td><td>Reject for V1</td><td>BK01 ไม่ใช่ marketplace/payment processor และจะเพิ่ม friction</td></tr>
+<tr><td>Per-booking quota wall</td><td>Reject</td><td>คู่แข่งให้ unlimited/high cap กันเยอะ กำแพง booking ทำให้ขายยาก</td></tr>
+<tr><td>WSTERA bundle LINE allowance ใน V1</td><td>Reject by OD-003</td><td>V1 ใช้ merchant-owned LINE OA/message cost</td></tr>
+<tr><td>ขาย Pro ก่อน auto-slip verified</td><td>Reject by OD-001</td><td>Pro reason-to-pay อยู่ที่ auto-slip ถ้ายังไม่ verified คือ trust/business risk</td></tr>
+</tbody></table>
+<h2>Remaining Business/Market Blockers</h2>
+<p>ไม่มี blocker ที่เหลือภายใต้ frozen Business/Market Gate contract หลัง targeted remediation.</p>
+<h2>Downstream Carry Forward</h2>
+<p>รายการพวกนี้ยังต้องทำจริง แต่ไม่ใช่เหตุผลให้ fail Business/Market Gate นี้:</p>
+<table>
+<thead><tr><th>รายการ</th><th>ไป gate/phase ไหน</th></tr></thead>
+<tbody>
+<tr><td>pilot WTP/conversion ที่ราคา reference</td><td>Pilot / Launch / Operations</td></tr>
+<tr><td>retention/churn, no-show reduction, recovered revenue</td><td>Pilot / Operations</td></tr>
+<tr><td>actual LINE quota/message consumption และ setup burden</td><td>Launch / Operations</td></tr>
+<tr><td>auto-slip provider/economics/reliability/failure path</td><td>Architecture / Pre-Build / Risk / Launch; blocks public Pro sale</td></tr>
+<tr><td>final public pricing</td><td>Owner decision หลัง pilot + unit economics</td></tr>
+<tr><td>cancel/reschedule UX/enforcement</td><td>Product / Risk / Launch</td></tr>
+<tr><td>remove V1-facing blacklist claims/copy</td><td>Product / Launch content QA</td></tr>
+<tr><td>competitive differentiation proof</td><td>Pilot / Launch / Operations</td></tr>
+<tr><td>CAC/onboarding/support cost</td><td>Launch / Operations</td></tr>
+<tr><td>DB-backed gates / V1 sellability</td><td>Architecture / Risk / Pre-Build / Launch</td></tr>
+</tbody></table>
+<h2>Confidence</h2>
+<p>74/100</p>
+<p>มั่นใจพอให้ <span class="badge pass">PASS</span> ในฐานะ market-direction gate เพราะตลาด recurring paid มี evidence จริงและ revenue model direction สอดคล้องกับ pain/payer. Confidence ยังไม่สูงกว่านี้เพราะ BK01-specific proof ยังต้องวัดใน pilot/launch และคู่แข่งไทยกดราคาหนัก.</p></section>
+</main></body></html>
