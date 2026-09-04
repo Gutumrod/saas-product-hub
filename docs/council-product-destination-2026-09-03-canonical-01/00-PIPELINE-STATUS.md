@@ -1,8 +1,8 @@
 # PIPELINE STATUS
 
 Council: WSTERA Product Destination Council — Canonical Run 01
-Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01 complete
-Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 / WS01 / LK01 / CM01 = not dispatched**
+Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01, PS01 complete
+Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 / LK01 / CM01 = not dispatched**
 
 Experts: `agent-claude`, `agent-agy`, `agent-qwen`
 Synthesizer: `agent-codex`
@@ -73,10 +73,22 @@ Owner approved Release 1B on 2026-09-04. Dispatch is per-product, one at a time.
 - Carry-forward: public Pro sale blocked until OD-001 downstream verification; final public prices after pilot/unit-economics evidence; merchant-owned LINE setup/support and cost disclosure; cancel/reschedule implementation; V1-facing blacklist claims/copy removal; DB-backed gates BLOCKED_ENVIRONMENT; V1 not sellable
 - Artifacts: `01.5-business-market/BK01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, INDEX.html, raw/, candidates, manifests)
 
+### PS01 Business/Market Gate — PASS (2026-09-04, after Owner BM-1/BM-2 remediation)
+
+- Expert completion: 3/3 (Claude, AGY, Qwen) — raw answers persisted at `01.5-business-market/PS01/raw/`. Claude run 467 blocked (safety system flags `claude.md` as protected agent-instruction file); deliverable filename changed to `claude-expert-answer.md` (matching `01-product/PS01/raw/` convention), unblocked, completed as run 470.
+- Codex synthesis: `01.5-business-market/PS01/BUSINESS-MARKET-SYNTHESIS.md` — initial verdict REMEDIATE (confidence 69/100)
+- Owner decisions BM-1/BM-2 applied via targeted Codex remediation (t_a522a968):
+  - **BM-1 Founding Member C2**: preserved the existing CEO-locked Decision C2. Founding Member limited to first 10 stores only; invitation-only closed-beta/founding-cohort offer (not public blanket); price remains THB 990/month; Pro core room/pet entitlement; continuous-subscription continuity required; shop-bound non-transferable; future paid add-ons excluded; loss of continuity terminal. THB 990 Founding pricing must NOT be represented as general-market Pro WTP or permanent public Pro price. General public Starter/Pro/Enterprise pricing remains a market hypothesis requiring downstream WTP validation.
+  - **BM-2 LINE OA ownership/economics**: store-owned/merchant-owned. Each merchant owns its own LINE OA and bears its own OA/messaging charges directly. Pawstia provides integration/configuration guidance/setup-support. LINE OA/message charges NOT bundled into V1 subscription; merchant-side cost disclosed during onboarding + commercial packaging. WSTERA/Pawstia-owned LINE OA only for internal dev/controlled demo/non-commercial test. No Pawstia-managed or hybrid commercial LINE allowance in V1 without a future explicit Owner decision.
+- Updated verdict: **PASS** (confidence 72/100) — no remaining Business/Market blockers under the frozen gate contract
+- Downstream validation preserved (NOT gate blockers): WTP for Starter/Pro/Enterprise public pricing, trial-to-paid conversion, retention/churn, measured staff-time saving, measured revenue lift, CAC/payback, onboarding/support cost, seasonality, media/storage economics, actual LINE message volume per merchant, long-term PMF. Founding C2 is a deliberately bounded acquisition incentive for at most 10 stores and must not be interpreted as validation of public pricing.
+- This PASS is document-level only — NOT build/launch approval
+- Artifacts: `01.5-business-market/PS01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, product-level INDEX.html, raw/, candidates, manifests)
+
 ## Not released
 
 Module Hub Scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay, and implementation are NOT RELEASED.
-Business/Market Gate for PS01, WS01, LK01, CM01 is NOT yet dispatched. MT01, DC01, and BK01 Business/Market gates have completed document-level PASS artifacts. No later gate, Agent Relay, Product #4 dispatch, implementation, launch, or deployment is released by these PASS results.
+Business/Market Gate for WS01, LK01, CM01 is NOT yet dispatched. MT01, DC01, BK01, and PS01 Business/Market gates have completed document-level PASS artifacts. No later gate, Agent Relay, Product #5 dispatch, implementation, launch, or deployment is released by these PASS results.
 
 ## MT01 procedure deviation (resolved)
 
