@@ -1,0 +1,236 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DC01 DocCraft — Product Owner Brief</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>DC01 DocCraft — Product Owner Brief</h1><p class="muted">Source: 01-PRODUCT-OWNER-BRIEF.md · SHA256 8f18a3acf8f9… · Decisions: 5</p><div class="grid"></div></section>
+<section class="card"><h1>DC01 DocCraft — Product Owner Brief</h1>
+<p>Gate status: <span class="badge remediate">REMEDIATE</span></p>
+<p>Procedure: llm-council-gate v0.3.2</p>
+<p>ผู้เชี่ยวชาญที่ส่งคำตอบครบ: 3/3</p>
+<p>สถานะ identity-blind: ไม่อ่าน mapping, ไม่อ่าน raw, ไม่ใช้ชื่อ expert</p>
+<p>ไฟล์ synthesis หลัก: PRODUCT-SYNTHESIS.md</p>
+<h2>1. รอบนี้ประชุมเรื่องอะไร</h2>
+<p>Verified fact: รอบนี้คือ Product Gate ของ DC01 DocCraft คำถามคือ DocCraft ควรเป็นอะไร ขาย/ทำให้ใคร และ V1 ที่พอเอาไป pilot/sellable ได้ควรจบตรงไหน</p>
+<p>External blocker: รอบนี้ยังไม่ตัดสินราคา รายได้ คู่แข่ง Module Hub, Architecture, Build, Release, Merge, Deploy หรือ Portfolio Arbitration</p>
+<h2>2. สุดท้ายเสนอให้ทำอะไร</h2>
+<p>Recommendation: ให้ล็อกนิยาม DocCraft V1 เป็น:</p>
+<p>DocCraft คือ no-login, browser-first Thai business-document studio สำหรับเจ้าของธุรกิจรายย่อยในไทย ที่ต้องทำใบเสนอราคา ใบแจ้งหนี้ ใบเสร็จ ใบงาน และใบกำกับภาษีแบบมีเงื่อนไข ให้เร็ว ถูกหลักภาษีไทยระดับเอกสาร และพิมพ์ A4 ได้ โดยไม่ต้องใช้ระบบบัญชีเต็มรูปแบบ</p>
+<p>Recommendation: V1 จบที่ PRD acceptance gates ถึง Phase 6 เท่านั้น ยังไม่ใช่ระบบบัญชี ยังไม่ใช่ e-Tax/e-Receipt ยังไม่มี cloud/login/payment confirmation/billing/e-sign/AI/template designer</p>
+<p>Gate status: <span class="badge remediate">REMEDIATE</span></p>
+<p>ความหมายแบบภาษาคน: ทิศทาง product ตอบได้แล้ว แต่ยังไม่ควรบอกว่า <span class="badge pass">PASS</span> สะอาด เพราะต้องแก้/ล็อกถ้อยคำสำคัญก่อนส่งต่อ โดยเฉพาะ "ของปัจจุบันยังไม่ใช่ sellable V1", เรื่อง JSON backup ที่ซ่อนอยู่, และ decision ก่อน pilot</p>
+<h2>3. ทำไมถึงเลือกแบบนี้</h2>
+<p class="consensus">Evidence: 3/3 expert เห็นตรงกันว่า core value คือทำเอกสารธุรกิจไทยให้เร็ว ถูกกว่า Word/Excel manual และไม่หนักเท่าระบบบัญชี</p>
+<p class="consensus">Evidence: 3/3 เห็นตรงกันว่า Thai tax correctness เป็น differentiator สำคัญ เช่น entityType ไม่เท่ากับ vatStatus, VAT/WHT/deposit/rounding ต้องชัด</p>
+<p class="consensus">Evidence: 3/3 เห็นตรงกันว่า V1 ต้องคุม scope แคบ ไม่ลากไปเป็น accounting/cloud/e-Tax/payment platform</p>
+<p>Evidence: 3/3 บอกว่ายังไม่มี live-user evidence เรื่อง willingness to pay หรือ repeat usage เพราะฉะนั้น Product Gate ตอบ "ควรเป็นอะไร" ได้ แต่ยังตอบ "ตลาดจะซื้อไหม" ไม่ได้</p>
+<h2 class="consensus">4. ทุก expert เห็นตรงกันเรื่องอะไร พร้อม ratio</h2>
+<p class="consensus">Consensus 3/3 among completed experts:</p>
+<ul>
+<li>DocCraft ควรเป็น Thai business-document studio ไม่ใช่ accounting software</li>
+<li>กลุ่มหลักคือ freelancer, ช่าง/contractor, ร้าน service, ร้านงานสั่งทำ, micro-SME ในไทย</li>
+<li>core loop คือเลือกเอกสาร -&gt; กรอก -&gt; เปิด/ปิด <span class="badge block">BLOCK</span> -&gt; ตรวจยอด -&gt; Preview A4 -&gt; Print</li>
+<li>V1 เป็น no-login/browser-first/local persistence/no backend</li>
+<li>Native print คือใช้ browser print dialog ไม่ใช่ PDF engine ของแอป</li>
+<li>ภาษีไทยเป็น business rule สำคัญ: entityType แยกจาก vatStatus, VAT/WHT/deposit/rounding ต้อง deterministic</li>
+<li>PromptPay เป็น payment instruction บนเอกสาร ไม่ใช่ payment gateway หรือระบบยืนยันการจ่าย</li>
+<li>Local storage เป็น autosave convenience ไม่ใช่ durable cloud backup</li>
+<li>ยังไม่มีหลักฐาน pilot/paid conversion/repeat usage/willingness to pay</li>
+</ul>
+<h2 class="dissent">5. เห็นต่างกันตรงไหน พร้อม ratio และผลกระทบ</h2>
+<p>Majority 2/3: V1 ที่ sellable ต้องจบที่ Phase 6 / PRD acceptance gates</p>
+<p>Minority/compatible 1/3: ยึด PRD V1 non-goal boundary เหมือนกัน แต่ไม่ได้เน้น Phase 6 เท่าอีกสองคน</p>
+<p>ผลกระทบ: ควรเขียนให้ชัดว่า current code ยังไม่ใช่ sellable V1 จนกว่า Phase 4.1, Phase 5, Phase 6 จะผ่าน</p>
+<p>Majority 2/3: local-first เป็น implementation/delivery choice เป็นหลัก ช่วยให้ no-login, เริ่มเร็ว, ต้นทุนต่ำ</p>
+<p>Minority 1/3: local-first เป็นส่วนหนึ่งของ value proposition ได้</p>
+<p>ผลกระทบ: เวลาขาย/อธิบาย ควรพูดว่า "เริ่มใช้ได้ทันที ไม่ต้องสมัคร ข้อมูล draft อยู่ใน browser" แต่อย่าขายว่า backup ปลอดภัยถาวร</p>
+<p class="risk">Minority evidence 1/3: มีความเสี่ยงว่าเอกสารบางชุดยังพูดเหมือน JSON backup เป็น user-facing backup ทั้งที่ decision ล่าสุดซ่อน JSON controls แล้ว</p>
+<p>ผลกระทบ: ก่อน public pilot/sales ต้อง reconcile messaging ไม่งั้น owner/support/sales อาจสัญญา feature ที่ผู้ใช้มองไม่เห็น</p>
+<p>Minority emphasis 1/3: single-active-draft/no-history อาจทำให้ repeat usage ต่ำ ไม่ใช่เพราะตลาดไม่ต้องการ แต่เพราะ V1 ยังไม่มี history</p>
+<p>ผลกระทบ: ตอนอ่านผล pilot ต้องระวัง อย่าตัดสิน demand ผิดจากข้อจำกัด product</p>
+<h2>6. เรื่องเทคนิคสำคัญที่ Owner ควรเข้าใจ แบบภาษาคน</h2>
+<p>Verified fact: entityType กับ vatStatus เป็นคนละเรื่องกัน นิติบุคคลไม่ได้แปลว่าจด VAT เสมอ และบุคคลธรรมดาก็จด VAT ได้ ถ้าระบบผูกสองอันนี้ผิด เอกสารภาษีจะพัง</p>
+<p>Verified fact: VAT ใช้เมื่อธุรกิจเป็น VAT registered และเปิด VAT เท่านั้น ไม่ใช่เดาจากประเภทกิจการ</p>
+<p>Verified fact: WHT ต้องคิดจากรายการที่ eligible เท่านั้น และถ้ามีส่วนลดทั้งเอกสาร ต้องกระจายส่วนลดเข้า basis ให้ถูก ไม่งั้นยอดหัก ณ ที่จ่ายจะเพี้ยน</p>
+<p>Verified fact: Tax invoice ต้อง lock จนกว่า VAT profile และ required fields ครบ แต่การ validate ในแอปไม่ใช่ legal certification</p>
+<p>Verified fact: PromptPay QR ใน V1 คือคำสั่งให้ลูกค้าจ่าย ไม่ใช่ระบบรับเงิน ไม่รู้ว่าจ่ายแล้วหรือยัง ไม่ verify slip</p>
+<p>Verified fact: Save as PDF เป็นความสามารถของ browser/OS print dialog ไม่ใช่ PDF generator ของ DocCraft</p>
+<p>Verified fact: localStorage ช่วย autosave draft แต่ถ้าผู้ใช้ล้าง browser data, ใช้ private mode, เปลี่ยนเครื่อง หรือ browser policy ล้างข้อมูล draft หายได้</p>
+<h2>7. อะไรยังไม่รู้ / ยังไม่ตัดสิน</h2>
+<p>Unknown: segment ไหนเจ็บสุดและยอมจ่ายสุด</p>
+<p>Unknown: ผู้ใช้จะยอมจ่ายให้ no-login local-first document studio โดยไม่มี cloud/history หรือไม่</p>
+<p>Unknown: telemetry mode สำหรับ pilot จะใช้แบบไหน</p>
+<p>Unknown: print fidelity นอก Chrome/Edge desktop จะดีพอไหม</p>
+<p>Unknown: JSON import/export จะกลับมาเมื่อไหร่ กลับมาเป็น backup ฟรี เป็น paid feature หรือไม่กลับใน V1</p>
+<p>Owner Decision: Phase 4.1 logo intake ยังต้องยืนยันขอบเขตก่อนทำ</p>
+<p>External blocker: ราคา แพ็กเกจ รายได้ และ competitor positioning ต้องไป Business/Market Gate</p>
+<h2 class="risk">8. ความเสี่ยงและกรณีพังสำคัญ</h2>
+<p class="risk">Risk: ประกาศว่า V1 พร้อมขายเร็วเกินไป ทั้งที่ Phase 4.1 logo, Phase 5 PromptPay, Phase 6 hardening ยังไม่เสร็จ</p>
+<p class="risk">Risk: ผู้ใช้เข้าใจผิดว่า browser autosave คือ backup ถาวร แล้ว draft หายจากการล้าง browser data</p>
+<p class="risk">Risk: messaging เรื่อง JSON backup ไม่ตรงกับของจริง เพราะ current decision คือซ่อน controls และไม่ถือเป็น V1 backup contract</p>
+<p class="risk">Risk: ผู้ใช้คิดว่า tax invoice ที่ระบบ validate แล้วคือ legal/tax compliance certification</p>
+<p class="risk">Risk: print output ต่างกันตาม browser/OS โดยเฉพาะนอก Chrome/Edge desktop</p>
+<p class="risk">Risk: ไม่มี telemetry/measurement mode ทำให้ pilot วัด repeat usage และ funnel ไม่ได้</p>
+<p class="risk">Risk: single active draft/no history อาจทำให้คนไม่กลับมาใช้ซ้ำ แม้ pain จริงมีอยู่</p>
+<h2>9. Gate status พร้อมคำแปลว่าหมายถึงอะไร</h2>
+<p>Gate status: <span class="badge remediate">REMEDIATE</span></p>
+<p>แปลตรง ๆ: Product direction ผ่านระดับ "ตอบได้" แต่ยังไม่ใช่ <span class="badge pass">PASS</span> สะอาดสำหรับส่งต่อแบบไม่ต้องระวัง ต้อง <span class="badge remediate">REMEDIATE</span> 4 เรื่อง:</p>
+<ol>
+<li>เขียนชัดว่าปัจจุบันยังไม่ใช่ sellable V1</li>
+<li>ยืนยันว่า JSON import/export ไม่ใช่ user-facing V1 backup contract</li>
+<li>เตือนว่าต้องแก้ messaging/docs ที่อาจยังพูดเรื่อง JSON backup เกินจริงก่อน public pilot</li>
+<li>Owner ต้องตัดสิน Phase 4.1 intake และ telemetry mode ก่อนเดินต่อบางส่วน</li>
+</ol>
+<p><span class="badge block">BLOCK</span>: ไม่มี hard blocker ที่ทำให้ Product Gate ตอบไม่ได้</p>
+<h2>10. ต่อจากนี้จะเกิดอะไร</h2>
+<p>Recommendation: ใช้ Product Pack ชุดนี้เป็น source สำหรับ Product Gate handoff:</p>
+<ul>
+<li>PRODUCT-SOURCE-OF-TRUTH.md</li>
+<li>PRODUCT-SCOPE.md</li>
+<li>USER-FLOWS.md</li>
+<li>BUSINESS-RULES.md</li>
+<li>V1-ACCEPTANCE-CRITERIA.md</li>
+<li>OPEN-DECISIONS.md</li>
+</ul>
+<p>Recommendation: งานถัดไปที่ควรเกิดหลัง owner รับ brief:</p>
+<ol>
+<li>ยืนยัน Phase 4.1 logo intake</li>
+<li>ทำ/ตรวจ Phase 4.1 แล้ว gate</li>
+<li>เปิด Phase 5 PromptPay ตาม brief</li>
+<li>ทำ Phase 6 hardening/release gate</li>
+<li>เลือก telemetry mode ก่อน public pilot</li>
+<li>ค่อยส่งต่อ Business/Market Gate เพื่อดู pricing/packaging/revenue</li>
+</ol>
+<h2>11. Owner ต้องตัดสินอะไรบ้าง</h2>
+<section class="decision-card">
+<h3>Decision D1 — Phase 4.1 logo จะยืนยัน fixed single-logo V1 scope ไหม</h3>
+<ul>
+<li>Status: REQUIRED</li>
+<li>Council recommendation: Option A</li>
+<li>Council support: 2/3</li>
+<li>Confidence: 82%</li>
+</ul>
+<div class="option-card">
+<h4>Option A — ยืนยัน single logo fixed placement แล้วเข้า intake</h4>
+<ul>
+<li>ข้อดี: เอกสารดูเป็นธุรกิจจริงขึ้น โดยไม่เปิด scope template designer</li>
+<li>ข้อเสีย: ยังไม่รองรับ multi-logo, watermark, brand kit</li>
+<li>ผลต่อระบบ: ต้องทำ Phase 4.1 และมี gate evidence ก่อนเรียก V1</li>
+<li>ผลต่อรายได้/ต้นทุน: ต้นทุนต่ำกว่า template designer และช่วยให้เอกสารดูพร้อมใช้</li>
+<li>ความเสี่ยง: ถ้าไม่ล็อก size/format limits จะ scope creep</li>
+</ul>
+</div>
+<div class="option-card">
+<h4>Option B — เลื่อน logo ออกจาก V1</h4>
+<ul>
+<li>ข้อดี: ลดงาน implementation ทันที</li>
+<li>ข้อเสีย: ขัดกับทิศทาง expert ส่วนใหญ่ที่มองว่า logo เป็น V1 value</li>
+<li>ผลต่อระบบ: ต้องแก้ scope/PRD หรือบันทึก deviation</li>
+<li>ผลต่อรายได้/ต้นทุน: ทำเร็วขึ้น แต่เอกสารดูไม่พร้อมขายเท่าเดิม</li>
+<li>ความเสี่ยง: V1 อาจดูไม่ professional สำหรับธุรกิจจริง</li>
+</ul>
+</div>
+</section>
+<section class="decision-card">
+<h3>Decision D2 — Pilot telemetry จะเก็บแบบไหน</h3>
+<ul>
+<li>Status: REQUIRED BEFORE PUBLIC PILOT</li>
+<li>Council recommendation: Option A</li>
+<li>Council support: 2/3</li>
+<li>Confidence: 76%</li>
+</ul>
+<div class="option-card">
+<h4>Option A — เก็บ anonymous/consented events แบบไม่เก็บเนื้อหาเอกสาร</h4>
+<ul>
+<li>ข้อดี: วัด activation, print/save completion, return usage ได้</li>
+<li>ข้อเสีย: ต้องทำ privacy copy และ guardrail ให้ดี</li>
+<li>ผลต่อระบบ: เพิ่ม event collection เฉพาะที่อนุญาต ห้ามเก็บ customer/document content</li>
+<li>ผลต่อรายได้/ต้นทุน: ช่วยให้ Business/Market Gate มี evidence จริง</li>
+<li>ความเสี่ยง: ถ้าออกแบบแย่จะเสี่ยง privacy</li>
+</ul>
+</div>
+<div class="option-card">
+<h4>Option B — ไม่เก็บ telemetry ใช้ feedback manual เท่านั้น</h4>
+<ul>
+<li>ข้อดี: privacy risk ต่ำสุด</li>
+<li>ข้อเสีย: หลักฐานอ่อน วัด funnel/repeat usage ยาก</li>
+<li>ผลต่อระบบ: ไม่ต้องเพิ่ม analytics</li>
+<li>ผลต่อรายได้/ต้นทุน: ตัดสิน pricing/Phase 7 ยากขึ้น</li>
+<li>ความเสี่ยง: ตัดสินจาก anecdote มากเกินไป</li>
+</ul>
+</div>
+</section>
+<section class="decision-card">
+<h3>Decision D3 — JSON import/export อนาคตจะเอายังไง</h3>
+<ul>
+<li>Status: REQUIRED LATER</li>
+<li>Council recommendation: Option A</li>
+<li>Council support: 3/3 for current hidden/non-contractual V1 state; future packaging unresolved</li>
+<li>Confidence: 74%</li>
+</ul>
+<div class="option-card">
+<h4>Option A — ซ่อนต่อใน V1 แล้วค่อย scope review</h4>
+<ul>
+<li>ข้อดี: ตรงกับ D-2026-09-03 และไม่สัญญา backup ที่ UI ไม่มี</li>
+<li>ข้อเสีย: ผู้ใช้ยังเสี่ยง draft หายโดยไม่มี visible export</li>
+<li>ผลต่อระบบ: handler ยังอยู่แต่ไม่เป็น product surface</li>
+<li>ผลต่อรายได้/ต้นทุน: ยังไม่ใช่ paid lever แต่ลด support promise</li>
+<li>ความเสี่ยง: docs/sales อาจเผลอพูดเกินจริง</li>
+</ul>
+</div>
+<div class="option-card">
+<h4>Option B — เปิดกลับมาเป็น visible V1 backup/data portability</h4>
+<ul>
+<li>ข้อดี: ลดความกลัวเรื่อง localStorage</li>
+<li>ข้อเสีย: ต้องแก้ owner decision ปัจจุบัน</li>
+<li>ผลต่อระบบ: ต้องทำ UI/docs/tests/support ใหม่</li>
+<li>ผลต่อรายได้/ต้นทุน: เพิ่ม trust แต่อาจลดเหตุผลของ cloud/pro ภายหลัง</li>
+<li>ความเสี่ยง: scope creep และ support burden</li>
+</ul>
+</div>
+<div class="option-card">
+<h4>Option C — เก็บไว้เป็น paid/deferred capability</h4>
+<ul>
+<li>ข้อดี: อาจเป็น monetization hook</li>
+<li>ข้อเสีย: เป็นเรื่อง Business/Market Gate ไม่ใช่ Product Gate นี้</li>
+<li>ผลต่อระบบ: ต้องรอตัดสินรอบหลัง</li>
+<li>ผลต่อรายได้/ต้นทุน: อาจสร้างรายได้ แต่ยังไม่มี evidence</li>
+<li>ความเสี่ยง: คิดเงินกับ data portability อาจกระทบ trust</li>
+</ul>
+</div>
+</section>
+<section class="decision-card">
+<h3>Decision D4 — Phase 7+ Cloud/Pro จะเปิดเมื่อไหร่</h3>
+<ul>
+<li>Status: REQUIRED LATER</li>
+<li>Council recommendation: Option A</li>
+<li>Council support: 3/3</li>
+<li>Confidence: 80%</li>
+</ul>
+<div class="option-card">
+<h4>Option A — รอ PV Gate ก่อนเปิด Cloud/Pro/history/catalog/billing</h4>
+<ul>
+<li>ข้อดี: ไม่ทำ SaaS กว้างเกินก่อนพิสูจน์ pain</li>
+<li>ข้อเสีย: V1 ยังไม่มี history/cloud ทำให้ repeat loop อ่อนกว่า</li>
+<li>ผลต่อระบบ: V1 คง no-backend/no-login</li>
+<li>ผลต่อรายได้/ต้นทุน: ต้นทุนต่ำ แต่ recurring revenue infrastructure ช้าลง</li>
+<li>ความเสี่ยง: pilot อาจดู repeat ต่ำเพราะ product ยังไม่มี history</li>
+</ul>
+</div>
+</section></section>
+</main></body></html>

@@ -1,0 +1,163 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PS01 Pawstia — Product Owner Brief</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>PS01 Pawstia — Product Owner Brief</h1><p class="muted">Source: 01-PRODUCT-OWNER-BRIEF.md · SHA256 e7cc590b6755… · Decisions: 0</p><div class="grid"><div class="gate"><b>Product Gate</b><span class="badge pass">PASS</span></div></div></section>
+<section class="card"><h1>PS01 Pawstia — Product Owner Brief</h1>
+<p>ขั้นตอน: <code>llm-council-gate</code> v0.3.2</p>
+<p>สถานะผู้เชี่ยวชาญ: ครบ 3/3</p>
+<p>Gate นี้ตัดสินเฉพาะ Product: Pawstia ควรเป็นอะไร, สำหรับใคร, และ V1 จบตรงไหน</p>
+<h2>1. Verdict</h2>
+<p><strong><span class="badge remediate">REMEDIATE</span></strong></p>
+<p>แปลตรง ๆ: ทิศทางสินค้าใช้ได้และชัด แต่ยังไม่ควรให้ Product Gate ผ่านเต็ม เพราะยังขาดหลักฐานจากร้านจริงและ decision ของ Owner บางข้อก่อนเข้าด่านถัดไป</p>
+<p>นี่ไม่ใช่ <span class="badge block">BLOCK</span> และไม่ใช่คำสั่งหยุดโปรเจกต์ เป็นคำสั่งให้เคลียร์ scope + validation ให้ครบก่อน <span class="badge pass">PASS</span></p>
+<h2>2. Agreement 3/3</h2>
+<p class="consensus">ผู้เชี่ยวชาญทั้ง 3 คนเห็นตรงกันว่า Pawstia V1 ควรเป็น:</p>
+<p><strong>Pet Hotel/Daycare OS สำหรับร้านเดี่ยวในไทย</strong></p>
+<p>ไม่ใช่ PMS กว้าง ๆ, ไม่ใช่ระบบคลินิก, ไม่ใช่ grooming suite, ไม่ใช่ระบบ multi-branch, ไม่ใช่ marketplace และไม่ใช่ paid-production SaaS ที่พร้อมขายจาก CI เขียวอย่างเดียว</p>
+<p>Agreement หลัก:</p>
+<ul>
+<li>Product identity: <strong>3/3</strong></li>
+<li>V1 ควรแคบและยึด daily stay loop: <strong>3/3</strong></li>
+<li>ยังไม่มี market fit / real-store validation: <strong>3/3</strong></li>
+<li>ต้องแยก technical closure ออกจาก product-market proof: <strong>3/3</strong></li>
+</ul>
+<h2>3. Product Identity</h2>
+<p>Pawstia V1 คือระบบ daily operations ของร้าน pet hotel/daycare ร้านเดี่ยว</p>
+<p>คำอธิบายที่ควรใช้:</p>
+<p><strong>ระบบจัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE พร้อมสำเนาข้อมูลใน Google Sheets สำหรับร้าน pet hotel/daycare ร้านเดี่ยว</strong></p>
+<p>คำว่า PMS ใช้เป็นชื่อหรือ category ได้ แต่ห้ามให้มันลาก scope ไปเป็นระบบกว้างเกินจริง</p>
+<h2>4. For Whom</h2>
+<p>คนจ่ายเงินหลัก: เจ้าของร้าน pet hotel/daycare ร้านเดี่ยว</p>
+<p>คนใช้ทุกวัน: เจ้าของร้าน, manager, staff หน้าร้าน/คนดูแลสัตว์</p>
+<p>คนได้รับ value ทางอ้อม: เจ้าของสัตว์เลี้ยงที่ได้รับ report ใน LINE</p>
+<p>ห้ามสลับ focus ไปเป็น B2C-first เพราะคนที่ต้องใช้ทุกวันและจ่ายเงินคือร้าน</p>
+<h2>5. Strongest Pain</h2>
+<p>Pain ที่ควรยึดเป็นหัวใจ:</p>
+<ol>
+<li>ห้องชน / booking ซ้อน โดยเฉพาะช่วงเทศกาล</li>
+<li>staff ต้องส่งรูปและ update สัตว์เลี้ยงผ่าน LINE แบบกระจัดกระจายทุกวัน</li>
+<li>เจ้าของร้านกลัว data lock-in ถ้าย้ายจาก Excel/paper ไปใช้ software</li>
+</ol>
+<p>ถ้า message ขายไม่แตะ 3 เรื่องนี้ แปลว่าหลุดจาก product core</p>
+<h2>6. Core Daily Value Loop</h2>
+<p>loop หลักของสินค้า:</p>
+<p>ลูกค้านำสัตว์มา check-in -&gt; staff จัดห้องโดยไม่ชน -&gt; staff บันทึก care/status -&gt; ส่ง Daily Care Report พร้อมรูป 1-4 รูป -&gt; เจ้าของสัตว์ได้รับใน LINE -&gt; ร้านมีข้อมูลสำเนาใน Google Sheets</p>
+<p>นี่คือ retention loop จริง ไม่ใช่ dashboard และไม่ใช่ subscription screen</p>
+<h2>7. V1 Boundary</h2>
+<p>V1 ควรจบที่:</p>
+<ul>
+<li>single-store tenant/staff authorization</li>
+<li>customer, pet, room, booking</li>
+<li>check-in, check-out, cleaning, maintenance</li>
+<li>booking integrity / no-overlap</li>
+<li>Daily Care Report + LINE delivery/retry</li>
+<li>LINE identity claim</li>
+<li>Google Sheets replica/export</li>
+<li>onboarding + CSV import</li>
+<li>owner/manager dashboard ที่พอใช้ควบคุมร้าน</li>
+<li>subscription/entitlement/quota foundation ในฐานะ access-control ไม่ใช่หลักฐานว่าพร้อมเก็บเงิน</li>
+</ul>
+<p>V1 ไม่รวม:</p>
+<ul>
+<li>clinic/pharmacy</li>
+<li>grooming queue</li>
+<li>payment, SlipOK, billing, e-tax</li>
+<li>Google Drive photo sync</li>
+<li>digital pet passport</li>
+<li>full multi-camera / RTSP-HLS platform</li>
+<li>multi-branch</li>
+<li>marketplace</li>
+</ul>
+<h2>8. Defining Vs Optional</h2>
+<p>Product-defining:</p>
+<ul>
+<li>room matrix + booking integrity</li>
+<li>pet/room no-overlap</li>
+<li>Daily Care Report เข้า LINE</li>
+<li>Google Sheets data ownership</li>
+<li>LINE claim ที่เชื่อมเจ้าของสัตว์ถูกคน</li>
+</ul>
+<p>Optional/support:</p>
+<ul>
+<li>LIFF self-booking</li>
+<li>visitor camera</li>
+<li>dashboard polish</li>
+<li>entitlement/quota UI</li>
+<li>CSV import tooling</li>
+</ul>
+<p>ของ optional มีได้ แต่ห้ามเอามาเป็น headline ของ V1 ก่อนพิสูจน์ loop หลักกับร้านจริง</p>
+<h2 class="dissent">9. Dissent / Divergence</h2>
+<p class="dissent">ไม่มี dissent ใหญ่เรื่อง identity</p>
+<p>จุดที่ต่างกัน:</p>
+<ul>
+<li>Candidate A เน้นว่า Phase 13 ยังไม่มี independent review และ docs บางส่วน drift</li>
+<li>Candidate B ให้น้ำหนักกับ CI run ที่ verified success และ PR #4 ที่ยัง Draft/Open</li>
+<li>Candidate C สรุป Phase 13 เป็น engineered/CI-closed แต่ยังไม่ independently closed</li>
+</ul>
+<p>สรุปรวม: Phase 13 เป็น technical evidence ที่แรง แต่ไม่ใช่ market fit, ไม่ใช่ paid launch readiness, และยังไม่ควรใช้แทน Product Gate <span class="badge pass">PASS</span></p>
+<p>เรื่อง Module Hub:</p>
+<ul>
+<li>Candidate A/B ตรวจ overlap แล้วเห็นว่าไม่ควรแทน native Pawstia behavior</li>
+<li>Candidate C ถือว่า Module Hub scan ยัง <span class="badge hold">HOLD</span></li>
+</ul>
+<p>สรุปรวม: Product Gate นี้ไม่ใช้ Module Hub มาตัด scope ของ Pawstia</p>
+<p>เรื่อง camera/LIFF:</p>
+<ul>
+<li>ทั้ง 3 มองว่าไม่ใช่ product-defining</li>
+<li>camera ต้องให้ Owner ตัดสินใจว่าจะโชว์, ซ่อน, หรือ postpone ใน beta</li>
+</ul>
+<h2 class="risk">10. Risks / Blockers</h2>
+<p class="risk">ความเสี่ยงหลัก:</p>
+<ul>
+<li>ยังไม่มีร้านจริงใช้ product loop</li>
+<li>ยังไม่มีหลักฐาน willingness-to-pay</li>
+<li>มีโอกาสเข้าใจผิดว่า CI เขียว = market fit</li>
+<li>Phase 13 ยังขาด independent review verdict ตาม candidate reports</li>
+<li>payment/legal/ops/support/brand/channel ยังไม่พร้อมสำหรับ paid production</li>
+<li>LINE OA / channel ownership ยังไม่ชัด</li>
+<li>Founding Member 990 THB Pro-forever อาจ lock ราคาเร็วเกินไปก่อนรู้ WTP จริง</li>
+<li>secret handling เช่น per-shop LINE token ยังควรถือเป็น beta/ops risk ไม่ใช่ production-hardening complete</li>
+</ul>
+<h2>11. Required Owner Decision Cards</h2>
+<h3>Decision 1 — ยืนยัน public V1 identity</h3>
+<p>ต้องตัดสินว่า Pawstia V1 จะพูดว่าเป็น <strong>single-location Pet Hotel/Daycare OS</strong> ไม่ใช่ PMS กว้าง ๆ</p>
+<p>Default จาก synthesis: ยืนยันทางนี้</p>
+<h3>Decision 2 — ล็อก V1 promise</h3>
+<p>ต้องล็อกว่า headline คือ room integrity + Daily Report to LINE + Google Sheets ownership</p>
+<p>Default จาก synthesis: ล็อก และห้ามเพิ่ม clinic/grooming/payment/multi-branch เข้า V1</p>
+<h3>Decision 3 — Visitor camera</h3>
+<p>ต้องเลือก: โชว์ใน beta, ซ่อน, หรือ postpone</p>
+<p>Default จาก synthesis: postpone หรือซ่อนหลัง controlled/internal flag จนกว่าร้านจริงบอกว่ามี value</p>
+<h3>Decision 4 — Store #1</h3>
+<p>ต้องระบุร้าน beta แรกและ success metrics</p>
+<p>metrics ขั้นต่ำ: onboarding time, staff learning, booking conflict, report time, LINE delivery, Sheets sync, support burden, owner value, WTP signal</p>
+<h3>Decision 5 — Founding Member offer</h3>
+<p>ต้องตัดสินว่า 990 THB Pro-forever จะ keep, revise, หรือ <span class="badge hold">HOLD</span> ก่อน WTP validation</p>
+<p>Default จาก synthesis: <span class="badge hold">HOLD</span> public commitment ถ้ายังไม่มี WTP evidence</p>
+<h3>Decision 6 — Paid launch separation</h3>
+<p>ต้องยืนยันว่า paid launch ห้ามเริ่มจนกว่า payment/legal/ops/brand gates ปิดจริง</p>
+<p>Default จาก synthesis: ยืนยัน hard separation</p>
+<h3>Decision 7 — LINE OA / channel ownership</h3>
+<p>ต้องตัดสินว่า beta/production ใช้ LINE OA ของร้าน, ของ Pawstia, หรือ hybrid setup</p>
+<p>Default จาก synthesis: เลือกให้ชัดก่อนร้านแรก เพราะ LINE report คือ product core</p>
+<h2>Final Product Gate Output</h2>
+<p><strong>Verdict: <span class="badge remediate">REMEDIATE</span></strong></p>
+<p class="consensus"><strong>Agreement: 3/3 เห็นตรงกันเรื่อง identity และ V1 boundary; 3/3 ของ evidence ชี้ว่าต้อง <span class="badge remediate">REMEDIATE</span> ก่อน <span class="badge pass">PASS</span></strong></p></section>
+</main></body></html>

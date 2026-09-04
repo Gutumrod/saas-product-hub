@@ -1,0 +1,108 @@
+# WS01 — Product Gate Candidate B
+
+_(anonymized candidate; identity withheld from synthesizer)_
+
+---
+
+Warning: running headless with --yolo / approval-mode=yolo and no sandbox. All tool calls (shell, write, edit) auto-execute at this process's privilege level. Enable a sandbox via --sandbox / QWEN_SANDBOX, or set QWEN_CODE_SUPPRESS_YOLO_WARNING=1 to silence this notice.
+I have completed the evidence inspection. The repo at HEAD `e1eff9b` (clean tree) is 42 tracked files, all documentation ΓÇö no code, migration, scaffold, or deployment exists. Here is my expert input.
+
+---
+
+## Recommendation
+
+WSM should be a **multi-tenant B2B supply planning and dealer allocation SaaS for importer/distributor businesses**, whose identity is the single traceable source of truth along **Demand ΓåÆ Supply ΓåÆ Gap ΓåÆ Allocation ΓåÆ Fulfillment** (`docs/00_PRODUCT_VISION.md`; `docs/design/01-north-star-architecture.md` ┬º1). The primary user/buyer is the **tenant owner (importer/distributor owner-admin)**; the dealer is the daily demand-side actor via a mobile-first booking link, and the dealer's trust in the result is part of the product, not a side effect.
+
+**Where V1 ends** (evidence: `docs/01_PRD.md` Required rows; `docs/10_DEVELOPMENT_ROADMAP.md` Phase 1; `docs/design/03-phase-map-source.md` Phase 1 deferred list): V1 ends at the thin end-to-end loop ΓÇö dealer booking round ΓåÆ idempotent demand submission ΓåÆ manual supply entry with confidence class ΓåÆ Gap view ΓåÆ manual/partial allocation ΓåÆ backorder ΓåÆ dealer-visible result ΓÇö plus tenant isolation, audit, entitlement-read enforcement, and mobile UX. V1 explicitly does **not** include: PO workflow, factory commitment/production batches, allocation policy engine, warehouses/stock ledger, payments/invoicing, dealer portal beyond booking + self-status, notifications, forecast/AI, or any integrations beyond auth/runtime/database (`docs/08_EXTERNAL_DEPENDENCIES.md` Phase 1 dependency minimization; `docs/design/03-phase-map-source.md` "Explicitly Deferred").
+
+The endgame identity (strongest form): the **Supply Gap Engine + Allocation decision record** ΓÇö the importer's control point for answering "who wants what, what supply is actually reliable, where is the shortage, who gets scarce supply, who is affected when supply changes, and what was actually shipped" (`00_PRODUCT_VISION.md` Core value; North Star ┬º12 calls the Gap engine "the core of the Product"). Phases 2ΓÇô8 deepen supply provenance, policies, fulfillment, and intelligence; they do not change the identity.
+
+I issue **no gate verdict, no pricing/revenue/competition decision, and no Phase 1 build brief**, per the frozen brief's hard rules. The repo itself is correctly staged: Documentation Lock is authorized (PD-012) and implementation awaits a separate approved Phase 1 build brief (`docs/CURRENT_STATUS.md`; `docs/MASTER_CHECKLIST.md`).
+
+## Verified facts/evidence used
+
+All facts below verified by opening files at git HEAD `e1eff9b` (branch `main`, working tree clean, up to date with `origin/main`); repo contains only documentation (42 tracked files, no code).
+
+**Primary user/buyer and pain**
+- `00_PRODUCT_VISION.md`: Problem ΓÇö importers/distributors manage dealer demand, factory commitments, shortages and allocation "across spreadsheets, chat and memory"; ordered quantity mistaken for confirmed supply; delays discovered too late. Primary ICP: importer/distributor with multiple SKUs and dealers, one or more suppliers/factories, regular partial production/delay/shortage, manual allocation today. Category: "Multi-tenant B2B supply planning and dealer allocation SaaS."
+- North Star ┬º2 (design evidence, Thai): the owner must continuously answer ten questions (dealer wants, real available stock, factory promises, who is affected by a delay, what to order, when). North Star ┬º28 defines success as every party referencing one dataset.
+- `06_UX_USER_FLOWS.md`: two journeys ΓÇö Owner/Admin 10-step thin-loop journey; Dealer 6-step mobile booking journey.
+
+**Smallest end-to-end loop**
+- `docs/design/03-phase-map-source.md` Phase 1 Exit Gate is a concrete numeric scenario: admin opens round X100 ΓåÆ Dealer A requests 50, Dealer B 80 ΓåÆ demand 130 ΓåÆ admin enters reliable supply 100 ΓåÆ shortage 30 ΓåÆ allocate A=40, B=60 ΓåÆ backorders A=10, B=20 ΓåÆ both dealers see correct self-only results ΓÇö "α╕äα╕úα╕Üα╣éα╕öα╕óα╣äα╕íα╣êα╣âα╕èα╣ë Excel α╣üα╕ùα╕úα╕üα╕üα╕Ñα╕▓α╕ç" (complete without Excel in the middle).
+- `docs/technical/PHASE1_SCHEMA.md` (authoritative column-level contract, promoted 2026-09-03) realizes exactly this loop with 16 Phase 1 entities and three views (`v_demand_line_state`, `v_supply_position`, `v_round_demand_summary`), including the DOC-001 Gap double-count correction.
+
+**V1 scope / non-goals / primary flows**
+- `01_PRD.md`: 25 Required requirement IDs (FR/SEC/REL/NFR/OPS), all mapped 25/25 in `audit/FEATURE_REQUIREMENT_TRACEABILITY.md` with evidence state `DOC-ONLY` and gates G0ΓÇôG9. Public-launch rule: no capability marketed as shipped until its Required row has implementation and release evidence.
+- Phase 1 explicit non-goals (`10_DEVELOPMENT_ROADMAP.md` Phase 1 name; `03-phase-map-source.md` "Explicitly Deferred"): auto allocation policy, full PO workflow, production batch/revision history, warehouse movement/barcode, payment/invoice, forecast/AI.
+- `08_EXTERNAL_DEPENDENCIES.md`: Phase 1 requires only auth, server runtime, database; notification/carrier/accounting/AI deferred unless promoted by owner decision.
+
+**Owner-approved decisions** (`docs/PRODUCT_DECISIONS.md`, PD-001ΓÇôPD-012, all APPROVED): name/ID (PD-001/002), North-Star-first then phased (PD-003), thin loop Phase 1 (PD-004), many-to-many sourcing (PD-005), doc hardening (PD-006), one supplier = one production source in Phase 1 with `supplier_sites` as Phase 2 expand migration (PD-007), dealer identity mode `code` for V1 with `login`/`open` defined but unused (PD-008), manual supply tenant-global by default (`supply_entries.booking_round_id` null; Gap defaults to global scope, round as optional filter) (PD-009), first tenant base currency THB (PD-010), no automatic backorder carry at round completion ΓÇö stays `open` until explicit admin action (PD-011), Documentation Lock authorized (PD-012).
+
+**Locked invariants** (`05_SUPPLY_DOMAIN_RULES.md` ten invariants; `02_SYSTEM_ARCHITECTURE.md` architectural invariants; North Star ┬º29 guardrails; `03_DATA_SECURITY_TENANCY.md` mandatory controls): Requested Γëá Allocated Γëá Fulfilled; Ordered Γëá Confirmed Γëá Received; product Γåö supplier many-to-many; history-over-overwrite; tenant-configurable policy (no one allocation rule fits all); manual supply is a replaceable adapter that must never force reinterpretation of historical demand; allocation may bind to reliable future supply; manual override requires actor/reason/audit; tenant isolation with rejection (not hiding) of cross-tenant FK mismatch; immutable audit; dealer reads self-scoped.
+
+**Gap semantics** (`05` Gap rule; `technical/CANONICAL_DATA_MODEL.md` "Correct Gap semantics"; `PHASE1_SCHEMA.md` ┬º7): Gap is derived over a horizon; `open_confirmed_demand` counts backordered lines once; `backorders.quantity` is never subtracted again ΓÇö this is the DOC-001 P1 defect fix from `audit/CURRENT_TRUTH_AND_CONTRADICTIONS.md`, with the defective formula surviving only in `design/04` (evidence-only).
+
+**Multi-tenant shape**
+- Product-required: category statement (`00`), North Star ┬º25 ("α╕Öα╕╡α╣êα╕äα╕╖α╕¡ SaaS α╣äα╕íα╣êα╣âα╕èα╣êα╕úα╕░α╕Üα╕Üα╕éα╕¡α╕çα╕Üα╕úα╕┤α╕⌐α╕▓α╕ùα╣Çα╕öα╕╡α╕óα╕º" ΓÇö 1 tenant = 1 importer business, per-tenant policies), every business table carries `tenant_id`, RLS via verified JWT claim (`PHASE1_SCHEMA.md` ┬º8), `tenant_policies` and `entitlement_snapshots` tables exist in the Phase 1 contract, cross-tenant/cross-dealer negative tests are gates G3 (`09_TEST_RELEASE_GATES.md`).
+- Architecturally pending: exact hosting/database placement and central billing integration contract are explicitly **pending portfolio decisions** (`02` "Placement decisions still pending"; `04`; `08` "Current portfolio facts"; `PRODUCT_DECISIONS.md` pending list; `PHASE1_SCHEMA.md` ┬º9). A stale claim tying WSM to a shared Subscribe DB was removed as DOC-002 (P1) and survives only in `design/`.
+
+**Success criteria** (`07_ANALYTICS_KPI_SPEC.md`; North Star ┬º30): KPIs demand capture rate, allocation coverage, backorder rate, supply reliability, promise accuracy, override rate; SaaS KPIs ΓÇö activated tenants completing first booking round, time to first completed thin loop, weekly active operators, active dealers submitting demand. Nine required V1 events defined. North Star success = owner answers the full question chain from one system with traceability from dealer demand to actual shipment.
+
+**Edge cases** (`06_UX_USER_FLOWS.md` required recovery/error states): expired/closed round, invalid/already-used dealer identity, retry-after-network-failure without duplication (FR-BKG-003, idempotency key unique `(booking_round_id, dealer_id, idempotency_key)`), quantity outside limits, supply changed during allocation, attempted over-allocation, session expiry/permission change, entitlement limit reached.
+
+**Verification state**: `audit/INDEPENDENT_REVIEW.md` (2026-08-30) ΓÇö PASS, no unresolved P0/P1, 25/25 PRD IDs traced, 0 missing/0 orphaned, no fabricated shipped claims, no invented commercial/legal values. Six documented defects DOC-001ΓÇô006 all dispositioned. `CURRENT_STATUS.md`: no migration, scaffold, deployment or DB apply exists.
+
+## Key reasons
+
+1. **The product identity is already owner-locked and internally consistent.** The North Star chain Demand ΓåÆ Supply ΓåÆ Gap ΓåÆ Allocation ΓåÆ Fulfillment appears verbatim in `00`, README, `03-phase-map-source.md`, and is enforced by a "every future feature must serve at least one core element" rule (North Star ┬º1). Seven review challenge sets in `audit/INDEPENDENT_REVIEW.md` all PASS.
+
+2. **The thin loop is the correct value probe, and it is precisely specified.** The Phase 1 exit scenario (30-unit shortage allocated across two dealers with backorders, dealers self-verify) is a real operational answer, not a demo: it proves requested Γëá allocated, shortage visibility, and dealer-visible fairness ΓÇö the three pains the vision names. Every loop element already has a column-level schema contract, so the loop is buildable without invention.
+
+3. **The domain invariants ΓÇö not the tech stack ΓÇö are what make WSM defensible as a product.** The requested/allocated/fulfilled and ordered/confirmed/received separations, confidence-classed supply, history-over-overwrite, and tenant-configurable allocation policy directly encode the importer's actual failure mode (spreadsheets conflating "ordered" with "confirmed" and "allocated" with "guaranteed"). A tool that keeps these distinctions is categorically different from a spreadsheet; a tool that drops them is a re-skin of the problem.
+
+4. **Multi-tenancy is product-required at the model level.** The ICP is "an importer/distributor business" as a class, not one company; tenant-configurable policy (Principle 5) and per-tenant dealers/rounds/policies are in the Phase 1 schema itself. However, the *deployment shape* (shared vs dedicated runtime, which Supabase project, billing integration contract) is deliberately and correctly left as a pending portfolio decision ΓÇö schema design "must not embed the placement assumption" (`PHASE1_SCHEMA.md` ┬º9). So: tenancy = product-defining; placement = architectural intent awaiting owner/portfolio decision.
+
+5. **Product-defining vs implementation-detail split of the locked invariants:**
+   - **Product-defining (would change what WSM is if violated):** the two state-separation triples; many-to-many sourcing; history-over-overwrite for commitments/promises/overrides; tenant-configurable allocation policy; Gap single-subtraction semantics; explicit backorder carry (PD-011); manual supply as a replaceable adapter with provenance/confidence; tenant isolation + dealer self-scope; immutable audited overrides; "requested is not guaranteed allocation" dealer contract (FR-BKG-004); canonical terminology rule (never call requested stock "reserved", `06` UX principles).
+   - **Implementation detail (correctly locked for Phase 1 but not identity-bearing):** one-supplier-one-source (PD-007 is a Phase 1 shape decision with a defined expand path, not a domain rule ΓÇö invariant 5 many-to-many is the product rule); dealer identity mode `code` (PD-008 fixes V1 but `login`/`open` remain defined); tenant-global-vs-round supply scope default (PD-009, a UX default with a filter); THB base currency (PD-010); advisory lock granularity per `(tenant_id, variant_id, booking_round_id)` (explicitly flagged revisable in a `ponytail` note); uuid/snake_case/no-prefix conventions; expand-contract migration discipline; `gen_random_uuid()` defaults.
+
+6. **Governance is working as designed.** The decision log cleanly separates owner-approved decisions (PD-001ΓÇô012) from pending owner choices (placement, billing contract, commercial values, retention/SLA), and the change rule forbids implementation briefs from converting pending items into facts. The documentation lock is explicitly "not implementation approval" (PD-012).
+
+## Risks/failure cases
+
+1. **Everything is DOC-ONLY.** All 25 Required requirements have zero implementation evidence (`FEATURE_REQUIREMENT_TRACEABILITY.md`). The product definition is sound on paper; the primary risk to the gate question is not conceptual but executional ΓÇö the Phase 1 build brief and build could still fail to realize the locked loop, and nothing in the repo yet proves otherwise.
+2. **Dealer-code identity is a real trust boundary.** PD-008 makes a tenant-issued dealer `code` the sole V1 identity on the public booking link. The schema correctly treats it as "an identity claim, not an authorization token" with server-side verification before insert and no read access to existing rows (`PHASE1_SCHEMA.md` ┬º8) ΓÇö but a guessable/leaked code lets a third party inject demand as a dealer. `03` mandates "forged booking identity" negative tests; this is the most security-sensitive V1 flow and is untested by definition.
+3. **The dealer experience carries the product's credibility.** FR-BKG-004 forces explicit "request is not guaranteed allocation" messaging, and the dealer sees requested/allocated/waiting only for self. If allocation outcomes or backorder handling feel opaque, dealers bypass the link and the demand-capture KPI collapses back to LINE chat ΓÇö the exact behavior WSM exists to replace. The North Star itself requires the dealer-facing flow from Phase 1 because it is "the source of real demand."
+4. **Manual supply is a load-bearing simplification.** Phase 1 gap math is only as honest as the admin-entered confidence classes. The adapter rule (record source/confidence/effective date, replaceable without reinterpreting history, `05` Phase 1 simplification) protects the migration path, but a tenant that over-enters `factory_confirmed` (the default reliable threshold) can make the Gap view lie in V1. PD-009's tenant-global default also means gap results mix supply across rounds unless admins use the filter.
+5. **No automatic backorder carry (PD-011) creates a follow-through burden.** Backorders stay `open` until an explicit admin action; nothing in V1 notifies or queues the carry. If admins forget, dealer promises silently stall ΓÇö acceptable for a thin loop, but it is a known manual-memory dependency reintroduced at exactly the point (round completion) the product is supposed to remove memory-dependence.
+6. **Unresolved owner decisions can stall activation.** Production runtime/database placement, central billing/entitlement contract, commercial plans/prices/trial/limits/grace, retention and public SLA wording are all explicitly pending (`PRODUCT_DECISIONS.md`; `CURRENT_STATUS.md`). These do not block the thin loop's development, but they block public launch, and the entitlement snapshot table's plan keys are shape placeholders only.
+7. **Design-source residue is a standing hazard.** `design/04` still carries the defective Gap formula and stale Subscribe-DB claims. The authority order demotes it to evidence, and the schema file explicitly warns "must not be copied" ΓÇö but anyone building from `design/` instead of `technical/PHASE1_SCHEMA.md` reintroduces DOC-001.
+
+## Assumptions
+
+- The Thai-language `design/01` and `design/03` documents reflect owner intent, consistent with their promotion into the English SSOT `00`ΓÇô`10`; they are evidence-only but I treat their Phase 1 exit scenario and North Star detail as authoritative in spirit since SSOT docs restate them.
+- "Tenant owner" (the importer/distributor business owner) is simultaneously buyer and primary operator in V1 ΓÇö no separate purchaser/warehouse/finance users are required for the loop, though roles are defined in the schema.
+- The ICP exists in WSTERA's reach and the Phase 1 exit scenario matches a real importer's weekly cadence; the repo contains no market/customer evidence, so ICP validity is assumed from the vision statement rather than verified.
+- "Module Hub" corresponds to the shared-portfolio infrastructure family (auth boundary, billing-core plan, data platform referenced in `02`/`04`/`08`); consistent with the brief, I assume none of it is in V1 beyond the three declared Phase 1 dependencies (auth, runtime, database), and I did not treat any sibling product's infra as in-scope.
+- PD-012's Documentation Lock was an informed owner act on 2026-09-03 matching the reviewed package.
+
+## Open questions/missing evidence
+
+1. **Owner decision ΓÇö production runtime/database placement** (pending per `PRODUCT_DECISIONS.md`, `02`, `08`, `PHASE1_SCHEMA.md` ┬º9). Deliberately open; must not be assumed into the build brief.
+2. **Central billing/entitlement integration contract** ΓÇö a WSTERA billing-core plan exists centrally (`08`), but WSM-specific admission and the entitlement event contract are "not yet proven in WSM documentation." `entitlement_snapshots` reads from it in Phase 1 schema; the actual contract shape is missing.
+3. **Commercial values** ΓÇö prices, trial length, plan limits, overage/fair-use, grace policy: launch blockers, intentionally TBD (`04`). Not answerable from this repo.
+4. **Retention periods and public support/SLA wording** ΓÇö launch blockers requiring business/legal approval (`03` Data lifecycle; `operations/LEGAL_PRIVACY_CHECKLIST.md`; `INDEPENDENT_REVIEW.md` challenge 7 confirms they are represented as blockers, not values).
+5. **Dealer-code operational security parameters** ΓÇö the schema fixes the mechanism but no doc specifies code format/uniqueness strength, rotation, or admin handling of "already-used dealer identity" errors beyond the recovery-state list. Resolvable in the build brief's test plan, but currently unevidenced.
+6. **Demand confirmation step** ΓÇö `demand_lines.status` includes `confirmed`, `open_confirmed_demand` counts only confirmed+ statuses, and `demand.confirmed` is a required event ΓÇö but no PRD row states *who* confirms demand or when (admin action vs automatic on round close). The loop works without it (statuses default `requested`), yet the Gap view's input set depends on this unstated business rule.
+7. **Round completion semantics** ΓÇö `backorders.quantity` is set "at round completion" (`PHASE1_SCHEMA.md` ┬º5), and `booking_rounds.status` includes `completed` distinct from `closed`, but no PRD row or flow defines what triggers completion or what it computes beyond backorder creation.
+8. **ICP/customer evidence** ΓÇö no discovery notes, pilot candidate, or design-partner evidence exists in the repo; the ICP is a documented profile, not a validated one.
+9. **Allocation `source_type = 'on_hand'` vs `supply_entry` semantics** ΓÇö Phase 1 allows allocating from abstract on-hand (no source row) or from a supply entry; the boundary between these two in admin UX and in G6 tests is defined in schema but not in the PRD/UX flows.
+
+## Confidence 0-100
+
+**88.**
+
+High confidence (evidence-dense, internally consistent, independently reviewed PASS, and every product-defining claim traces to a specific owner-approved decision or SSOT file): the product identity, ICP, thin-loop boundary, non-goals, invariant classification, and the product-required (vs placement-pending) multi-tenant shape.
+
+Confidence is withheld from 100 because: the entire requirement set is `DOC-ONLY` with no implementation evidence (verified, not assumed); several loop-relevant business rules (demand confirmation actor/timing, round completion trigger) are present in the schema but not specified in the PRD or UX flows; dealer-code identity strength is undetermined; and ICP validity, commercial model, and legal/retention values have no evidence in the repo by design.

@@ -37,32 +37,12 @@ Revision history:
 
 > **Status overlay, not revision 4.** Revision 3 and CEO decisions D1-D10 remain the execution authority. This section updates only verified gate/dependency state; it does not reopen scope, sequencing rules or owner decisions.
 
-- **P0a-C1 = READY FOR REASSESSMENT, NOT YET DECLARED PASSED.** The blocking condition recorded on
-  2026-09-02 is cleared: Hub CI is green at `hub-web@b576d59`, and the first-adopter
-  `booking-ticket-module` owning CI is now green on `main@aeaa750` (Actions run `33670789635`,
-  `push`, conclusion `success`, job `build-and-test` success; merged via PR #1 after its own green
-  `pull_request` run `33670273164`). The red run `33128547044` at `ff15819` is superseded, not
-  deleted. Root cause was a test-harness defect: the suite never pinned a timezone, so calendar-date
-  fixtures authored at +07:00 failed on the UTC runner; the fix pins `test.env.TZ='Asia/Bangkok'`
-  and adds a regression guard (63 tests, no assertion weakened).
-  Verified independently of the implementer on 2026-09-03 by reading the GitHub Actions run via API
-  and by reproducing 63/63 locally under a forced `TZ=UTC` host environment.
-  The other two P0a-C1 conditions have published evidence (`REPOSITORY_MAP.md`, `RUNTIME_MATRIX.md`,
-  `ENVIRONMENT_AND_SECRETS_POLICY.md`, `EVIDENCE_TEMPLATE.md`, `CI_BASELINE.md`,
-  `PHASE_P0a_B4_EVIDENCE.md`). **P0a-C1 is not declared PASSED here** - the checkpoint verdict is the
-  owner's, and this entry only records that the named blocker is closed. Two criterion-2 judgments
-  remain the assessor's, not the implementer's: whether a hosted-runner `actions/checkout` counts as
-  the required clean clone, and whether criterion 2 tolerates that **the lint stage is disabled in
-  both proving workflows** because neither repository has a linter installed. See
-  `docs/CURRENT_STATUS.md` § "P0a-C1 criterion 2".
-  Residual, non-blocking: three `registry.yaml` `path:` fields added after P0a-B4 are still
-  mixed-case (`products/LINE OA AI Sales & Service Engine`, `products/RentMatrix`,
-  `products/OmniDesk`). Per D5 they must be lowercased in the same change that renames the
-  directories - never before, or the paths stop matching the filesystem.
+- **P0a-C1 = PASS (independent reassessment 2026-09-03).** The named CM01 blocker is closed: CM01 owning CI is green on `main@aeaa750` (run `33670789635`) and `hub-web` CI is green at `d8e31c7` (run `33593735430`). Both jobs run on GitHub-hosted runners after `actions/checkout@v4`, satisfying the checkpoint's clean-clone/no-untracked-local requirement. `CI_BASELINE.md` explicitly makes lint advisory/placeholder-only when the proving repository lacks installed lint tooling and assigns that closure to P0b; the missing lint step therefore does not invalidate P0a-C1. Independent evidence and verdict: `docs/platform/REVIEW-P0a-C1-2026-09-03.md`. Residual P0b lint/tooling debt remains blocking only at the per-repository release-readiness gate.
+  Residual, non-blocking: three `registry.yaml` `path:` fields added after P0a-B4 remain mixed-case (`products/LINE OA AI Sales & Service Engine`, `products/RentMatrix`, `products/OmniDesk`). Per D5, lowercase them only in the same change that renames the physical directories.
 - **Booking Stage 4 prerequisite = CLOSED** at `836943a`. PS-A2 is unblocked from that upstream dependency, but Pawstia is **not** admitted until its schema-scoped migration/RLS/grants/denial package is independently reviewed and explicit Project B admission is authorized.
 - **Pawstia Phase 13 = NOT CLOSED.** Verification branch `c063592` / Draft PR #4 has clean migration replay + DB lint evidence but the matrix stopped at the historical Phase 1 isolation regression; final evidence and independent PASS do not exist yet.
 - **R15 = OPEN / pre-data gate.** `apps/hub-web` runtime database access must move off the Project A `postgres` owner identity to scoped `hub_web_app` and prove billing-schema denial before billing data exists.
-- **DC01 Gate 3/Gate 4 = CLOSED locally.** Phase 4.1 is product-gate unblocked for mandatory intake only; P0a-C1 still governs opening the implementation track.
+- **DC01 Gate 3/Gate 4 = CLOSED locally.** P0a-C1 is PASS. Before Phase 4.1 implementation, DocCraft must disposition its High JSON backup-controls contract finding and then complete mandatory intake/owner plan approval.
 - **Payment rail addendum:** the 2026-09-01 council does not create another billing service. `BILLING_CORE_PLAN.md` remains canonical and now records card subscription as the recurring rail, PromptPay as a manual/non-auto-renew payment rail, and reconciliation as mandatory before PromptPay activation.
 
 Operational status index: `docs/CURRENT_STATUS.md`.

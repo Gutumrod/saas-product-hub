@@ -1,0 +1,202 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>01-PRODUCT-OWNER-BRIEF - WS01 WSTERA Supply Management</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>01-PRODUCT-OWNER-BRIEF - WS01 WSTERA Supply Management</h1><p class="muted">Source: 01-PRODUCT-OWNER-BRIEF.md · SHA256 0b7fdafd8c06… · Decisions: 0</p><div class="grid"></div></section>
+<section class="card"><h1>01-PRODUCT-OWNER-BRIEF - WS01 WSTERA Supply Management</h1>
+<p>Gate: Product Gate</p>
+<p>Procedure: <code>llm-council-gate</code> v0.3.2</p>
+<p>Experts completed: 3/3, no degraded run</p>
+<p>Verdict: <span class="badge pass">PASS</span></p>
+<h2>1. สรุปปัญหาที่ Council เข้าใจ</h2>
+<p>WSM คือ SaaS แบบ multi-tenant สำหรับธุรกิจ importer/distributor ที่ต้องรับ demand จาก dealer หลายราย แล้วจัดสรร supply ที่มีจำกัดอย่างตรวจสอบย้อนกลับได้</p>
+<p>ปัญหาหลักคือ วันนี้คนทำงานมักเอา "dealer ขอ" ไปปนกับ "ของยืนยันแล้ว" และเอา "จัดสรรแล้ว" ไปปนกับ "ส่งมอบแล้ว" ทำให้ shortage รู้ช้า allocation ใช้ spreadsheet/chat/memory และไม่มี single source of truth</p>
+<p>V1 ต้องจบที่ loop บางแต่ครบ: dealer booking -&gt; confirmed demand -&gt; manual reliable supply -&gt; gap -&gt; manual/partial allocation -&gt; backorder -&gt; dealer เห็นผลเฉพาะของตัวเอง</p>
+<h2>2. ข้อเท็จจริงที่ยืนยันแล้ว</h2>
+<ul>
+<li>Product identity คือ multi-tenant B2B supply-planning + dealer-allocation SaaS สำหรับ importer/distributor. Support: 3/3.</li>
+<li>North Star คือ Demand -&gt; Supply -&gt; Gap -&gt; Allocation -&gt; Fulfillment. Support: 3/3.</li>
+<li>Buyer/tenant คือเจ้าของหรือ operator ฝั่ง importer/distributor; dealer เป็นคนส่ง demand ผ่าน mobile booking link. Support: 3/3.</li>
+<li>Pain หลักคือ requested ถูกเข้าใจเป็น confirmed supply และ allocated ถูกเข้าใจเป็น fulfilled. Support: 3/3.</li>
+<li>V1 คือ Phase 1 thin end-to-end loop ไม่ใช่ deep module. Support: 3/3.</li>
+<li>V1 ไม่รวม PO, factory commitment, production batch, allocation policy/auto-allocation, warehouse/inventory, finance/payment, AI/intelligence, multi-site suppliers, auto backorder carry. Support: 3/3.</li>
+<li>Multi-tenancy เป็น product-required ไม่ใช่แค่ architecture preference; tenant = importer business. Support: 3/3.</li>
+<li>Gap ต้องไม่ double-subtract backorder. Support: 3/3.</li>
+<li>สถานะตอนนี้เป็น docs-only: Documentation Lock authorized แต่ยังไม่มี migration/scaffold/deploy/db apply/build approval. Support: 3/3.</li>
+<li>Candidate confidence: A=78, B=88, C=72.</li>
+</ul>
+<h2 class="consensus">3. Consensus / Majority / Dissent</h2>
+<p class="consensus">Consensus 3/3:</p>
+<ul>
+<li>WSM เป็น supply-planning/dealer-allocation SaaS</li>
+<li>ICP คือ importer/distributor</li>
+<li>dealer เป็น demand actor ไม่ใช่ buyer</li>
+<li>V1 จบที่ thin loop</li>
+<li>multi-tenancy เป็นแกน product</li>
+<li>Documentation Lock ไม่ใช่ approval ให้ build</li>
+</ul>
+<p>Majority 2/3:</p>
+<ul>
+<li>ต้องล็อก demand confirmation actor/timing</li>
+<li>ต้องล็อก round completion/backorder timing</li>
+<li>ต้องล็อก dealer-code security detail</li>
+<li>ต้องมี measurable success threshold ก่อนเอาไปใช้เป็น build acceptance</li>
+</ul>
+<p class="dissent">Dissent แบบ emphasis 1/3:</p>
+<ul>
+<li>Candidate B เน้นว่า endgame คือ Supply Gap Engine + Allocation decision record</li>
+<li>Candidate C เน้นว่าขาด pilot/design partner evidence</li>
+<li>Candidate A เน้น Module Hub vendoring caution ชัดกว่าอีกสองราย</li>
+</ul>
+<p>ไม่มี candidate ไหนเสนอให้ขยาย V1 เกิน thin loop</p>
+<h2>4. หลักฐานที่ยังขาด / คำถามที่ยังไม่จบ</h2>
+<ul>
+<li>runtime/database placement ยังไม่ตัดสิน</li>
+<li>central billing/entitlement contract ยังไม่ตัดสิน</li>
+<li>pricing/trial/limits/grace ยังไม่ตัดสิน และอยู่นอก Product Gate</li>
+<li>demand confirmation ใครกด/เกิดตอนไหน ยังไม่ชัด</li>
+<li>round completion trigger และ backorder creation timing ยังไม่ชัด</li>
+<li>dealer code format/rotation/leak handling ยังไม่ชัด</li>
+<li>KPI มีหมวดแล้ว แต่ยังไม่มี target number สำหรับบอกว่า V1 prove value แล้ว</li>
+<li>retention period และ public support/SLA wording ยังเป็น launch blocker</li>
+<li>ยังไม่มี market/pilot/customer validation ใน evidence ชุดนี้</li>
+</ul>
+<h2>5. คำแนะนำของ Synthesizer</h2>
+<p>ให้ <span class="badge pass">PASS</span> Product Gate เพื่อ lock นิยาม product และ Product Pack เท่านั้น:</p>
+<p>WSM คือ multi-tenant B2B supply-planning/dealer-allocation SaaS สำหรับ importer/distributor tenant โดย V1 ต้องพิสูจน์ loop Demand -&gt; Supply -&gt; Gap -&gt; Allocation -&gt; Backorder -&gt; Dealer Result แบบ manual, traceable, tenant-safe</p>
+<p>หลังจากนี้ต้องทำ Phase 1 build brief แยกต่างหาก และ brief นั้นต้อง resolve blocker ที่เกี่ยวกับ build ก่อนเริ่ม migration/code</p>
+<h2>6. ทำไมถึงแนะนำแบบนี้</h2>
+<p class="consensus">เพราะ 3/3 candidates เห็นตรงกันในแกน product, user, pain, V1 boundary และ non-goals</p>
+<p>ถ้าเริ่มจาก PO, inventory, finance, AI หรือ auto-allocation มันจะใหญ่เกินและยังไม่ prove pain หลัก กูมองว่า V1 ที่ถูกต้องคือ thin loop ที่ทำให้เจ้าของเห็นความจริงก่อนว่า dealer ขออะไร supply ที่เชื่อได้มีเท่าไหร่ ขาดตรงไหน ใครได้ของ และใครรอ</p>
+<p>manual supply/manual allocation ไม่ใช่ข้อเสียใน V1 ถ้ามันถูกทำเป็น adapter ที่มี provenance/audit และไม่ทำให้ historical demand ต้องตีความใหม่ในอนาคต</p>
+<h2>7. ทางเลือกที่ไม่เลือก + เหตุผล</h2>
+<ul>
+<li>ERP-lite: ไม่เลือก เพราะลาก inventory/finance/PO/warehouse เข้ามาก่อน prove loop</li>
+<li>PO/factory commitment first: ไม่เลือก เพราะเป็น Phase 2</li>
+<li>allocation engine first: ไม่เลือก เพราะ policy/auto-allocation เป็น Phase 3</li>
+<li>dealer portal first: ไม่เลือก เพราะ V1 dealer scope ควรมีแค่ booking + self-result</li>
+<li>single-tenant internal tool: ไม่เลือก เพราะ multi-tenancy เป็น product requirement</li>
+<li>assume Module Hub/shared infra เข้า V1: ไม่เลือก เพราะ manifest ระบุ Module Hub scan เป็น <span class="badge hold">HOLD</span></li>
+</ul>
+<h2>8. Gate Verdict + Blockers</h2>
+<p>Verdict: <span class="badge pass">PASS</span></p>
+<p>ความหมายของ <span class="badge pass">PASS</span> นี้: ผ่าน Product Gate สำหรับล็อกนิยาม product/docs เท่านั้น ไม่ใช่ build approval, launch approval, pricing decision, architecture placement decision หรือ migration approval</p>
+<p>Blockers ก่อนอนุมัติ Phase 1 build brief:</p>
+<ul>
+<li>runtime/database placement ต้องล็อก หรือระบุชัดว่าเป็น development-only ไม่มี live assumption</li>
+<li>billing/entitlement contract ต้องล็อกอย่างน้อยในระดับ read/enforcement/fail-safe</li>
+<li>demand confirmation actor/timing ต้องล็อก</li>
+<li>round completion trigger และ backorder creation/carry behavior ต้องล็อก</li>
+<li>dealer-code security format/rotation/recovery ต้องล็อก</li>
+<li>measurable V1 success thresholds ต้องล็อก</li>
+</ul>
+<p>Launch blockers:</p>
+<ul>
+<li>pricing/plans/trial/limits/grace</li>
+<li>retention period</li>
+<li>public support/SLA wording</li>
+<li>implementation + release evidence สำหรับ Required PRD rows และ G0-G9</li>
+</ul>
+<h2>9. Confidence</h2>
+<p>82 / 100</p>
+<p class="consensus">มั่นใจสูงเรื่อง product identity, buyer, V1 boundary, non-goals, invariants และ docs-only status เพราะ 3/3 เห็นตรงกัน แต่ยังไม่ให้สูงกว่านี้เพราะยังไม่มี implementation evidence, pilot evidence, market validation, และยังมี owner decisions ที่ต้องล็อกก่อน build/launch</p>
+<h2>10. Technical Document Pack</h2>
+<p>ไฟล์ที่สร้างใน Product Pack:</p>
+<ul>
+<li><code>PRODUCT-SOURCE-OF-TRUTH.md</code></li>
+<li><code>PRODUCT-SCOPE.md</code></li>
+<li><code>USER-FLOWS.md</code></li>
+<li><code>BUSINESS-RULES.md</code></li>
+<li><code>V1-ACCEPTANCE-CRITERIA.md</code></li>
+<li><code>OPEN-DECISIONS.md</code></li>
+</ul>
+<h2>11. REQUIRED Owner Decision Cards</h2>
+<h3>OD-001 - Runtime/Database Placement</h3>
+<p>Decision: Phase 1 จะใช้ runtime/database placement แบบไหน และ production จะอยู่ที่ไหน</p>
+<p>Options:</p>
+<ul>
+<li>A. Product Gate neutral; Phase 1 build brief ต้องล็อก placement หรือจำกัดเป็น dev-only ชัดเจน (recommended)</li>
+<li>B. เลือก shared portfolio placement ตอนนี้</li>
+<li>C. เลือก dedicated WSM placement ตอนนี้</li>
+</ul>
+<p>Council support level: 3/3 ระบุว่า unresolved</p>
+<h3>OD-002 - Billing/Entitlement Contract</h3>
+<p>Decision: WSM จะอ่าน entitlement จาก boundary ไหน sync อย่างไร และ fail-safe อย่างไร</p>
+<p>Options:</p>
+<ul>
+<li>A. กำหนด read-only entitlement snapshot contract + server-side fail-safe ก่อน build (recommended)</li>
+<li>B. defer entitlement ทั้งหมดออกจาก V1</li>
+<li>C. ผูกตรงกับ billing system แบบ live integration ตั้งแต่แรก</li>
+</ul>
+<p>Council support level: 3/3 ระบุ uncertainty; 2/3 เน้น contract detail</p>
+<h3>OD-003 - Demand Confirmation Actor/Timing</h3>
+<p>Decision: demand จาก dealer จะกลายเป็น confirmed demand โดยใคร และเมื่อไร</p>
+<p>Options:</p>
+<ul>
+<li>A. admin explicitly confirms demand ก่อนเข้า Gap (recommended)</li>
+<li>B. auto-confirm เมื่อ dealer submit</li>
+<li>C. auto-confirm ตอน round close</li>
+</ul>
+<p>Council support level: 2/3 ระบุว่า unresolved</p>
+<h3>OD-004 - Round Completion / Backorder Creation</h3>
+<p>Decision: round completed เมื่อไร และ backorder ถูกสร้าง/คำนวณเมื่อไร</p>
+<p>Options:</p>
+<ul>
+<li>A. admin explicitly completes round แล้วระบบคำนวณ backorder หนึ่งครั้ง (recommended)</li>
+<li>B. complete อัตโนมัติเมื่อถึง close time</li>
+<li>C. complete อัตโนมัติหลัง allocation ทุก line จบ</li>
+</ul>
+<p>Council support level: 2/3 ระบุว่า unresolved</p>
+<h3>OD-005 - Dealer-Code Security</h3>
+<p>Decision: dealer code ควรมี format, uniqueness, rotation, leak handling และ recovery อย่างไร</p>
+<p>Options:</p>
+<ul>
+<li>A. ใช้ non-guessable tenant-scoped code พร้อม rotation/reissue และ negative tests (recommended)</li>
+<li>B. ใช้ short human-readable code แบบง่าย</li>
+<li>C. เปลี่ยน V1 เป็น dealer login เต็ม</li>
+</ul>
+<p>Council support level: 3/3 เห็นว่า dealer-code เป็น trust boundary; 2/3 ขอรายละเอียดเพิ่ม</p>
+<h3>OD-006 - V1 Success Thresholds</h3>
+<p>Decision: ตัวเลขอะไรบอกว่า V1 prove value แล้ว</p>
+<p>Options:</p>
+<ul>
+<li>A. กำหนด target สำหรับ demand capture, time to first completed loop, allocation coverage, backorder visibility, active dealer submission (recommended)</li>
+<li>B. ใช้แค่ <span class="badge pass">PASS</span>/fail E2E scenario</li>
+<li>C. defer KPI targets หลัง build</li>
+</ul>
+<p>Council support level: 3/3 เห็นว่ามี KPI categories; 2/3 ระบุว่ายังขาด target values</p>
+<h3>OD-007 - Commercial Values</h3>
+<p>Decision: pricing, plan, trial, limits, grace, overage/fair-use</p>
+<p>Options:</p>
+<ul>
+<li>A. defer ไป Business-Market gate และห้าม engineering invent values (recommended)</li>
+<li>B. ใส่ placeholder ใน build brief</li>
+<li>C. owner ตัดสิน commercial values ตอนนี้</li>
+</ul>
+<p>Council support level: 3/3 ระบุว่า unresolved และ out of Product Gate</p>
+<h3>OD-008 - Retention / Support / SLA</h3>
+<p>Decision: retention period และ public support/SLA wording</p>
+<p>Options:</p>
+<ul>
+<li>A. defer ไป legal/ops/launch gate และถือเป็น launch blocker (recommended)</li>
+<li>B. ใช้ default internal wording ชั่วคราว</li>
+<li>C. owner ตัดสินตอนนี้</li>
+</ul>
+<p>Council support level: 2/3 ระบุชัด; ไม่มี candidate คัดค้าน</p></section>
+</main></body></html>

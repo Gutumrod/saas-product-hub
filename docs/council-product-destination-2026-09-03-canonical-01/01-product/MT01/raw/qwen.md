@@ -1,0 +1,73 @@
+Warning: running headless with --yolo / approval-mode=yolo and no sandbox. All tool calls (shell, write, edit) auto-execute at this process's privilege level. Enable a sandbox via --sandbox / QWEN_SANDBOX, or set QWEN_CODE_SUPPRESS_YOLO_WARNING=1 to silence this notice.
+All evidence is gathered and independently verified. Here is my expert answer.
+
+## Recommendation
+
+The sellable MT01 artifact is a **one-time, versioned, self-hosted source product ΓÇö a "Multi-Tenant AI Starter Kit"** consisting of exactly two things: (a) the bundle of 7 reusable TypeScript modules copied from the Canonical Module Hub, and (b) the Express **reference server** in `server/` that proves and demonstrates their composition end-to-end (tenant ΓåÆ auth ΓåÆ AI ΓåÆ subscription ΓåÆ payment ΓåÆ verified webhooks). The buyer is a **developer/small team building their own multi-tenant AI SaaS**, who receives source code plus wiring documentation, runs it with **their own** Supabase/AI-provider/Stripe accounts, and replaces the in-memory mock adapters with their own production infrastructure.
+
+Product identity: it is **not** a hosted SaaS, **not** a production application, and **not** merely a reference implementation. It is a **module-bundle starter kit whose reference server is the composition proof** ΓÇö closest to "starter architecture kit sold as boilerplate" (BRIEF.md TODO: "α╕éα╕▓α╕óα╣Çα╕¢α╣çα╕Ö boilerplate"; registry category "Developer Starter Kit"; master plan: "One-time source product"). The reference server alone must never be sold as the product; per `BRIEF.md` it is "α╣éα╕äα╣ëα╕öα╕òα╕▒α╕ºα╕¡α╕óα╣êα╕▓α╕ç/reference... α╣äα╕íα╣êα╣âα╕èα╣ê production app."
+
+**Where V1 ends:** V1 is *not* the current state of `master @ 92139cf`. The current state is the internal source material for V1. V1 exists only after the P5 productization work already scheduled and specified in `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md` ┬º6.5 (MT-AΓÇªMT-F) and the L0ΓÇôL5 ladder (┬º4): locked buyer/scope contract (L0 ΓÇö today open, per BRIEF.md TODO), clean-install proof by a non-author on a clean machine with no WSTERA secrets (L1), a license (L2 ΓÇö none exists today), tag/changelog/checksum/SBOM (L3), exercised fulfillment path (L4), and a published support boundary (L5). V1 explicitly ends before: hosted operation, buyer persistence (only adapter interfaces ship), OTel export, frontend/auth UI, and deployment tooling.
+
+## Verified facts/evidence used
+
+**Git (direct, authoritative):** branch `master`, HEAD `92139cfa4697fbade1a023d76dc4734dd82d5862` (= `origin/master`), working tree clean except untracked `docs/`. History: `8600384` initial scaffold ΓåÆ `ce9ceb9` enterprise-features copy ΓåÆ `3247b41` reference server (6 modules wired) ΓåÆ `ef821f6` webhook-receiver copy + real Stripe verifier ΓåÆ `92139cf` webhook middleware-order/billing-wiring/replay-status fix. `docs/CURRENT_STATUS.md` indeed contains unresolved `$branch` / `$head` placeholders, though its "Evidence Basis: master @ 92139cf" matches the real HEAD.
+
+**Reran the suite myself** (`server/`, at HEAD): `tsc --noEmit` clean; `vitest run` **13/13 passed** (`server.test.ts` 9, `webhook.test.ts` 4). Matches the 2026-08-27 reaudit claim.
+
+**Product identity & buyer (in-repo):**
+- `BRIEF.md` ΓÇö "α╕éα╕▓α╕óα╣Çα╕¢α╣çα╕Ö boilerplate" to devs building their own AI SaaS; server explicitly reference-only; TODO list still open (target customer, MVP scope, tracing optional-include, pricing, timeline, risk).
+- `server/README.md` ΓÇö "reference / example code," in-memory mock repos, buyer replaces mocks with production infra; all credentials are the buyer's own; production disclaimer lists persistent storage, OTel exporter, frontend as buyer work.
+- `docs/products/registry.yaml` (parent repo) ΓÇö MT01: `delivery_model: one_time_source_product`, `commercial_status: "sellable"`, tagline "Boilerplate α╕¬α╕│α╕½α╕úα╕▒α╕Üα╕¬α╕úα╣ëα╕▓α╕çα╣Çα╕ºα╣çα╕Üα╣üα╕¡α╕¢ AI α╕úα╕¡α╕çα╕úα╕▒α╕Üα╕½α╕Ñα╕▓α╕ó Tenant α╣üα╕Ñα╕░α╕êα╕│α╕üα╕▒α╕ö Quota", description "not yet a production deployment, licensed buyer artifact, or clean-install release", 7 modules listed, acceptance `architecture: true, operations: true, commercial: false, support: false`.
+
+**Parent delivery-model records:** `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` ΓÇö delivery-model table ("MT01 | multi_tenant_ai | One-time source product"), L0ΓÇôL5 ladder (┬º4), ┬º6.5 target "complete self-hostable multi-tenant AI starter kit sold as a versioned source product" with work packages MT-AΓÇªMT-F and checkpoint MT-L1 / P5-C1 ("MT01 installs and operates as a complete starter kit"). `PORTFOLIO_REAUDIT_2026-08-27.md` ΓÇö 13 tests pass, 5 npm-audit findings (3 moderate, 1 high, 1 critical), "No repository-level release orchestration, license, release tag, compatibility policy, or buyer artifact exists." `product-hub-master-plan.md` covers only the storefront UX (no MT01-specific delivery record). Module-scan brief is `STATUS: HOLD` and forbids module changes.
+
+**Reference-server boundaries (code read):** `server/src/app.ts` ΓÇö 8 routes; webhook mounted before `express.json()` with `express.raw()`; tenant middleware ΓåÆ auth middleware ΓåÆ demo routes. `server/src/routes/payment-demo.ts` ΓÇö real `StripeWebhookVerifier` HMAC verify (timing-safe, timestamp window), in-memory `Set`-based idempotency store (comment flags persistent store required for multi-instance), `mapStripeEventToBilling()` ΓåÆ `subscriptionCore.handleBillingEvent()`, replay ΓåÆ `200 {received:true, duplicate:true}` without re-applying. `server/src/lib/*.ts` ΓÇö graceful `null`/503 degradation when buyer credentials absent. `server/src/lib/subscriptions.ts` ΓÇö seed plans `free` (50 req/mo) and `pro` ($29/mo, 1000 req/mo) on mock repos.
+
+**Module provenance:** all 7 `modules/*` are copies of `D:\AI-Workspace\projects\modules-hub\modules\*` (copy-and-own convention per commit messages `ce9ceb9`, `ef821f6`); each has `package.json` + tests; webhook-receiver v0.1.0 has a real `providers/stripe/index.ts` (`StripeWebhookVerifier`, HMAC-SHA-256 over `{t}.{rawBody}`, hex `v1` multi-signature, timestamp tolerance) while `providers/github` and `providers/line` are **unimplemented stubs** returning `WEBHOOK_UNKNOWN_PROVIDER` (confirmed in module TEST-REPORT.md). Version skew found: copied `ai-provider` VERSION 0.2.0 / `tenant-context` 0.2.0 vs modules-hub `INDEX.md` listing AI Provider 0.3.0 and Tenant Context 0.3.0; the copied ai-provider lacks `FallbackAIProvider`, which hub INDEX advertises. Registry comment records that `rate-limit` was once wrongly listed and never copied ΓÇö no such bloat exists on disk.
+
+**Missing V1-defining artifacts:** no LICENSE anywhere in the product repo, no root README/CHANGELOG/VERSION, no release tag, no CI workflow (reaudit ┬º4 corroborates).
+
+## Key reasons
+
+1. **All three authorities converge on the same identity.** In-repo BRIEF.md ("boilerplate" for AI-SaaS builders), the registry (`one_time_source_product`, "Developer Starter Kit"), and the master plan (┬º6.5 "self-hostableΓÇª starter kit sold as a versioned source product"; delivery-model table) independently agree ΓÇö MT01 is a source-product starter kit, not a service.
+2. **The reference server genuinely proves composition**, and I re-proved it at HEAD: 13/13 tests, clean typecheck, real Stripe signature verification wired to subscription state changes ΓÇö this is the demonstrable core value ("modules compose; here is exactly how").
+3. **The money path is real but shallow.** Verified Stripe signature ΓåÆ billing-event mapping ΓåÆ subscription state machine is wired and tested including replay/idempotency edge cases, but persistence behind it is in-memory ΓÇö precisely the boundary the buyer is documented to own.
+4. **V1's end is externally defined, not mine to invent:** the master plan hard-codes MT01's V1 exit as L0ΓÇôL5 + MT-L1/P5-C1, and `docs/CURRENT_STATUS.md` defers productization to P5 with "no current slot assigned." Selling anything from `92139cf` as-is would violate the owner's own gates (no license, no clean-install proof, `commercial: false` in registry acceptance).
+5. **No bundle bloat today:** every copied module is wired live in the server (webhook-receiver is required for the Stripe path; CircuitBreaker protects `/ai/demo`); the one historical bloat error (rate-limit) was already caught and removed from the registry. The remaining excess is intra-module (Tracer without OTel; 2 stub providers), which is a labeling problem, not a packaging problem.
+6. **Primary buyer and JTBD are documented but not locked:** "dev α╕ùα╕╡α╣êα╕êα╕░α╕¬α╕úα╣ëα╕▓α╕ç AI SaaS α╕éα╕¡α╕çα╕òα╕▒α╕ºα╣Çα╕¡α╕ç" (BRIEF.md TODO) / "SaaS Builders, Tech SMEs" (registry wave 2) ΓÇö the job is skipping weeks of multi-tenant plumbing (tenant resolution, RBAC auth, provider abstraction, quotas/entitlements, Stripe billing with verified webhooks, resilience).
+
+## Risks/failure cases
+
+1. **Registry says `commercial_status: "sellable"` while every evidence layer says otherwise** (BRIEF.md: commercial readiness still un-assessed; master plan MT-A explicitly orders replacing the "production-ready boilerplate" claim; registry acceptance `commercial: false`). A buyer reading the catalog today could be misled ΓÇö this is the top storefront-integrity risk.
+2. **Identity drift between tagline/description/plan** ("boilerplate" vs "starter kit" vs "starter kit target") can produce a mismatched V1 contract; MT-A must lock one definition before any sellable claim.
+3. **Demo/production gap will be the #1 buyer disappointment:** in-memory repos, in-memory idempotency store (unsafe for multi-instance deployments ΓÇö flagged in code), no migrations, no rate limiting, no audit logging (master plan MT-C items all open).
+4. **Tracing overclaim risk:** only `MemoryTracer`/`NoopTracer` ship; BRIEF.md itself warns that "distributed tracing" claims require an OTel adapter the kit does not include. Marketing this as an observability feature would be false.
+5. **Dependency risk:** 5 audit findings including 1 critical + 1 high (reaudit, 2026-08-27) ΓÇö counts time-sensitive; unresolved before any buyer artifact.
+6. **Version skew vs Canonical Hub:** copied `ai-provider` 0.2.0 and `tenant-context` 0.2.0 vs hub INDEX 0.3.0 entries (e.g., missing `FallbackAIProvider`) ΓÇö the kit as-is ships older capability than the hub's current state; provenance records must state which versions V1 freezes.
+7. **Stale/unresolved documentation:** STAGE3_EVIDENCE_REPORT.md says "α╕óα╕▒α╕çα╣äα╕íα╣ê commit" yet the work is committed in `92139cf`; `docs/CURRENT_STATUS.md` has `$branch`/`$head` placeholders and sits untracked in `docs/`. Historical docs must not be read as current-state claims.
+8. **webhook-receiver stub providers** (github, line) ship as dead surface ΓÇö harmless but must be excluded from any V1 marketing of "multi-provider webhooks" (only Stripe is real, and only Stripe is wired).
+9. **No license file anywhere in the repo** ΓÇö legally unsellable as source today; L2 gate explicitly fails for MT01 per the master plan.
+
+## Assumptions
+
+- The master plan's P5/L-ladder process remains the governing definition of "sellable" (it is the highest-authority non-CEO document per its own ┬º1).
+- `docs/CURRENT_STATUS.md`'s untracked state is a documentation-pass artifact, not a divergent product decision (its content matches verified git state except placeholders).
+- The registry's `commercial_status: "sellable"` is a catalog placeholder awaiting P5, not an owner claim that MT01 is sellable now (contradicted by the registry's own `commercial: false` acceptance field and description).
+- The seven-product scope in the master plan (BK01, PS01, LK01, DC01, MT01, CM01, HC01) supersedes the longer catalog in `product-hub-master-plan.md` for delivery-model purposes; MT01's classification is unambiguous across both.
+- Module-scan HOLD means module provenance/fit evidence I gathered is for this gate only; no module changes are authorized now (I made none).
+
+## Open questions/missing evidence
+
+1. **L0 buyer/scope lock does not exist for MT01** ΓÇö BRIEF.md's TODO (target customer, MVP scope, pricing model, timeline, risks) is the open owner decision the master plan's L0 gate requires. Which segment (indie dev vs tech SME) is primary, and what the buyer is licensed to build, is unresolved.
+2. **Which production persistence reference (if any) ships in V1** ΓÇö master plan MT-B says replace in-memory repos with "a production reference implementation, migrations, environment validation"; which stack (PostgreSQL/Supabase DB/Prisma/Drizzle) is an unmade owner decision, as is whether a DB adapter example ships in V1 or only interfaces.
+3. **OTel adapter in or out of V1** ΓÇö BRIEF.md marks tracing optional-include; the master plan MT-D requires "observable request correlation," so the owner must decide whether V1 claims observability with in-process tracing only.
+4. **License variant and IP terms** ΓÇö L2 blocker; explicitly outside my scope (pricing/license economics) but is a hard prerequisite for any sellable artifact.
+5. **Clean-install (L1) has never been executed for MT01** ΓÇö my typecheck/test rerun was on this already-provisioned machine with `node_modules` present; a true clean-machine, non-author, no-WSTERA-secrets install proof is missing evidence.
+6. **Why the copied ai-provider/tenant-context are behind hub INDEX versions** ΓÇö whether V1 ships the stale copies or recopies current hub versions (a provenance/fit decision, not mine to execute).
+7. **Whether the webhook-receiver github/line stubs stay in the shipped bundle** or are pruned at packaging time (L3 concern).
+8. **Fulfillment path (L4)** ΓÇö the master plan notes it is "the portfolio's largest untested surface"; no evidence exists that a buyer can actually receive the artifact.
+
+## Confidence 0-100
+
+**84.** Direct verification covers git state, all key product/portfolio documents, the full server source, module provenance versus the Canonical Hub, and an independent rerun of typecheck + 13/13 tests at HEAD. The remaining uncertainty is concentrated in (a) owner decisions not yet written anywhere (L0 buyer lock, persistence stack, OTel inclusion) that could legitimately reshape V1's edges, and (b) absence of any executed clean-install proof, so my "usable V1" description rests on documented intent plus code boundaries rather than a demonstrated buyer experience.

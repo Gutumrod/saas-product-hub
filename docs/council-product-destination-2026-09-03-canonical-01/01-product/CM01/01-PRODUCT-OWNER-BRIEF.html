@@ -1,0 +1,184 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CM01 Product Owner Brief</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>CM01 Product Owner Brief</h1><p class="muted">Source: 01-PRODUCT-OWNER-BRIEF.md · SHA256 8886a9db3eaa… · Decisions: 0</p><div class="grid"></div></section>
+<section class="card"><h1>CM01 Product Owner Brief</h1>
+<p>Gate Verdict: <span class="badge remediate">REMEDIATE</span></p>
+<h2>1. สรุปปัญหาที่ Council เข้าใจ</h2>
+<p>CM01 คือ React UI template/module สำหรับจัดการเคส claim/case แบบ local-first และ Thai-first ขายเป็น source code ให้ frontend developer หรือ web agency เอาไปฝังในงานลูกค้า ไม่ใช่ SaaS ที่ deploy แล้วใช้ได้ทันที ไม่ใช่ backend module และไม่ใช่ feature ของ BK01</p>
+<p>V1 จบที่ template tier ที่ใช้งาน workflow ได้ครบในเครื่อง/browser เดียว: เปิดเคส ค้นหา ดูรายละเอียด ปิด/เปิดเคสใหม่ ดูประวัติ และลบเคสปิดแล้วตาม retention แบบ manual ยังไม่รวม auth, backend, Supabase, Module Hub, multi-user sync, notification, file upload, hosted widget หรือ deployment</p>
+<h2>2. ข้อเท็จจริงที่ยืนยันแล้ว</h2>
+<ul>
+<li>ตัวตนสินค้า: local-first Thai-first React case-management UI template/module. สนับสนุน 3/3</li>
+<li>Buyer: frontend developer / web agency. สนับสนุน 3/3</li>
+<li>End user: เจ้าหน้าที่ดูแลเคส role เดียว ไม่มี auth ตาม design. สนับสนุน 3/3</li>
+<li>V1 มี 3 หน้า: intake, ticket detail/action, history/retention. สนับสนุน 3/3</li>
+<li>localStorage เป็น adapter เดียวตอนนี้ และมี <code>TicketRepository</code> เป็น boundary สำหรับอนาคต. สนับสนุน 3/3</li>
+<li>Backend ไม่จำเป็นสำหรับ V1 template; เป็น post-V1. สนับสนุน 3/3</li>
+<li>ต้องแยก CM01 ออกจาก BK01 และ Module Hub <code>ticket-tracker</code>. สนับสนุน 3/3</li>
+<li>Code baseline ถูก report ว่า complete และ green: 63 unit/integration, 28 Chromium E2E, typecheck, build, HEAD <code>6202108</code>, main clean == origin/main. สนับสนุน 3/3</li>
+<li>ราคา <code>$39</code>, <code>$129</code>, <code>THB 350/mo</code> เป็น proposal ใน working draft ไม่ใช่ราคาที่อนุมัติแล้ว. สนับสนุน 3/3</li>
+<li>ยังมี debt ก่อนขาย source product: lint disabled, E2E ไม่อยู่ใน CI, npm audit advisory, license/secret/SAST ยัง disabled รอ decision. สนับสนุน 3/3</li>
+</ul>
+<h2 class="consensus">3. Consensus / Majority / Dissent</h2>
+<p class="consensus">Consensus 3/3:</p>
+<ul>
+<li>ล็อก CM01 เป็น source-code UI template/module สำหรับ dev/agency</li>
+<li>ไม่ merge กับ BK01, TT01, หรือ Module Hub <code>ticket-tracker</code></li>
+<li>Backend adapter ไม่ใช่ V1 gate</li>
+<li>งานที่เหลือก่อนขายคือ packaging, docs, license, hardening ไม่ใช่ feature build</li>
+<li>Product Gate ห้าม approve pricing</li>
+<li>Demand ยังไม่ validate</li>
+<li>MIT license ขัดกับ paid single-use model ต้องเคลียร์ก่อนขาย</li>
+</ul>
+<p>Majority 2/3:</p>
+<ul>
+<li>A และ C เน้นว่า V1 คือ sellable single-use template tier; B เห็นด้วยกับ source-product V1 แต่ระวังไม่ endorse tier/price เพราะเป็น proposal</li>
+<li>A และ C บอกว่า packaging + hardening เป็นงานสั้นกว่า feature build; B เห็นด้วยเชิงสาระ แต่ย้ำว่า PRD scope complete แล้ว</li>
+</ul>
+<p class="dissent">Dissent / emphasis 1/3:</p>
+<ul>
+<li>B เท่านั้นที่ชี้ว่า adapter swap ตอนนี้ยังต้องแก้ source ใน <code>App.tsx</code> ไม่ใช่ config prop</li>
+<li>B เท่านั้นที่ชี้ timezone caveat และชื่อ theme <code>super-admin</code> เป็น buyer-facing caveat</li>
+<li>B ให้ confidence 86 สูงกว่า A/C ที่ 78 เพราะ evidence เรื่อง identity แข็งกว่า แต่ทุกคนยังยอมรับ commercial/legal gaps</li>
+</ul>
+<h2>4. หลักฐานที่ยังขาด / คำถามที่ยังไม่จบ</h2>
+<ul>
+<li>ยังไม่มีหลักฐาน buyer demand, sale, channel หรือ market research</li>
+<li>ยังไม่ตัดสิน license strategy ระหว่าง MIT กับ paid single-use</li>
+<li>ราคาทั้งหมดเป็น proposal ยังไม่ approved</li>
+<li>revenue draft ยังพูดขัดกันเอง: จะขาย template แต่บอกว่ายังต้องมี backend ก่อนถึงจะมากกว่า demo</li>
+<li>ยังไม่เลือก post-V1 adapter direction: Supabase/REST หรือ Module Hub <code>ticket-tracker</code></li>
+<li>Module Hub scan ยัง <span class="badge hold">HOLD</span> ห้าม revive ใน gate นี้</li>
+<li>ยังขาด buyer onboarding docs: embed guide, adapter guide, limitation, package manifest, support boundary</li>
+<li>tooling/security gates ยังไม่จบ: lint, E2E-in-CI, dependency audit, license audit, secret scan, SAST, cross-browser</li>
+</ul>
+<h2>5. คำแนะนำของ Synthesizer</h2>
+<p>ให้ verdict เป็น <span class="badge remediate">REMEDIATE</span></p>
+<p>ล็อก product direction ได้แล้ว: CM01 คือ Thai-first local-first React source template/module สำหรับ dev/agency buyer และ V1 ไม่ต้องมี backend แต่ยังไม่ควรปล่อยไปเป็น sellable package จนกว่า owner จะตัดสิน license, demand threshold, positioning, docs, hardening และ adapter direction ให้ชัด</p>
+<h2>6. ทำไมถึงแนะนำแบบนี้</h2>
+<p class="consensus">ไม่ควร <span class="badge block">BLOCK</span> เพราะผู้เชี่ยวชาญ 3/3 เห็นตรงกันว่าตัวตนสินค้า ผู้ซื้อ และ V1 boundary ชัดแล้ว</p>
+<p>แต่ยังไม่ควร <span class="badge pass">PASS</span> เพราะถ้าเดินขายทันทีจะชนเรื่อง license, demand ที่ยังไม่ prove, positioning ที่ขัดกัน, buyer docs ที่ยังไม่พอ และ tooling/security debt ของ source product</p>
+<h2>7. ทางเลือกที่ไม่เลือก + เหตุผล</h2>
+<ul>
+<li>ไม่เลือกทำเป็น deployable SaaS: ขัดกับ PRD/README/registry และต้องเพิ่ม backend/auth/tenancy นอก V1. สนับสนุน 3/3</li>
+<li>ไม่เลือก merge เข้า BK01: owner decision แยก product family และ BK01 มี native full-stack ticket system เอง. สนับสนุน 3/3</li>
+<li>ไม่เลือก merge/bundle กับ Module Hub <code>ticket-tracker</code>: scan ยัง <span class="badge hold">HOLD</span> และตัวนั้นเป็น backend-only ไม่ใช่ drop-in. สนับสนุน 3/3</li>
+<li>ไม่เลือกบังคับ backend เป็น V1: local-first template ใช้งาน V1 ได้แล้ว. สนับสนุน 3/3</li>
+<li>ไม่เลือก approve pricing ใน gate นี้: ตัวเลขยังเป็น proposal. สนับสนุน 3/3</li>
+</ul>
+<h2>8. Gate Verdict + Blockers</h2>
+<p>Gate Verdict: <span class="badge remediate">REMEDIATE</span></p>
+<p>Build-approval blockers:</p>
+<ul>
+<li>ต้องตัดสิน license/EULA ให้เข้ากับ paid source distribution</li>
+<li>ต้องตัดสินว่าจะ require buyer validation แค่ไหนก่อน packaging/launch</li>
+<li>ต้องแก้ positioning ไม่ให้พูดขัดกันระหว่าง "usable V1 template" กับ "ยังเป็น demo ถ้าไม่มี backend"</li>
+<li>ต้อง approve limitation language: localStorage-only, no auth, no backend, no deployment, no multi-user sync, Chromium-only E2E</li>
+<li>ต้องตัดสิน tooling/security gates หรือ accepted-risk ledger</li>
+<li>ต้องทำ buyer onboarding pack ให้พอสำหรับคนซื้อ source code</li>
+</ul>
+<p>Launch blockers:</p>
+<ul>
+<li>license/EULA final</li>
+<li>buyer-facing docs final</li>
+<li>pricing ต้องผ่าน Business/Market หรือ owner decision ที่ถูก gate</li>
+<li>source package ต้องผ่าน hardening gates หรือมี risk acceptance ชัด</li>
+<li>backend integration claim ต้องตรงกับ implementation จริง</li>
+</ul>
+<h2>9. Confidence</h2>
+<p>Confidence: 81/100</p>
+<p class="consensus">เหตุผล: identity, buyer, V1 boundary, และ separation มี consensus 3/3 ชัดมาก แต่ความมั่นใจถูกกดลงเพราะ demand, license, pricing/package, docs, tooling/security ยังไม่จบ</p>
+<h2>10. Technical Document Pack</h2>
+<ul>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\PRODUCT-SYNTHESIS.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\PRODUCT-SOURCE-OF-TRUTH.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\PRODUCT-SCOPE.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\USER-FLOWS.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\BUSINESS-RULES.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\V1-ACCEPTANCE-CRITERIA.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\OPEN-DECISIONS.md</code></li>
+<li><code>D:\AI-Workspace\projects\saas-product-hub\docs\council-product-destination-2026-09-03-canonical-01\01-product\CM01\01-PRODUCT-OWNER-BRIEF.md</code></li>
+</ul>
+<h2>11. REQUIRED Owner Decision Cards</h2>
+<h3>OD-001 License Strategy</h3>
+<p>Decision: จะขาย source code แบบ paid single-use อย่างไรเมื่อ repo เป็น MIT</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): ทำ commercial EULA หรือ dual-license สำหรับ sale package ก่อนขาย</li>
+<li>B: คง MIT แล้วขาย convenience/support โดยยอมรับ redistribution risk</li>
+<li>C: ยังไม่ขายจนกว่าจะ legal/licensing review เสร็จ</li>
+</ul>
+<p>Council support: 3/3 เห็นว่า contradiction นี้จริงและต้อง resolve ก่อน sale</p>
+<h3>OD-002 Buyer Demand Threshold</h3>
+<p>Decision: ต้องมีหลักฐาน demand แค่ไหนก่อนลงทุน packaging/launch</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): validate กับ dev/agency buyer จริงแบบ lightweight ก่อน launch</li>
+<li>B: ทำ package ขายเป็น experiment ต้นทุนต่ำ และยอมรับ risk</li>
+<li>C: รอ Business/Market Gate ก่อนทำ commercial work</li>
+</ul>
+<p class="risk">Council support: 3/3 เห็นว่า demand ยังไม่ validate และเป็น risk ใหญ่</p>
+<h3>OD-003 Product Positioning</h3>
+<p>Decision: จะอธิบาย CM01 ยังไงไม่ให้ขัดกันเอง</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): วางเป็น usable local-first source template พร้อม BYO-backend roadmap</li>
+<li>B: วางเป็น demo/template เท่านั้นจนกว่าจะมี backend adapter</li>
+<li>C: วางเป็น agency/backend-ready หลังทำ adapter แล้วเท่านั้น</li>
+</ul>
+<p>Council support: 3/3 เห็นว่า backend ไม่ต้องเป็น V1; 3/3 เห็นว่า revenue draft tension ต้องแก้</p>
+<h3>OD-004 Backend Adapter Direction</h3>
+<p>Decision: ถ้าจะทำ post-V1 adapter จะเลือกทางไหน</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): defer จนมี buyer demand และเข้า Architecture Gate</li>
+<li>B: Supabase/REST adapter ตาม PRD roadmap</li>
+<li>C: สำรวจ Module Hub <code>ticket-tracker</code> หลัง Module Hub scan ถูก release เท่านั้น</li>
+</ul>
+<p>Council support: 3/3 ว่า backend เป็น post-V1; 3/3 ว่า Module Hub scan <span class="badge hold">HOLD</span>; 3/3 ว่า <code>ticket-tracker</code> ไม่ใช่ drop-in ตอนนี้</p>
+<h3>OD-005 Hardening Gates</h3>
+<p>Decision: ก่อนขาย source package ต้องผ่าน check อะไร</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): <span class="badge remediate">REMEDIATE</span> หรือ risk-accept lint, E2E-in-CI, dependency audit, license audit, secret scan, SAST, cross-browser claims</li>
+<li>B: ship พร้อม limitation และ accepted-risk ledger</li>
+<li>C: <span class="badge block">BLOCK</span> packaging จนทุก check automate ครบ</li>
+</ul>
+<p>Council support: 3/3 เห็นว่า gaps เหล่านี้มีจริงและกระทบ source-product readiness</p>
+<h3>OD-006 Buyer Onboarding Pack</h3>
+<p>Decision: เอกสารสำหรับ buyer V1 ต้องมีอะไรบ้าง</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): embed guide, adapter guide, theme guide, limitations, distribution manifest, support boundary</li>
+<li>B: ใช้ README อย่างเดียวและยอมรับ support/refund risk</li>
+<li>C: รอ full docs + independent review ก่อนขาย</li>
+</ul>
+<p>Council support: 3/3 เห็นว่า docs/onboarding ยังไม่พอ</p>
+<h3>OD-007 Repository Injection Claim</h3>
+<p>Decision: จะพูดเรื่อง adapter integration ยังไง</p>
+<p>Options:</p>
+<ul>
+<li>A (Recommended): บอกตรง ๆ ว่าตอนนี้ adapter swap เป็น source-code integration ไม่ใช่ config-level injection</li>
+<li>B: เพิ่ม repository prop/config ก่อนขาย</li>
+<li>C: เลี่ยง backend-adapter claim ทั้งหมดใน V1</li>
+</ul>
+<p class="dissent">Council support: 1/3 explicit emphasis; ไม่มี dissent</p></section>
+</main></body></html>
