@@ -1,8 +1,8 @@
 # PIPELINE STATUS
 
 Council: WSTERA Product Destination Council — Canonical Run 01
-Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01, PS01, WS01 complete
-Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 = PASS (after D1-D2 remediation); LK01 / CM01 = not dispatched**
+Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01, PS01, WS01, LK01 complete
+Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 = PASS (after D1-D2 remediation); LK01 = PASS; CM01 = not dispatched**
 
 Experts: `agent-claude`, `agent-agy`, `agent-qwen`
 Synthesizer: `agent-codex`
@@ -96,13 +96,23 @@ Owner approved Release 1B on 2026-09-04. Dispatch is per-product, one at a time.
 - Differentiation locked: **Truthful Supply + Explainable Allocation** (Requested != Allocated != Fulfilled; Ordered != Confirmed != Received; visible Demand->Supply->Gap; shortage truth before allocation; auditable allocation history; dealer-visible self-scoped result; explicit backorder without double-subtracting/overwriting). Status-quo competitor preserved: Excel/Google Sheets + LINE/chat + owner/admin memory.
 - Downstream Pilot/Launch validation preserved (NOT gate blockers): 5-10 beachhead interviews, direct WTP evidence, real allocation-round walkthroughs, redacted spreadsheet/dealer/supplier sample review, onboarding hours, paid pilot conversion, activation (first real supply/allocation round), retention/churn, CAC, ARPU, measured admin-time saving, measured dispute reduction, dealer adoption, production billing, runtime/database placement, architecture/security, implementation/deployment.
 - This PASS is document-level only — NOT build/launch approval. WS01 may proceed to the next authorized governance stage only when Owner explicitly releases it.
-- This gate is **STOP after Owner report; do not dispatch LK01 / Product #6** per brief.
 - Artifacts: `01.5-business-market/WS01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, product-level INDEX.html, raw/, candidates, manifests)
+
+### LK01 Business/Market Gate — PASS (2026-09-05, locked Council verdict)
+
+- Expert completion: 3/3 (Claude, AGY, Qwen) per neutral Council manifest for task `t_f10edf03`
+- Authoritative verdict artifact: `.secretary-relay/t_f10edf03/LK01-GATE-VERDICT.json` — **PASS** (confidence 65/100)
+- Authoritative Council synthesis input: `.secretary-relay/t_f10edf03/council-decision/DECISION-SYNTHESIS.CODEX-ORIGINAL.json` — original recommendation `CONDITIONAL MARKET-DIRECTION CREDIBLE`
+- Official gate interpretation: PASS means credible pre-build market thesis only, not PMF, final-price validation, launch authorization, implementation authorization, or production readiness
+- Preserved dissent: Candidate B leaned PASS; Candidates A/C were conditional. Short.io's generous free tier and free/manual status quo remain serious commercial pressure.
+- Preserved caveats: no validated WTP, paid pilot, retention, CAC/payback, PMF, traffic/support unit economics, or durable single-feature moat claim.
+- Core market thesis: narrow Thai-first seller/creator/page-admin/agency/affiliate/SMB segment with recurring destination changes, multi-channel distribution, stable branded links/QRs, first-party outbound attribution, destination switching, and redirect reliability.
+- Artifacts: `01.5-business-market/LK01/` (synthesis, original-readable rendering, doc pack, Thai OWNER-BRIEF.md)
 
 ## Not released
 
 Module Hub Scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay, and implementation are NOT RELEASED.
-WS01 Business/Market Gate has completed a document-level PASS artifact after Owner D1-D2 remediation; LK01 and CM01 Business/Market gates are NOT yet dispatched. MT01, DC01, BK01, PS01, and WS01 Business/Market gates have completed document-level PASS artifacts. No later gate, Agent Relay, Product #6 dispatch, implementation, launch, or deployment is released by these results. Do not dispatch LK01 / Product #6 after WS01 per brief.
+LK01 Business/Market Gate has completed a document-level PASS artifact from the locked Council verdict. CM01 is the only Release 1B product remaining. No later gate, Agent Relay, CM01 dispatch, implementation, launch, or deployment is released by these results.
 
 ## MT01 procedure deviation (resolved)
 
@@ -118,7 +128,7 @@ These do not affect the Product Gate verdict.
 
 ## Not released (Owner decision required)
 
-Business/Market Gate, Module Hub scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay,
+CM01 Business/Market dispatch, Module Hub scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay,
 and implementation are NOT released.
 
 ## Artifacts (verified on filesystem)
@@ -134,6 +144,6 @@ and implementation are NOT released.
 
 ## Owner Review Required
 
-Release 1A + Meta-Audit are complete. Release 1B Business/Market Gate has completed document-level PASS for MT01, DC01, BK01, PS01, and WS01. WS01 passed after Owner D1-D2 targeted remediation on 2026-09-05.
+Release 1A + Meta-Audit are complete. Release 1B Business/Market Gate has completed document-level PASS for MT01, DC01, BK01, PS01, WS01, and LK01. WS01 passed after Owner D1-D2 targeted remediation on 2026-09-05. LK01 passed from the locked Council verdict artifact on 2026-09-05.
 
-Per the WS01 stop boundary, LK01 and CM01 Business/Market gates remain not dispatched. No later gate, Architecture, Risk, Pre-Build, Agent Relay, implementation, launch, or deployment is released by these results. Owner must explicitly release the next product/gate or give other direction.
+CM01 is the only remaining Release 1B Business/Market product. No later gate, Architecture, Risk, Pre-Build, Agent Relay, implementation, launch, deployment, or CM01 dispatch is released by these results. Owner must explicitly release the next product/gate or give other direction.
