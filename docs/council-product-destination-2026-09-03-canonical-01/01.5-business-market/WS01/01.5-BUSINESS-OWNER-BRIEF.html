@@ -18,159 +18,58 @@ blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;backgrou
 @media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
 </style></head><body><main class="wrap">
 <div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
-<section class="hero"><h1>01.5 Business Owner Brief - WS01 WSTERA Supply Management</h1><p class="muted">Source: 01.5-BUSINESS-OWNER-BRIEF.md · SHA256 72064e3ba1fe… · Decisions: 2</p><div class="grid"><div class="gate"><b>Business / Market Gate</b><span class="badge remediate">REMEDIATE</span></div></div></section>
+<section class="hero"><h1>01.5 Business Owner Brief - WS01 WSTERA Supply Management</h1><p class="muted">Source: 01.5-BUSINESS-OWNER-BRIEF.md · SHA256 416ccbf2f00e… · Decisions: 0</p><div class="grid"><div class="gate"><b>Business/Market Gate</b><span class="badge pass">PASS</span></div></div></section>
 <section class="card"><h1>01.5 Business Owner Brief - WS01 WSTERA Supply Management</h1>
-<h2>1. คำถามของ Gate</h2>
-<p>คำถามที่ต้องตัดสิน: WS01 WSTERA Supply Management มีตลาดแบบจ่ายเงินซ้ำที่น่าเชื่อถือไหม มีผู้จ่ายเงินเริ่มต้นชัดไหม มี pain เรื่อง supply/allocation ที่เกิดซ้ำและแพงพอไหม และ V1 มีทิศทาง monetization/delivery ที่สมเหตุสมผลไหม</p>
-<p>คำตอบสั้น: <strong>มีตลาดที่น่าเชื่อถือ แต่ยังต้อง <span class="badge remediate">REMEDIATE</span> ก่อนเดินกว้าง</strong></p>
-<p>Verdict: <strong><span class="badge remediate">REMEDIATE</span></strong></p>
-<p>Confidence: <strong>64/100</strong></p>
-<p>Business / Market Gate: <strong><span class="badge remediate">REMEDIATE</span></strong></p>
-<h2>2. Verdict</h2>
-<p>กูให้ <strong><span class="badge remediate">REMEDIATE</span></strong> ไม่ใช่ <span class="badge pass">PASS</span> และไม่ใช่ <span class="badge block">BLOCK</span></p>
-<p class="consensus">เหตุผลคือ 3/3 candidate เห็นตรงกันว่า payer, pain, wedge, และ monetization direction มีเหตุผลพอไปต่อ แต่ยังไม่มีหลักฐานตรงจาก owner-operator ไทย, ยังไม่รู้ qualified beachhead จริง, ยังไม่รู้ ARPU จริง, และยังไม่รู้ onboarding cost จริง</p>
-<p>นี่ไม่ใช่ technical blocker และไม่ใช่ให้ไป build เต็มทันที สิ่งที่ต้องทำต่อคือ validation เชิง Business/Market แบบแคบและมีหลักฐาน</p>
-<h2>3. Initial payer / beachhead</h2>
-<p>ผู้จ่ายเงินเริ่มต้นที่ชัดที่สุดคือ <strong>เจ้าของหรือทีม ops/admin ของ importer/distributor</strong> ไม่ใช่ dealer และไม่ใช่ supplier/factory</p>
-<p>Beachhead ที่ควรเริ่มคือธุรกิจไทยขนาดเล็กถึงกลางที่มี:</p>
+<h2>Verdict</h2>
+<p>Verdict ใหม่: <strong><span class="badge pass">PASS</span></strong></p>
+<p>Confidence: <strong>72/100</strong></p>
+<p>กูให้ <span class="badge pass">PASS</span> เฉพาะ <strong>Business/Market hypothesis gate</strong> หลัง Owner decision D1-D2 ไม่ใช่ <span class="badge pass">PASS</span> แบบเปิด build หรือ launch</p>
+<h2>D1-D2 แก้อะไรแล้ว</h2>
+<p><strong>D1 แก้ beachhead ที่กว้างเกินไปแล้ว</strong></p>
+<p>Beachhead แรกถูกล็อกเป็น: ธุรกิจไทยกลุ่ม motorcycle / automotive aftermarket importer-distributors คือผู้นำเข้า/ผู้จัดจำหน่ายอะไหล่หรือ accessories มอเตอร์ไซค์/รถยนต์ ที่มี dealer network และเจอ supply มาไม่ครบ มาช้า หรือโดนจำกัด quota ซ้ำๆ จนต้อง allocate ของให้ dealer</p>
+<p>นี่เป็น go-to-market beachhead เท่านั้น ไม่ใช่ให้ทำ product เป็นระบบเฉพาะวงการมอเตอร์ไซค์ ห้าม hard-code schema หรือ business rules เฉพาะ automotive เข้า WS01</p>
+<p><strong>D2 แก้ pricing policy แล้ว</strong></p>
+<p>รอบนี้ยังไม่ล็อกราคาขายจริง ไม่ล็อก plan name ไม่ล็อก dealer/SKU/seat limits ไม่ล็อก onboarding fee ไม่ล็อก trial และไม่ใช้ transaction take-rate เป็น default</p>
+<p>ที่ผ่านได้คือทิศทาง monetization: subscription ต่อ tenant, อาจ tier ตาม active dealers, อาจมี SKU/variant หรือ advanced workflow เป็น dimension รอง และ assisted onboarding อาจมี fee ทีหลังเมื่อรู้ต้นทุนจริง</p>
+<h2>ทำไม Gate ผ่านได้</h2>
+<p>Payer ชัดแล้ว: importer/distributor เป็น tenant และคนจ่ายเงิน โดย buyer หลักคือ owner/operator หรือทีม supply/admin เล็กๆ Dealer เป็นคนส่ง demand และดูผลของตัวเอง ไม่ใช่ payer</p>
+<p>Pain น่าเชื่อถือพอ: กลุ่มที่เจอ constrained supply ซ้ำๆ ต้อง reconcile dealer demand กับ supply ที่มาไม่ครบหรือยังไม่ confirmed แล้วต้องตัดสินใจ allocate ของให้ dealer พร้อมตอบคำถามว่าทำไมใครได้หรือไม่ได้ของ</p>
+<p>คู่แข่งจริงคือ Excel/Google Sheets + LINE/chat + ความจำเจ้าของ/admin ไม่ใช่ ERP ตรงๆ</p>
+<p>Wedge ของ WS01 คือ <strong>Truthful Supply + Explainable Allocation</strong>:</p>
 <ul>
-<li>dealer/reseller ประมาณ 20-200 ราย</li>
-<li>SKU/variant หลายรายการ จน allocation ไม่ใช่เรื่องง่าย</li>
-<li>เจอ partial supply, factory delay, quota, หรือ shortage ซ้ำๆ</li>
-<li>ใช้ Excel/Google Sheets + LINE/chat + ความจำของเจ้าของหรือแอดมิน</li>
-<li>เคยมีปัญหา oversell, shortage รู้ช้า, dealer ถามว่าทำไมไม่ได้ของ, backorder งง, หรือไฟล์ Excel ทับกัน</li>
-</ul>
-<p>ห้ามตีความว่า importer ทุกเจ้าคือลูกค้า ถ้า supply เหลือๆ หรือ dealer น้อยมาก WSM ไม่มี hook พอให้จ่ายรายเดือน</p>
-<h2>4. Recurring pain</h2>
-<p>Pain ที่น่า monetize คือ supply ไม่แน่นอนและต้องจัดสรรของให้ dealer แบบอธิบายได้</p>
-<p>ปัญหาหลัก:</p>
-<ul>
-<li>dealer ส่งคำขอใน LINE/chat กระจัดกระจาย</li>
-<li>request ถูกเข้าใจผิดว่าเป็น order หรือ promise</li>
-<li>factory order ถูกเข้าใจผิดว่าเป็น confirmed/received supply</li>
-<li>shortage รู้ช้า</li>
-<li>allocation ทำใน Excel หรือจากความจำเจ้าของ แล้วอธิบายย้อนหลังยาก</li>
-<li>backorder ถูกลืมหรือ double count</li>
-<li>dealer ต้องถาม admin ซ้ำๆ ว่าได้ของไหม</li>
-<li>history หายเมื่อ spreadsheet ถูกแก้หรือทับ</li>
-</ul>
-<p>มูลค่าทางธุรกิจ เช่น admin time saved, dispute reduction, allocation accuracy ยังเป็น <code>hypothesis</code> ต้องวัดใน pilot</p>
-<h2>5. Status quo / competitors</h2>
-<p>คู่แข่งตัวจริงคือ <strong>Excel + LINE/chat + owner memory</strong> เพราะฟรี คุ้นมือ และ flexible</p>
-<p>คู่แข่ง adjacent:</p>
-<ul>
-<li>Zort, Smith, Fusion และระบบ dealer/order ไทยอื่นๆ</li>
-<li>FlowAccount/PEAK/accounting-POS SaaS ที่มี inventory บางส่วน</li>
-<li>Odoo/ERP-lite</li>
-<li>B2B ordering portals เช่น SparkLayer, OrderDock, B2B Wave, Brandboom, Shopify B2B</li>
-<li>Inventory/OMS เช่น Zoho Inventory, inFlow, Unleashed, Cin7, Katana</li>
-<li>Supply planning/enterprise systems เช่น Netstock, Oracle/SAP style fair-share allocation</li>
-</ul>
-<p>WSM ไม่ควรสู้ด้วยการเป็น ERP หรือ order portal แต่ต้องยืนบน allocation truth: Demand -&gt; Supply -&gt; Gap -&gt; Allocation -&gt; Fulfillment</p>
-<h2>6. Differentiation wedge</h2>
-<p>Wedge ที่มีจริงคือ:</p>
-<ul>
-<li>Ordered != Confirmed != Received</li>
 <li>Requested != Allocated != Fulfilled</li>
-<li>คำนวณ gap โดยไม่ double-subtract backorder</li>
-<li>allocation แบบ manual/partial มี audit trail</li>
-<li>backorder carry ต้อง explicit ไม่ auto</li>
-<li>dealer เห็นผลของตัวเองโดยไม่ต้องถาม admin</li>
-<li>history ไม่หายแบบ spreadsheet</li>
+<li>Ordered != Confirmed != Received</li>
+<li>เห็น Demand -&gt; Supply -&gt; Gap ก่อน allocation</li>
+<li>allocation มีประวัติและอธิบายย้อนหลังได้</li>
+<li>backorder ไม่ double-subtract หรือ overwrite มั่ว</li>
+<li>dealer เห็นผลของตัวเองโดยไม่ต้องถาม admin ทุกครั้ง</li>
 </ul>
-<p>ถ้าขายเป็น "spreadsheet ที่สวยขึ้น" หรือ "ระบบ order/ERP อีกตัว" wedge จะพัง</p>
-<h2>7. Monetization direction</h2>
-<p>Commercial values ยัง <strong>TBD</strong> ห้ามล็อกราคาสาธารณะในรอบนี้</p>
-<p>ทิศทางที่ coherent:</p>
+<p>ถ้าขายเป็น spreadsheet สวยขึ้น หรือ ERP/order portal อีกตัว wedge จะพัง</p>
+<h2>สิ่งที่ยังเหลือ</h2>
+<p>ยังไม่มีหลักฐานจริงจาก interview/pilot ของกลุ่ม Thai motorcycle/automotive aftermarket importer-distributors ห้ามแต่งผลลัพธ์ขึ้นมา</p>
+<p>สิ่งที่ต้องไป validate ใน Pilot/Launch:</p>
 <ul>
-<li>subscription รายเดือน/รายปีต่อ tenant</li>
-<li>tier หลักตาม active dealers เพราะ dealer count สัมพันธ์กับ workload และ allocation complexity</li>
-<li>SKU/variant เป็น secondary tier ได้</li>
-<li>seats ไม่ควรเป็นตัวคิดเงินหลัก เพราะทีมแรกๆ มีแค่ owner + admin 1-3 คน</li>
-<li>onboarding/data-import fee ควรมี เพราะ Excel/SKU/dealer/supplier setup มีต้นทุนจริง</li>
-<li>advanced allocation policy, automation, API/integration, audit export เป็น tier ต่อไป</li>
-<li>ไม่ควรใช้ take-rate/transaction fee ใน V1</li>
+<li>คุย beachhead interview 5-10 ราย</li>
+<li>ดู allocation round ล่าสุดของ prospect จริง</li>
+<li>วัด willingness-to-pay</li>
+<li>ขอ sample spreadsheet/dealer/supplier data แบบ redacted</li>
+<li>วัด onboarding hours</li>
+<li>วัด activation จากการจบรอบ supply/allocation จริง</li>
+<li>วัด retention, CAC, ARPU, admin-time saved, dispute reduction, dealer adoption</li>
 </ul>
-<h2>8. Sales / onboarding / delivery</h2>
-<p>Sales motion ที่เหมาะคือ <strong>owner-led demo + assisted onboarding</strong></p>
-<p>ไม่ควร pure self-serve เพราะ value แรกต้องเกิดจาก real round จริง ไม่ใช่แค่สมัครแล้วลองเล่นเอง และไม่ควร enterprise consulting เพราะ ICP จ่ายไม่ไหวถ้า onboarding หนักเกิน</p>
-<p>Onboarding ที่ควรล็อก:</p>
+<p>รายการพวกนี้สำคัญ แต่ไม่ใช่ blocker ของ Business/Market gate นี้ เพราะ D1-D2 ทำให้ payer, beachhead, pain, wedge, onboarding direction และ monetization direction coherent แล้ว</p>
+<h2>Blocker</h2>
+<p>ตอนนี้ <strong>ไม่พบ genuine Business/Market blocker</strong> หลัง D1-D2</p>
+<p class="risk">ยังมี risk แต่ไม่ใช่ blocker:</p>
 <ul>
-<li>เริ่มจากรอบถัดไป ไม่ migrate history ลึกใน V1</li>
-<li>import SKU/dealer/supplier จาก Excel template</li>
-<li>สร้าง dealer code/link แบบ zero-install และ LINE-friendly</li>
-<li>run รอบแรก parallel กับ Excel ได้</li>
-<li>train admin เรื่อง state separation และ allocation logging</li>
+<li>ตลาดจริงอาจเล็กกว่าที่คิด</li>
+<li>ARPU อาจไม่พอถ้า onboarding หนัก</li>
+<li>dealer อาจไม่ใช้ self-result link</li>
+<li>prospect อาจขอ ERP/POS/accounting/integration เกิน V1</li>
+<li>pain อาจ seasonal ในบางหมวด</li>
+<li>competitor อาจ copy allocation feature ได้</li>
 </ul>
-<p>ถ้า onboarding กลายเป็นหลายสัปดาห์ มี custom ERP, integration, หรือ data cleanup หนักๆ unit economics จะเสี่ยงพัง</p>
-<h2 class="risk">9. Risks / blockers / downstream split</h2>
-<h3>Genuine Business/Market blockers</h3>
-<p>ยังไม่พบ fatal blocker ตอนนี้:</p>
-<ul>
-<li>payer มีชัด</li>
-<li>pain เกิดซ้ำได้จริงใน ICP ที่ถูกต้อง</li>
-<li>wedge แยกจาก spreadsheet/ERP/order portal ได้</li>
-<li>monetization direction coherent</li>
-<li>beachhead แคบแต่พอใช้ validate ได้</li>
-</ul>
-<h3>Remediation required</h3>
-<p>ต้องแก้/พิสูจน์ก่อนเดินกว้าง:</p>
-<ul>
-<li>เลือก first vertical หรือ acquisition segment ที่แคบกว่านี้</li>
-<li>สัมภาษณ์ owner-operator 5-10 รายที่มี constrained supply + dealer allocation จริง</li>
-<li>พิสูจน์ว่า pain เป็น top pain ไม่ใช่แค่ annoyance</li>
-<li>พิสูจน์ว่าเขามอง WSM เป็น allocation truth/provenance ไม่ใช่ spreadsheet/order portal</li>
-<li>ประเมิน onboarding effort จาก spreadsheet/dealer/supplier data จริง</li>
-<li>ล็อก packaging dimensions โดยราคายัง TBD</li>
-</ul>
-<h3>Downstream preserved-not-blockers</h3>
-<p>สิ่งต่อไปนี้ยังไม่ใช่ blocker ของ gate นี้ แต่ต้องเก็บไป validate:</p>
-<ul>
-<li>retention/churn จริง</li>
-<li>CAC/conversion จริง</li>
-<li>admin time saved จริง</li>
-<li>dispute reduction จริง</li>
-<li>allocation accuracy จริง</li>
-<li>ARPU จริง</li>
-<li>production billing</li>
-<li>runtime/database placement</li>
-<li>architecture/security</li>
-<li>implementation/deployment</li>
-</ul>
-<h2>10. Owner decision cards</h2>
-<p>รอบนี้มี Owner Decision Required เพราะ verdict เป็น <span class="badge remediate">REMEDIATE</span> และต้องล็อกขอบเขต remediation ก่อนรอบต่อไป</p>
-<section class="decision-card">
-<h3>Decision D1 — เลือก first beachhead vertical สำหรับ validation รอบแรก</h3>
-<p>Decision required: เลือก first beachhead vertical สำหรับ validation รอบแรก</p>
-<p>Recommended decision: เริ่มจาก vertical ที่มี recurring constrained supply + dealer allocation ชัดที่สุด เช่น auto parts/accessories, electronics/appliances, building materials/hardware, หรือ FMCG sub-distribution โดยเลือกหนึ่งเดียวก่อน ไม่เปิดกว้างทุก importer</p>
-<p>Why: ถ้าไม่ narrow จะ validate ไม่เจอ pain ที่แท้จริง และ WSM จะถูกลากไปเป็น generic order/ERP tool</p>
-<p>Options:</p>
-<ul>
-<li>Approve: เลือกหนึ่ง vertical แล้วทำ discovery 5-10 owner calls</li>
-<li>Revise: เสนอ vertical อื่นพร้อมเหตุผลเรื่อง recurring shortage/allocation</li>
-<li><span class="badge hold">HOLD</span>: หยุด Business/Market validation ไว้ก่อน</li>
-</ul>
-</section>
-<section class="decision-card">
-<h3>Decision D2 — ยืนยันว่า V1 validation จะไม่ lock final public prices</h3>
-<p>Decision required: ยืนยันว่า V1 validation จะไม่ lock final public prices</p>
-<p>Recommended decision: อนุมัติให้ทดสอบเฉพาะ monetization structure: per-tenant subscription, active-dealer tier, optional SKU tier, onboarding/data-import fee; ราคาจริงยัง TBD</p>
-<p>Why: brief ระบุชัดว่า commercial values ยัง TBD การเดาราคาใน gate นี้จะทำให้ source-of-truth เพี้ยน</p>
-<p>Options:</p>
-<ul>
-<li>Approve: validate structure โดยไม่ประกาศ final prices</li>
-<li>Revise: เพิ่ม/ตัด billing dimensions ที่ต้องทดสอบ</li>
-<li><span class="badge hold">HOLD</span>: รอ owner กำหนด pricing policy ก่อน validation</li>
-</ul>
-</section>
-<h2>11. Next action</h2>
-<p>Next action ที่ชัดเจน:</p>
-<ol>
-<li>เลือก first vertical เดียว</li>
-<li>เตรียม interview script ที่ถามจากรอบ allocation จริงล่าสุด</li>
-<li>สัมภาษณ์ owner-operator 5-10 ราย</li>
-<li>ขอ sample spreadsheet/dealer list/supplier mapping แบบ redacted เพื่อประเมิน onboarding</li>
-<li>สรุปว่าผ่าน remediation หรือควรปรับ/หยุด</li>
-</ol>
-<p>สรุปสุดท้าย: WS01 ไม่ควรถูก <span class="badge block">BLOCK</span> แต่ก็ยังไม่ควร <span class="badge pass">PASS</span> แบบเปิดทางเต็ม รอบนี้ควรเป็น <strong><span class="badge remediate">REMEDIATE</span> with narrow commercial validation</strong></p></section>
+<h2>Boundary</h2>
+<p><span class="badge pass">PASS</span> นี้ไม่ authorize Product Gate reopening, implementation, architecture, migrations, deployment, production billing, Agent Relay, Layer 2, หรือ broad launch</p>
+<p>สิ่งที่ authorize มีแค่อย่างเดียว: ปิด WS01 Business/Market gate เป็น <span class="badge pass">PASS</span> ภายใต้ D1-D2 และเก็บ validation ที่เหลือไว้สำหรับ Pilot/Launch governance</p></section>
 </main></body></html>

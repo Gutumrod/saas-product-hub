@@ -1,162 +1,266 @@
 # Business/Market Synthesis - WS01 WSTERA Supply Management
 
-## 1. Problem understood
+Re-evaluation date: 2026-09-05  
+Mode: Targeted re-evaluation of existing anonymized evidence after Owner decisions D1-D2  
+Gate: WS01 Business/Market Gate, llm-council-gate v0.3.2
 
-Frozen gate question: Does WS01 WSTERA Supply Management have a credible recurring paid market, with a clear initial payer, recurring costly supply/allocation pain, and a commercially coherent V1 monetization and delivery direction?
+This is not a fresh expert round. This synthesis uses only the frozen brief, current synthesis, current owner brief, current doc pack, Candidate A/B/C, the identity-safe synthesis manifest, and the Owner decisions D1-D2 supplied for this re-evaluation.
 
-The market problem is not generic ERP, inventory, marketplace, or forecasting. WSM is being tested as a narrow B2B workflow for importer/distributor businesses that take recurring dealer demand, receive uncertain or partial supplier/factory supply, discover gaps, manually allocate scarce stock, carry explicit backorders, and need dealers to see their own result without turning the product into a broad dealer portal.
+## New verdict (PASS | REMEDIATE | BLOCK)
 
-The business question is whether this pain recurs often enough and costs enough for the importer/distributor owner to pay monthly, rather than continue with Excel, Google Sheets, LINE/chat, and owner memory.
+**PASS**
 
-## 2. Verified facts
+The WS01 Business/Market gate can close as PASS after D1-D2. The original REMEDIATE state was driven mainly by an insufficiently locked beachhead and unresolved interpretation of pricing policy. D1 now locks a narrow, reachable first commercial beachhead. D2 correctly keeps final public pricing unlocked while preserving a coherent monetization direction.
 
-### Verified or strongly cross-supported across candidates
+This PASS is narrow. It means WS01 has a credible recurring paid market hypothesis, a sufficiently explicit initial payer, a credible recurring pain pattern, a meaningful wedge over Excel + LINE, and a commercially coherent V1 monetization/delivery direction. It does not prove PMF, paid retention, CAC, ARPU, launch readiness, technical readiness, or implementation readiness.
 
-- 3/3 candidates identify the initial payer as the importer/distributor owner-operator or owner-led small operations team. Dealers are demand-side actors, not SaaS payers.
-- 3/3 candidates identify the credible beachhead as small/mid Thai importer/distributors with active dealer networks, multi-SKU complexity, recurring partial supply/shortage, manual allocation rounds, and current Excel + LINE/chat coordination.
-- 3/3 candidates identify Excel/Google Sheets + LINE/chat + owner memory as the strongest status quo competitor.
-- 3/3 candidates identify the core wedge as truthful supply/demand state separation, gap visibility, auditable manual/partial allocation, explicit backorder handling, and dealer-visible self-scoped results.
-- 3/3 candidates agree commercial values/prices remain TBD and should not be finalized here.
-- 3/3 candidates recommend a monthly B2B per-tenant subscription as the primary monetization direction, with active dealer count as the strongest value-correlated tiering dimension and onboarding/data-import as a likely separate fee.
-- 3/3 candidates reject transaction/take-rate as a V1 assumption.
-- 3/3 candidates classify actual retention, CAC, activation conversion, measured admin-time saving, measured dispute reduction, real ARPU, production billing, runtime/database placement, architecture/security, implementation, and deployment as downstream validation, not Business/Market blockers.
+## Confidence 0-100
 
-### Externally evidenced by candidates, still point-in-time
+**72/100**
 
-- Thailand is LINE/chat-commerce heavy. Candidate B cites DataReportal 2025 LINE monthly-active-user context and Bangkok Post/LINE chat-commerce growth figures. This supports, but does not prove per-ICP adoption.
-- Thai vendors already monetize adjacent dealer/order/booking pain. Candidate B cites Zort booking/reservation features and Thai pricing anchors; candidates B/C cite Thai accounting/POS/ERP-lite anchors such as FlowAccount/PEAK/Odoo bundles; candidates A/B cite dealer/reseller systems such as Smith/Fusion.
-- International and regional alternatives exist across B2B ordering, inventory, ERP-lite, and supply planning, but candidates found no surveyed SMB-priced Thai product whose center of gravity is WSM's exact combination: supplier-state truth + recurring gap + manual auditable allocation + dealer self-result.
-- Broad Thai wholesale/distribution universe counts are large but not qualified. Candidate A and C cite about 162k-166k wholesale/distribution records from commercial/DBD-derived sources. Candidate B could not verify DBD/NSO establishment counts directly. Treat qualified beachhead size as `unverified`.
+Confidence rises above the prior 64/100 because the two most gate-relevant commercial ambiguities have now been resolved: the first beachhead is locked to Thailand-first motorcycle/automotive aftermarket importer-distributors, and final pricing is explicitly not locked at this gate. Confidence remains capped because primary beachhead interviews, paid pilots, onboarding unit economics, dealer adoption, actual ARPU, and retention are still unproven and belong downstream.
 
-### Hypothesis / unverified labels to preserve
+## D1 beachhead applied
 
-- The number of Thai importer/distributors with recurring partial supply plus manual dealer allocation is `unverified`.
-- Actual willingness-to-pay for WSM's allocation-truth workflow is `hypothesis`.
-- Measured admin-time saving, dispute reduction, allocation accuracy, dealer adoption rate, CAC, retention, churn, and ARPU are `hypothesis` until pilots.
-- Transfer of large-market allocation-dispute/audit value into Thai SME dealer-trust economics is `hypothesis`.
-- Dealer willingness to use a zero-friction self-result link is `hypothesis`.
+**D1 is correctly reflected in this re-evaluation. No material Business/Market gap remains from the beachhead issue.**
 
-## 3. Consensus / majority / dissent with real ratios
+Locked first commercial beachhead: Thailand-first motorcycle / automotive aftermarket importer-distributors. The specific target is small-to-mid-size Thai importers/distributors of motorcycle and automotive aftermarket accessories that repeatedly receive constrained, delayed, or partial supplier/factory supply and must allocate that supply across an existing dealer network.
 
-### 3/3 consensus
+The ICP is not generic wholesale, FMCG, retail ERP, warehouse management, procurement, or universal supply-chain planning. The working profile is:
 
-- Credible market direction exists only for a narrow ICP, not for all importers/distributors.
-- The initial payer is the importer/distributor business owner or owner-led operations team.
-- Dealer networks are value drivers and adoption actors, not payers.
-- Recurring constrained supply and allocation disputes are essential qualification conditions.
-- Excel + LINE/chat is the primary competitor and must be beaten by state discipline/provenance, not UI polish.
-- WSM's strongest differentiation is the combination of supply truth, demand truth, gap visibility, traceable allocation, explicit backorder, and dealer self-result.
-- Monetization should be recurring B2B SaaS, primarily per tenant, with value-correlated tiers and onboarding/data-import support; final price values remain TBD.
-- The delivery model is owner-led demo plus assisted onboarding, not pure self-serve and not enterprise consulting.
-- Downstream metrics remain unproven and must be measured later, but are not automatic gate blockers.
+- Importer/distributor is the tenant and payer.
+- Owner/operator or small supply/admin team is the primary buyer/user.
+- Multiple active SKUs/variants.
+- Multiple dealers, approximately 20-200 as a working hypothesis, not a hard limit.
+- One or more suppliers/factories.
+- Recurring partial production, delayed supply, shortage, or constrained allocation.
+- Current workflow relies on Excel/Google Sheets + LINE/chat + owner/admin memory.
+- Dealer demand is regularly reconciled against supply actually expected or received.
+- Allocation decisions create repeated dealer questions, exceptions, or disputes.
 
-### 2/3 majority
+Important boundary: this is a go-to-market beachhead, not a hard-coded domain model. WS01 remains a generic multi-tenant B2B supply planning and dealer allocation SaaS. No motorcycle-specific schema, allocation rule, terminology dependency, or business rule is authorized by D1.
 
-- 2/3 candidates gave confidence in the low-to-mid 60s; 1/3 gave 67. Synthesized confidence should sit in the same band.
-- 2/3 candidates explicitly framed public price/trial/limits as important unresolved commercial policy. Because the frozen brief says commercial values are source-of-truth TBD, this is not a blocker to this gate unless V1 monetization direction itself is incoherent. It is not incoherent.
-- 2/3 candidates emphasized Thai local SaaS price anchors in low thousands THB/month as a practical ARPU ceiling/anchor. This informs risk, not final pricing.
+## D2 pricing state applied
 
-### 1/3 dissent or sharper emphasis
+**D2 is correctly reflected in this re-evaluation. No material Business/Market gap remains from the pricing issue.**
 
-- 1/3 candidate was more cautious that unresolved V1 commercial policy could become gate-affecting if launch were authorized. I preserve this as a remediation condition, not a hard blocker, because this gate asks for monetization/delivery direction and explicitly forbids final public prices.
-- 1/3 candidate emphasized broader allocation dispute/litigation evidence from automotive markets. This supports the auditability wedge by analogy, but Thai SME-scale value remains `hypothesis`.
-- 1/3 candidate emphasized category-consolidation risk from TradeGecko/QuickBooks Commerce. This is a commercial trust risk, not a blocker.
+Final public pricing remains unlocked. This gate approves only monetization direction, not price values or public packaging.
 
-## 4. Missing evidence / unresolved questions
+Approved direction at hypothesis level:
 
-- Qualified Thai beachhead count: how many businesses match importer/distributor + dealer network + recurring constrained supply + manual allocation rounds. Current broad wholesale/distribution counts are `unverified` for the target trigger.
-- Direct payer interviews: no evidence yet from 5-10 Thai owner-operators confirming WSM is a top recurring pain with willingness to pay.
-- Actual ARPU tolerance: whether buyers will pay enough for WSM specifically, not just for accounting/POS/order SaaS.
-- Onboarding unit economics: actual assisted hours to import SKU/dealer/supplier data and get through the first live round.
-- Dealer adoption: whether dealers will use a self-scoped link/result flow without accounts, training, or admin chasing.
-- Vertical focus: which first vertical has the densest recurring allocation pattern.
-- Integration ceiling: how often prospects reject V1 because it does not include ERP, inventory, POS, accounting, purchasing, logistics, or automation.
-- Seasonality: whether allocation rounds recur enough to support monthly subscription retention outside shortage seasons.
-- Competitor response and vertical-specific incumbents: Zort/Smith/Fusion/Odoo-style providers may already own or quickly add adjacent workflows in some verticals.
+- Per-tenant recurring subscription.
+- Active dealers as the strongest likely packaging dimension.
+- SKU/variant scale, seats, workflow sophistication, automation/API, and enterprise controls as possible secondary or later dimensions.
+- Assisted onboarding/data setup may justify a separate onboarding fee later.
 
-## 5. Recommendation
+Not approved at this gate:
 
-Recommended direction: **REMEDIATE, not BLOCK**.
+- Final THB monthly prices.
+- Final plan names.
+- Dealer limits, SKU limits, seat limits, or overage pricing.
+- Annual discount.
+- Onboarding fee amount.
+- Trial duration.
+- Transaction percentage or take-rate.
 
-WS01 has a credible recurring paid market hypothesis and a commercially coherent V1 direction, but it should pass through a focused Business/Market remediation step before broader Phase 1 go-to-market or build authorization. The remediation should be narrow: lock the first beachhead, validate direct payer pain and willingness-to-pay qualitatively, and define the V1 commercial policy shape without inventing final public prices in this synthesis.
+A transaction percentage/take-rate is not the current default model.
 
-Recommended remediation scope:
+## Payer
 
-- Choose one initial beachhead vertical and reject generic "all importers" positioning.
-- Conduct 5-10 owner-operator discovery calls with businesses matching the constrained-supply/dealer-allocation trigger.
-- Validate one real recent allocation round per interview: booking source, factory confirmation, shortage/gap, allocation method, dealer dispute/admin burden, backorder handling.
-- Test whether the buyer describes WSM as an allocation record/system of truth, not a spreadsheet/order portal.
-- Estimate onboarding effort from real sample spreadsheets/dealer lists/supplier mappings.
-- Draft pricing structure only as dimensions and packaging; leave actual values TBD for Owner/source-of-truth approval.
+The initial payer is sufficiently explicit.
 
-## 6. Why this recommendation
+Economic buyer and tenant: the Thailand-first motorcycle/automotive aftermarket importer-distributor business, usually represented by the owner/operator, managing director, or small supply/admin team.
 
-A hard BLOCK would over-classify the unknowns. The candidates agree on a clear payer, a recurring pain pattern, a credible wedge, and a coherent monetization structure. None of the genuine Business/Market blocker classes is proven fatal.
+Operations user: the owner/admin team that collects dealer requests, maintains SKU/dealer/supplier data, updates supply status, calculates gaps, performs manual/partial allocation, tracks backorders, and answers dealer questions.
 
-A clean PASS would under-classify the commercial risk. The beachhead is not quantified, willingness-to-pay is unmeasured, onboarding economics are unresolved, and the product could collapse into "spreadsheet/order portal but nicer" if sold outside the constrained-supply ICP.
+Dealer actor: dealer/reseller/shop. Dealers submit demand and consume self-scoped results. Dealers are not the SaaS payer.
 
-REMEDIATE is the accurate gate result because the market is credible enough to continue, but not mature enough for broad authorization. The required work is commercial validation and packaging discipline, not product-definition reopening or technical implementation.
+Supplier/factory actor: confirms, partially confirms, delays, or ships supply. In V1, supplier/factory state is represented through manual reliable supply input, not supplier-side collaboration.
 
-## 7. Rejected alternatives + why
+## Beachhead
 
-- **Unconditional PASS:** rejected because 3/3 candidates are conditional, no paid pilots or direct owner interviews are present, qualified beachhead count is `unverified`, and unit economics depend on onboarding effort that has not been measured.
-- **BLOCK:** rejected because payer, recurring pain, wedge, and monetization direction are all credible across 3/3 candidates; no fatal Business/Market blocker is demonstrated.
-- **Broad importer/distributor market:** rejected because many importers have plentiful supply, small dealer counts, stable ordering, or no recurring allocation pain. WSM needs constrained supply plus dealer allocation rounds.
-- **Dealer-paid model:** rejected because locked product identity and all candidates agree dealers are demand-side actors, not payers.
-- **Transaction/take-rate model:** rejected because WSM is not a marketplace, dealers are not payers, and candidates agree take-rate should not be assumed.
-- **Pure self-serve sales:** rejected because the first value moment requires real data, a real supply round, and workflow change.
-- **Enterprise consultative delivery:** rejected because the ICP is owner-led SMB/mid-market and Thai SaaS price anchors cannot support heavy implementation.
-- **ERP/inventory replacement positioning:** rejected because it violates V1 non-goals and invites incumbent comparison where WSM loses scope-wise.
-- **Forecasting/AI allocation proposition:** rejected because V1 explicitly excludes AI demand forecasting and automated allocation engine.
+The initial beachhead is now sufficiently narrow and reachable for this gate.
 
-## 8. GATE VERDICT + blockers
+D1 removes the original over-broad "all importers/distributors" risk. The first reachable segment is a concrete Thai owner/operator network: motorcycle and automotive aftermarket accessory importers/distributors with dealer networks and recurring constrained supply. This is narrow enough for interviews, outreach, redacted spreadsheet review, and early pilot selection without diluting the product into generic ERP or order management.
 
-**Gate verdict: REMEDIATE**
+The beachhead remains a hypothesis in size. The candidates cited broad Thai wholesale/distribution counts and adjacent SaaS evidence, but the exact number of Thai aftermarket importer-distributors with recurring partial supply plus active dealer allocation is unverified. That does not block this gate because the gate asks whether a credible recurring paid market exists, not whether full TAM and repeatable acquisition have already been proven.
 
-### Genuine Business/Market blockers
+## Recurring pain
 
-No fatal Business/Market blocker is proven today. Specifically:
+The recurring pain is credible enough for a paid SaaS hypothesis.
 
-- Credible payer exists: importer/distributor owner-operator or owner-led operations team.
-- Recurring pain is credible for the constrained-supply/dealer-allocation ICP.
-- Wedge is distinguishable from spreadsheet/ERP/order portals when kept to truthful supply/demand/gap/allocation provenance.
-- Monetization direction is commercially coherent: recurring per-tenant B2B subscription, value-correlated tiers, onboarding/data-import support, values TBD.
-- Beachhead is narrow but plausible for initial validation.
+The credible pain cluster is not "inventory management" in general. It is recurring mismatch between dealer demand and reliable supply:
 
-### Remediation-required Business/Market issues
+- Dealer requests arrive through LINE/chat and spreadsheets.
+- Requested demand is mistaken for allocated or fulfilled demand.
+- Ordered supplier/factory quantity is mistaken for confirmed or received supply.
+- Partial supply and delay cause shortage to be discovered late.
+- Owner/admin must decide who gets scarce stock and explain why.
+- Backorders are forgotten, overwritten, double-counted, or silently re-promised.
+- Dealer questions and exceptions recur after allocation decisions.
+- Spreadsheet history does not reliably preserve allocation provenance.
 
-These are not fatal blockers, but must be resolved before broad launch/build authorization:
+The existing candidate evidence supports this pain at category level through LINE/chat-commerce context, adjacent Thai dealer/order systems, inventory/order/planning competitors, and supply/allocation practice. Actual Thai aftermarket interview data is not present and must not be fabricated. It is downstream Pilot/Launch validation, not a remaining Business/Market blocker for this gate.
 
-- Qualified beachhead must be narrowed to one first vertical or acquisition segment.
-- Direct payer evidence must confirm recurring shortage/allocation is a top pain, not just an annoyance.
-- WSM must be perceived as allocation truth/provenance, not a spreadsheet/order portal.
-- Onboarding effort must be bounded enough for Thai SMB/mid-market ARPU.
-- V1 packaging dimensions must be locked with commercial values still TBD.
+## Reason to pay vs Excel+LINE
 
-### Preserved downstream items, not gate blockers
+The status-quo competitor to preserve is **Excel/Google Sheets + LINE/chat + owner/admin memory**.
 
-- Actual retention/churn.
-- Real CAC and conversion rate.
+WS01 has a reason to pay only when Excel + LINE breaks structurally:
+
+- Excel records numbers but does not enforce Requested != Allocated != Fulfilled.
+- Excel records supply notes but does not enforce Ordered != Confirmed != Received.
+- LINE keeps conversation but not an auditable allocation record.
+- Owner/admin memory explains allocation once, but does not scale across many dealers or repeated rounds.
+- Spreadsheet overwrite or manual edits can destroy decision history.
+- Dealers still ask admins for self-specific allocation status.
+
+WS01's paid promise is not "a prettier spreadsheet." The reason to pay is truthful supply state, visible Demand -> Supply -> Gap, explainable manual allocation, explicit backorder state, and dealer-visible self-scoped results.
+
+## Differentiation
+
+Differentiation to lock: **Truthful Supply + Explainable Allocation**.
+
+Product truths that remain commercially important:
+
+- Requested != Allocated != Fulfilled.
+- Ordered != Confirmed != Received.
+- Visible Demand -> Supply -> Gap.
+- Shortage truth before allocation.
+- Manual/partial allocation with auditable decision history.
+- Dealer-visible self-scoped result.
+- Explicit backorder state without double-subtracting or overwriting.
+
+This wedge is meaningful against Excel + LINE and distinguishable from adjacent ERP/inventory/order portals when WS01 stays focused on scarce-supply dealer allocation. The wedge weakens if WS01 is sold as generic ERP, warehouse management, procurement, B2B ordering, forecasting, or retail inventory software.
+
+## Monetization direction
+
+The monetization direction is commercially coherent without final pricing.
+
+Approved hypothesis-level direction:
+
+- Recurring B2B subscription per tenant.
+- Active dealers as the strongest likely tiering/package dimension because dealer count correlates with communication burden and allocation complexity.
+- Active SKU/variant scale as a secondary complexity dimension.
+- Seats as a minor dimension, not the main value meter, because the first buyer is usually owner + small admin team.
+- Workflow sophistication, advanced allocation policies, automation/API, audit export, integrations, and enterprise controls as possible later expansion dimensions.
+- Assisted onboarding/data setup may become a separate fee once actual setup effort is known.
+
+Rejected for current default:
+
+- Transaction percentage/take-rate.
+- Dealer-paid subscription.
+- Final public price values at this gate.
+- Broad marketplace economics.
+
+## Onboarding direction
+
+Assisted onboarding is compatible with likely SaaS economics if it is bounded and templated.
+
+Correct initial delivery motion:
+
+- Owner-led demo.
+- Assisted onboarding first.
+- Start with the next real supply/allocation round.
+- Import or prepare SKU/variant, dealer, and supplier/factory data from templates.
+- Avoid deep historical migration in V1.
+- Keep dealer side zero-install and LINE-friendly.
+- Run the first round through the truthful state flow: demand, reliable supply, gap, allocation, backorder, dealer self-result.
+
+Commercial condition: onboarding must remain bounded. If early tenants require deep historical migration, bespoke allocation logic, ERP/POS/accounting integration, or weeks of data cleanup, the economics can become a downstream blocker for Pilot/Launch. That is not proven today.
+
+## Activation hypothesis
+
+Activation is not data import, account creation, or login.
+
+Activation hypothesis: a tenant is activated only when it completes at least one real supply/allocation round:
+
+Dealer booking -> confirmed demand -> reliable supply -> visible gap -> manual/partial allocation -> explicit backorder where needed -> dealer-visible self-scoped result.
+
+This is the first value moment. It remains a hypothesis until observed in pilot.
+
+## Retention hypothesis
+
+Retention depends on recurring operational truth plus accumulated decision history.
+
+Expected retention drivers:
+
+- Repeated dealer demand rounds.
+- Recurring supplier/factory partial confirmations, delays, or shortages.
+- Accumulated SKU/dealer/supplier data.
+- Accumulated allocation and backorder history.
+- Dealer habit of checking self-scoped results.
+- Owner/admin reliance on Demand -> Supply -> Gap before making allocation decisions.
+
+Retention remains unproven. Actual month-2/month-3 retention, churn, and renewal behavior are downstream validation.
+
+## Remaining risks
+
+- Qualified beachhead size is unverified for Thai motorcycle/automotive aftermarket importer-distributors with recurring constrained supply.
+- Actual willingness-to-pay for WS01's allocation-truth workflow is unproven.
+- Thai SMB/mid-market ARPU may be too low if onboarding is heavy.
+- Dealer adoption of self-scoped results is unproven.
+- Some prospects may demand ERP, inventory, POS, accounting, purchasing, warehouse, logistics, or automation scope.
+- Adjacent competitors may already satisfy buyers who see the problem as booking/order management rather than allocation truth.
+- Pain may be seasonal or intermittent for some aftermarket categories.
+- Bespoke workflow pressure could drag WS01 into custom ERP.
+- The wedge is copyable if incumbents decide to add allocation-round features.
+- Security and trust expectations around sensitive dealer allocation data still need later architecture/security evidence.
+
+## Remaining blockers
+
+**No genuine Business/Market blocker remains after D1-D2.**
+
+Specifically:
+
+- No credible payer? Not demonstrated. The payer is explicit.
+- Recurring pain too weak? Not demonstrated for the narrowed constrained-supply ICP.
+- Wedge indistinguishable from spreadsheet/ERP? Not demonstrated if WS01 preserves Truthful Supply + Explainable Allocation.
+- Economics cannot support delivery/onboarding? Not demonstrated; it is a risk to test with bounded assisted onboarding.
+- Unresolved V1 commercial policy essential to offer? Resolved for this gate by D2: direction is approved, values remain TBD.
+- Beachhead too broad or too narrow to support initial validation? Resolved for this gate by D1: narrow, reachable first beachhead.
+- Monetization direction fundamentally incoherent? Not demonstrated.
+
+## Downstream Pilot/Launch validation
+
+These items belong to Pilot/Launch validation, not this Business/Market gate:
+
+- 5-10 beachhead interviews with Thai motorcycle/automotive aftermarket importer-distributors.
+- Direct willingness-to-pay evidence.
+- Real recent allocation-round walkthroughs from prospects.
+- Redacted spreadsheet/dealer/supplier sample review.
+- Actual onboarding hours and support burden.
+- Actual paid pilot conversion.
+- Activation rate: first real supply/allocation round completed.
+- Month-2/month-3 retention and churn.
+- Real CAC and sales-cycle length.
+- Actual ARPU.
 - Measured admin-time saving.
 - Measured dealer-dispute reduction.
-- Measured allocation accuracy.
-- Actual ARPU.
-- Full PMF.
+- Measured allocation accuracy/error reduction.
+- Dealer self-result adoption rate.
 - Production billing.
 - Runtime/database placement.
 - Architecture/security review.
-- Implementation and deployment.
+- Implementation, deployment, monitoring, and operations.
 
-## 9. Confidence 0-100
+The interviews are still strongly recommended before Pilot/Launch decisions and before broad go-to-market spending. They are not required to close this Business/Market hypothesis gate because the narrowed ICP, payer, pain, wedge, delivery direction, and monetization direction are now coherent on the existing authoritative evidence.
 
-**64/100**.
+## Explicit gate questions
 
-Basis: strong 3/3 agreement on payer, pain pattern, wedge, status quo, and monetization direction; credible external category evidence around Thai LINE/chat commerce, adjacent Thai SaaS, and inventory/order/planning competitors. Confidence is capped because direct Thai payer evidence, qualified beachhead size, onboarding unit economics, dealer adoption, retention, and actual ARPU are unproven.
+1. **Is the initial payer now sufficiently explicit?** Yes. The importer/distributor tenant pays; owner/operator or small supply/admin team is buyer/user; dealers and suppliers are not payers.
+2. **Is the initial beachhead sufficiently narrow and reachable?** Yes. D1 locks Thailand-first motorcycle/automotive aftermarket importer-distributors with recurring constrained supply and dealer allocation.
+3. **Is the recurring pain credible enough for a paid SaaS hypothesis?** Yes. The constrained-supply allocation pain is credible, recurring, and category-supported, while measured Thai aftermarket outcomes remain downstream.
+4. **Does WS01 have a meaningful wedge over Excel + LINE?** Yes. The wedge is state truth, gap visibility, auditable allocation, explicit backorder, and dealer self-result.
+5. **Is the V1 product still generic despite vertical beachhead selection?** Yes, provided the product model remains generic and no motorcycle-specific schema/rules are introduced.
+6. **Is monetization direction commercially coherent without final pricing?** Yes. Per-tenant subscription with dealer-based packaging hypotheses and possible onboarding fee is coherent; final values remain TBD.
+7. **Is assisted onboarding compatible with likely SaaS economics?** Yes, if bounded, templated, forward-looking, and not converted into custom ERP or deep migration.
+8. **Which remaining evidence belongs to Pilot/Launch rather than this gate?** Interviews, paid pilots, WTP, onboarding hours, activation, retention, CAC, ARPU, measured savings, dealer adoption, and technical readiness.
+9. **Is there any genuine Business/Market blocker remaining?** No.
+10. **Should the current gate close as PASS, remain REMEDIATE, or BLOCK?** PASS.
 
-## 10. Business/Market document pack
+## Explicit non-authorization statement
 
-The full Business/Market document pack is written separately in `BUSINESS-MARKET-DOC-PACK.md`. It contains the initial payer/beachhead profile, pain-status-quo map, competitor landscape, differentiation wedge, Pain -> Capability -> Outcome -> Business Value -> Reason-to-Pay table, monetization direction with values TBD, sales/onboarding/delivery model, acquisition/activation/retention, market-size/beachhead estimate, commercial risk register, and downstream-validation register.
+This re-evaluation authorizes **no Product Gate reopening, no implementation, no architecture change, no migrations, no deployment, no production billing, no Agent Relay, no Layer 2, no broad launch, and no mutation of raw expert evidence**.
 
-## 11. Thai OWNER-BRIEF
-
-The Thai canonical human brief is written separately in `01.5-BUSINESS-OWNER-BRIEF.md`. It preserves the same REMEDIATE verdict, 64/100 confidence, 3/3 consensus framing, no-final-price rule, risks, uncertainties, and downstream-validation split.
+It authorizes only closing the WS01 Business/Market gate as PASS under the D1-D2 narrowed commercial interpretation and preserving the downstream validation list for Pilot/Launch governance.
