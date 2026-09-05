@@ -1,0 +1,120 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CM01 Business / Market Owner Brief</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>CM01 Business / Market Owner Brief</h1><p class="muted">Source: 01.5-BUSINESS-OWNER-BRIEF.md · SHA256 d969e6d471ae… · Decisions: 1</p><div class="grid"><div class="gate"><b>Business / Market Gate</b><span class="badge remediate">REMEDIATE</span></div></div></section>
+<section class="card"><h1>CM01 Business / Market Owner Brief</h1>
+<p>รอบนี้ประชุมเรื่อง Business / Market Gate ของ <strong>CM01 Booking Claim &amp; Case Mgmt</strong>: สร้างแล้วขายได้ไหม ใครจ่าย เพราะอะไร และติดอะไรจริงก่อนขาย</p>
+<h2>สรุปสั้น</h2>
+<p>CM01 มีทิศทางขายได้แบบมีเงื่อนไข แต่ยัง <strong>ไม่ <span class="badge pass">PASS</span></strong>.</p>
+<p>Gate ทางการคือ <strong><span class="badge remediate">REMEDIATE</span></strong>, confidence <strong>59/100</strong>. เหตุผลเดียวที่ยังเป็น blocker ของ Business / Market Gate คือ <strong>OD-001 License Strategy</strong>: ตอนนี้ repo เป็น MIT ซึ่งเปิดให้คนเอาโค้ดไป copy, modify, distribute, sublicense, resell ได้ แต่โมเดลที่คิดไว้คือขาย source code แบบ paid single-use. สองอย่างนี้ชนกันตรง ๆ ก่อนขายจริง</p>
+<h2>CM01 ขายอะไร</h2>
+<p>CM01 ขาย <strong>source code React template/module</strong> สำหรับหน้าจอจัดการเคส/เคลม/งานหลังบ้านแบบ Thai-first ให้ <strong>frontend developer หรือ web agency</strong> เอาไป embed ในงานลูกค้าของตัวเอง</p>
+<p>สิ่งที่ขายไม่ใช่ SaaS, ไม่ใช่ backend, ไม่ใช่ระบบ ticket เต็มตัว, และไม่ใช่ฟีเจอร์ของ BK01.</p>
+<p>V1 ที่ล็อกไว้คือ local-first:</p>
+<ul>
+<li>มีหน้า intake, ticket detail/action, history/retention</li>
+<li>เก็บข้อมูลด้วย <code>localStorage</code></li>
+<li>มี <code>TicketRepository</code> เป็น boundary สำหรับต่อ adapter ภายหลัง</li>
+<li>ไม่มี auth</li>
+<li>ไม่มี backend</li>
+<li>ไม่มี multi-user sync</li>
+</ul>
+<p>คนจ่ายเงินคือ dev/agency. คนใช้ปลายทางคือเจ้าหน้าที่ดูแลเคสในธุรกิจของลูกค้าเขา</p>
+<h2>ทำไม backend absence ไม่ใช่ blocker</h2>
+<p class="consensus">ผู้เชี่ยวชาญ 3/3 เห็นตรงกันว่า backend ไม่ใช่ตัวบล็อกของ V1 เพราะ CM01 ไม่ได้ถูกขายเป็น production SaaS ตั้งแต่แรก. มันถูกวางเป็น source template ที่ใช้ local-first และบอกตรง ๆ ว่า BYO backend / adapter เป็นเรื่องหลัง V1</p>
+<p>ถ้าเราไปบังคับว่าต้องมี backend ก่อนถึงขายได้ เราจะเปลี่ยนประเภทสินค้าเองจาก template/source product ไปเป็น SaaS/runtime product ซึ่งขัดกับ Product Gate ที่ล็อกไว้แล้ว</p>
+<p>ดังนั้น backend adapter ยังเป็นเรื่องที่ต้องตัดสินทีหลังใน OD-004 แต่ไม่ใช่ blocker ของ Business / Market Gate รอบนี้</p>
+<h2>ทำไม license เป็น blocker</h2>
+<p>License เป็น blocker เพราะมันกระทบวิธีเก็บเงินโดยตรง</p>
+<p>ตอนนี้ license เป็น MIT. ถ้าขาย source code ภายใต้ MIT แล้วตั้งใจจำกัดว่า "single-use" หรือห้าม resale แบบ commercial template ปกติ มันขัดกันเอง เพราะ MIT อนุญาตให้ redistribution/resale ได้กว้างมาก</p>
+<p>ถ้าไม่แก้เรื่องนี้ก่อน sale:</p>
+<ul>
+<li>buyer คนแรกอาจเอาโค้ดไปแจกหรือขายต่อได้ตามสิทธิ MIT</li>
+<li>โมเดล paid single-use เสียฐานทาง commercial</li>
+<li>pricing/package/support/refund เขียนให้ชัดไม่ได้</li>
+<li>Gate จะกลายเป็น <span class="badge pass">PASS</span> แบบหลอกตัวเอง ทั้งที่ตัว blocker จริงยังอยู่</li>
+</ul>
+<h2 class="consensus">สิ่งที่ผู้เชี่ยวชาญเห็นตรงกัน</h2>
+<ul>
+<li><strong>3/3</strong> CM01 เป็น Thai-first local-first React source template/module</li>
+<li><strong>3/3</strong> payer คือ frontend developer หรือ web agency</li>
+<li><strong>3/3</strong> backend absence ไม่ใช่ blocker ของ V1</li>
+<li><strong>3/3</strong> OD-001 license conflict เป็น blocker จริงก่อนขาย</li>
+<li><strong>3/3</strong> buyer demand และ willingness-to-pay ยังไม่ได้พิสูจน์</li>
+<li><strong>3/3</strong> pricing/packaging ยังไม่ final</li>
+</ul>
+<h2 class="dissent">จุดที่เห็นต่าง</h2>
+<p class="dissent">ไม่มี dissent สำคัญเรื่อง verdict, product identity, buyer, backend, หรือ license blocker</p>
+<p>ต่างกันแค่ระดับความมั่นใจ:</p>
+<ul>
+<li>Candidate A: 60/100</li>
+<li>Candidate B: 58/100</li>
+<li>Candidate C: 58/100</li>
+</ul>
+<p>สรุปรวมเป็น confidence <strong>59/100</strong></p>
+<section class="decision-card">
+<h3>Decision D1 — จะจัดการ license สำหรับ paid source distribution อย่างไร</h3>
+<ul>
+<li>Status: REQUIRED</li>
+<li>Council recommendation: Option A</li>
+<li>Council support: 3/3 that the contradiction is real and must be resolved before sale</li>
+<li>Confidence: 59%</li>
+</ul>
+</section>
+<h3>Option A — Replace/augment sale package with commercial EULA or dual-license terms before first sale</h3>
+<ul>
+<li>ข้อดี: ทำให้โมเดล paid single-use/source distribution ไม่ชนกับ MIT แบบเดิม และเขียนสิทธิการใช้/แจกต่อ/support ได้ชัด</li>
+<li>ข้อเสีย: ต้องทำงานด้าน license/EULA เพิ่ม และอาจต้องให้คนที่เข้าใจกฎหมายช่วย review</li>
+<li>ผลต่อระบบ: ไม่ต้องแก้ product code หรือ backend จาก decision นี้โดยตรง แต่ต้องทำให้ sale package/license artifact ตรงกับสิทธิที่ขาย</li>
+<li>ผลต่อรายได้/ต้นทุน: รองรับการขาย source package ได้ชัดกว่า แต่มีต้นทุนทำเอกสาร/นโยบาย license</li>
+<li>ความเสี่ยง: ถ้าเขียน license ไม่รัดกุม อาจยังเกิด dispute หรือ buyer เข้าใจสิทธิผิด</li>
+</ul>
+<h3>Option B — Keep MIT and sell only convenience/support, accepting redistribution risk</h3>
+<ul>
+<li>ข้อดี: ไม่ต้องเปลี่ยน license เดิม และเปิด friction ต่ำกับ developer ที่ชอบ MIT</li>
+<li>ข้อเสีย: ขายแบบ single-use/source restriction ไม่ได้จริง ต้องยอมรับว่า buyer redistribute/resell ได้ตาม MIT</li>
+<li>ผลต่อระบบ: ไม่ต้องแก้ product code หรือ license structure มาก แต่ต้องเปลี่ยน packaging/copy ให้ขาย convenience/support ไม่ใช่สิทธิ exclusive/single-use</li>
+<li>ผลต่อรายได้/ต้นทุน: รายได้อาจอ่อนกว่าเพราะตัว source ถูกแจกต่อได้ ต้องหาเงินจาก support, update, convenience, หรือบริการเสริม</li>
+<li>ความเสี่ยง: ตลาดอาจ copy/redistribute เร็ว และราคา source package อาจป้องกันยาก</li>
+</ul>
+<h3>Option C — Delay sale until legal/licensing review produces a final policy</h3>
+<ul>
+<li>ข้อดี: ลดความเสี่ยงตัดสิน license ผิด และให้ policy ชัดก่อนแตะ commercialization</li>
+<li>ข้อเสีย: ชะลอการขายและ packaging ทั้งหมด</li>
+<li>ผลต่อระบบ: ไม่มี product code/backend change ตอนนี้ งาน commercial หยุดรอ policy</li>
+<li>ผลต่อรายได้/ต้นทุน: เลื่อนรายได้ แต่ลดโอกาสเกิดปัญหา license หลังขาย</li>
+<li>ความเสี่ยง: ถ้ารอนานเกินไป CM01 อาจค้างเป็น prototype และเสีย momentum การ validate buyer</li>
+</ul>
+<h2>สิ่งที่ยังไม่รู้ / ยังไม่ตัดสิน</h2>
+<ul>
+<li>OD-002 buyer demand: ยังไม่มี buyer interview, paid pilot, pre-order, LOI, conversion evidence หรือ channel proof</li>
+<li>Willingness-to-pay เทียบกับ generic React/admin templates ยังไม่พิสูจน์</li>
+<li>Final pricing/packaging ยังไม่ approved</li>
+<li>OD-006 buyer docs/support ยังไม่ครบ: embed guide, adapter guide, theme guide, limitations, distribution manifest, support scope</li>
+<li>OD-004 backend adapter ยังเป็น post-V1 และยังไม่เลือกว่าจะไป Supabase, REST, Module Hub <code>ticket-tracker</code>, หรือทางอื่น</li>
+<li>Unit economics, support burden, dev-days saved, localization hours avoided, cross-browser support, repeat purchase, retention ยังต้องพิสูจน์</li>
+</ul>
+<h2>Gate Status</h2>
+<p><strong>Business / Market Gate = <span class="badge remediate">REMEDIATE</span></strong></p>
+<p>แปลว่า: ทิศทางตลาดยังไม่ตาย และไม่ใช่ <span class="badge block">BLOCK</span> แต่ยังประกาศ <span class="badge pass">PASS</span> ไม่ได้จนกว่า Owner จะเลือก OD-001 แล้วเอกสาร remediation ถูก persist ให้สอดคล้องกับ decision นั้น</p>
+<h2>ต่อจากนี้</h2>
+<p>Owner ต้องตัดสิน OD-001 ก่อน. หลังจากนั้นค่อยทำ targeted remediation ของ Business / Market docs เพื่อดูว่า license decision ปิด blocker ได้พอให้ CM01 เปลี่ยนเป็น <span class="badge pass">PASS</span> หรือยัง</p>
+<p>เอกสารนี้ไม่อนุญาตให้แก้ product code, เปลี่ยน LICENSE, ตั้งราคา final, ทำ backend, ทำ architecture, เปิด Agent Relay, launch, deploy, commit, push, หรือปล่อย later gate</p></section>
+</main></body></html>

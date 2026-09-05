@@ -2,7 +2,7 @@
 
 Council: WSTERA Product Destination Council — Canonical Run 01
 Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01, PS01, WS01, LK01 complete
-Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 = PASS (after D1-D2 remediation); LK01 = PASS; CM01 = not dispatched**
+Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 = PASS (after D1-D2 remediation); LK01 = PASS; CM01 = REMEDIATE awaiting Owner OD-001**
 
 Experts: `agent-claude`, `agent-agy`, `agent-qwen`
 Synthesizer: `agent-codex`
@@ -109,10 +109,21 @@ Owner approved Release 1B on 2026-09-04. Dispatch is per-product, one at a time.
 - Core market thesis: narrow Thai-first seller/creator/page-admin/agency/affiliate/SMB segment with recurring destination changes, multi-channel distribution, stable branded links/QRs, first-party outbound attribution, destination switching, and redirect reliability.
 - Artifacts: `01.5-business-market/LK01/` (synthesis, original-readable rendering, doc pack, Thai OWNER-BRIEF.md)
 
+### CM01 Business/Market Gate — REMEDIATE (2026-09-05, locked Council verdict)
+
+- Expert completion: 3/3 (Claude, AGY, Qwen) per locked Council synthesis for task `t_59b056c4`
+- Authoritative verdict artifact: `.secretary-relay/t_59b056c4/CM01-GATE-VERDICT.json` — **REMEDIATE** (confidence 59/100)
+- Authoritative Council synthesis input: `.secretary-relay/t_59b056c4/council-decision/DECISION-SYNTHESIS.json` — conditional commercial direction; `READY_FOR_GPT_REVIEW` means Secretary GPT review readiness only, not PASS/launch/implementation approval
+- Remaining Business/Market gate blocker: **OD-001 License Strategy** — current MIT license conflicts with a paid single-use source-code distribution model
+- Owner Decision Required under canonical `01-product/CM01/OPEN-DECISIONS.md`: Option A commercial EULA / dual-license before first sale; Option B keep MIT and sell convenience/support while accepting redistribution risk; Option C delay sale until legal/licensing review produces final policy
+- Preserved downstream gaps: OD-002 buyer demand, willingness-to-pay, final pricing/packaging, OD-006 buyer docs/support, OD-004 backend adapter later, unit economics, cross-browser evidence, and repeat-purchase/retention evidence
+- Effective Product Gate remains PASS. Backend absence is not the Business/Market blocker; it correctly defines the V1 source-template category.
+- Artifacts: `01.5-business-market/CM01/` (synthesis, original-readable rendering, doc pack, Thai OWNER-BRIEF.md)
+
 ## Not released
 
 Module Hub Scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay, and implementation are NOT RELEASED.
-LK01 Business/Market Gate has completed a document-level PASS artifact from the locked Council verdict. CM01 is the only Release 1B product remaining. No later gate, Agent Relay, CM01 dispatch, implementation, launch, or deployment is released by these results.
+LK01 Business/Market Gate remains PASS/complete. CM01 Business/Market Gate is REMEDIATE awaiting Owner OD-001. Release 1B remains incomplete. No later gate, Agent Relay, implementation, launch, or deployment is released by these results.
 
 ## MT01 procedure deviation (resolved)
 
@@ -128,7 +139,7 @@ These do not affect the Product Gate verdict.
 
 ## Not released (Owner decision required)
 
-CM01 Business/Market dispatch, Module Hub scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay,
+CM01 remediation, Module Hub scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay,
 and implementation are NOT released.
 
 ## Artifacts (verified on filesystem)
@@ -144,6 +155,6 @@ and implementation are NOT released.
 
 ## Owner Review Required
 
-Release 1A + Meta-Audit are complete. Release 1B Business/Market Gate has completed document-level PASS for MT01, DC01, BK01, PS01, WS01, and LK01. WS01 passed after Owner D1-D2 targeted remediation on 2026-09-05. LK01 passed from the locked Council verdict artifact on 2026-09-05.
+Release 1A + Meta-Audit are complete. Release 1B Business/Market Gate has completed document-level PASS for MT01, DC01, BK01, PS01, WS01, and LK01. WS01 passed after Owner D1-D2 targeted remediation on 2026-09-05. LK01 passed from the locked Council verdict artifact on 2026-09-05. CM01 is REMEDIATE from the locked Council verdict artifact on 2026-09-05, confidence 59/100, awaiting Owner OD-001.
 
-CM01 is the only remaining Release 1B Business/Market product. No later gate, Architecture, Risk, Pre-Build, Agent Relay, implementation, launch, deployment, or CM01 dispatch is released by these results. Owner must explicitly release the next product/gate or give other direction.
+Release 1B remains incomplete until CM01 OD-001 is decided and remediated. No later gate, Architecture, Risk, Pre-Build, Agent Relay, implementation, launch, deployment, or CM01 remediation is released by these results. Owner must explicitly decide OD-001 or give other direction.
