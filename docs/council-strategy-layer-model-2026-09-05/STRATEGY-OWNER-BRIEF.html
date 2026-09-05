@@ -1,0 +1,56 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Owner Brief — WSTERA Layer Model Targeted Re-Evaluation</title><style>
+:root{font-family:Inter,"Noto Sans Thai",system-ui,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#0f1115;color:#eef1f6;line-height:1.65}
+a{color:#8fc7ff}.wrap{max-width:1050px;margin:auto;padding:24px 18px 64px}
+.banner{border:1px solid #596170;background:#181c24;padding:12px 16px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.hero,.card,.decision-card,.option-card{background:#171a21;border:1px solid #303642;border-radius:16px;padding:18px;margin:14px 0}
+.hero h1{margin:.1em 0}.muted{color:#aab2c0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.gate{padding:12px;border-radius:12px;border:1px solid #343a46;background:#11141a}.gate b{display:block}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:800;font-size:.85rem;border:1px solid currentColor}
+.pass{color:#65d58b}.remediate,.hold{color:#f0c75e}.block{color:#ff7b7b}.na{color:#aeb6c4}
+.decision-card{border-left:5px solid #f0c75e}.option-card{background:#12151b;border-left:4px solid #7fa8ff;margin-left:12px}
+.consensus{border-left:4px solid #65d58b;padding-left:12px}.dissent,.risk{border-left:4px solid #ff9a73;padding-left:12px}
+h1,h2,h3,h4{line-height:1.3}h2{margin-top:1.7em;border-bottom:1px solid #303642;padding-bottom:.35em}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{background:#252a34;padding:.1em .35em;border-radius:5px}
+pre{overflow:auto;background:#0c0e12;padding:14px;border-radius:10px;border:1px solid #2c313c}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #353b47;padding:8px 10px;vertical-align:top}th{background:#202530}
+blockquote{margin:12px 0;padding:8px 14px;border-left:4px solid #7f8a9a;background:#151922}
+@media(prefers-color-scheme:light){body{background:#f4f6f8;color:#20242b}.hero,.card,.decision-card{background:white}.option-card,.gate{background:#f8fafc}a{color:#175fae}code{background:#edf0f4}pre{background:#f5f7f9}.banner{background:#fff}}
+</style></head><body><main class="wrap">
+<div class="banner">OWNER PRESENTATION ONLY · Generated from Markdown · NOT an implementation Source of Truth</div>
+<section class="hero"><h1>Owner Brief — WSTERA Layer Model Targeted Re-Evaluation</h1><p class="muted">Source: STRATEGY-OWNER-BRIEF.md · SHA256 29d229f8abb4… · Decisions: 0</p><div class="grid"></div></section>
+<section class="card"><h1>Owner Brief — WSTERA Layer Model Targeted Re-Evaluation</h1>
+<h2>Verdict</h2>
+<p><strong>ACCEPT/<span class="badge pass">PASS</span></strong></p>
+<p>Confidence: <strong>93/100</strong></p>
+<p>เอกสาร <code>WSTERA-LAYER-MODEL.md</code> หลัง Owner decisions D1-D6 ถูก apply แล้ว แก้ defect เดิมจากรอบ <code><span class="badge remediate">REMEDIATE</span></code> ได้ครบในระดับ strategy baseline.</p>
+<h2>สิ่งที่ D1-D6 แก้แล้ว</h2>
+<ul>
+<li><strong>D1:</strong> Layer 2 ไปต่อแบบราย product ได้ แต่ต้องรอ product นั้นได้ <code>L1 COMPLETE — AGENTIZATION ELIGIBLE</code> และ Owner release การ evaluate แยกต่างหากก่อน ยังไม่ authorize implementation.</li>
+<li><strong>D2:</strong> <code>L1 COMPLETE</code> ไม่ auto. ต้องมี evidence จาก product -&gt; Council review -&gt; Council recommendation -&gt; Owner sign final state.</li>
+<li><strong>D3:</strong> Current L1 closeout cycle ถูกล็อกเป็น DC01, BK01, PS01, WS01, LK01, MT01, CM01. Product นอกวงไม่ถูกลากเข้ามาอัตโนมัติ.</li>
+<li><strong>D4:</strong> ห้าม retroactive Agent retrofit. ห้าม reopen architecture ที่จบแล้วเพื่อยัด Agent API, MCP, credential, orchestration หรือของ speculative.</li>
+<li><strong>D5:</strong> Layer 2 เป็น program ใหม่ ไม่ inherit authorization จาก Layer 1 และต้องมีกฎ/gate ของตัวเองก่อน build Agent execution.</li>
+<li><strong>D6:</strong> Future Agent execution ต้อง tenant opt-in, Agent ห้ามมีอำนาจเกิน principal ที่ delegate, ต้อง tenant-scoped, และ cross-tenant authority ถูกห้ามจนกว่าจะมี future platform-control approval.</li>
+</ul>
+<h2>สถานะ strategy ตอนนี้</h2>
+<p>Layer Model coherent แล้ว:</p>
+<ul>
+<li>Layer 1 = product foundation ที่มนุษย์ใช้ได้จริง ไม่พึ่ง AI</li>
+<li>Layer 2 = future Agent operation เฉพาะ capability ที่ approved และผ่าน governance ใหม่</li>
+<li>Layer 3 = future horizon เท่านั้น ถูก quarantine จากงานปัจจุบัน</li>
+</ul>
+<p><code>L1 COMPLETE — AGENTIZATION ELIGIBLE</code> ถูกนิยามเป็น evidence-based แล้วด้วย 15 criteria และต้องบันทึกใน <code>LAYER-1-CLOSEOUT.md</code>. สถานะนี้แปลว่า "เริ่ม evaluate Layer 2 ได้" ไม่ใช่ "Agent-ready แล้ว" และไม่ใช่ approval ให้ build Agent.</p>
+<h2>สิ่งที่ยังเหลือ</h2>
+<p>ไม่มี Owner decision เพิ่มที่จำเป็นสำหรับการ accept strategy baseline นี้.</p>
+<p>งานในอนาคตยังต้องมี decision/gate ใหม่ถ้าจะ:</p>
+<ul>
+<li>release product ใดเข้าสู่ Layer 2 evaluation</li>
+<li>เปิด Layer 2 program</li>
+<li>build Agent execution capability</li>
+<li>พิจารณา Layer 3</li>
+</ul>
+<h2>Non-Authorization Boundary</h2>
+<p>re-evaluation นี้ไม่ authorize Layer 2/3, Agent Relay, MCP, Agent credentials, Agent APIs, implementation, runtime/database change, migration, deployment, product-gate reopening, หรือ WS01/LK01/CM01 dispatch.</p>
+<p>Verdict นี้เป็นแค่การรับ strategy baseline ที่แก้ remediation แล้วเท่านั้น.</p></section>
+</main></body></html>

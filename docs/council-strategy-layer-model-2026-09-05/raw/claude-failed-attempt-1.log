@@ -1,0 +1,8 @@
+﻿claude.exe : Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect 
+stdin explicitly: < /dev/null to skip, or wait longer.
+At D:\AI-Workspace\runtime\npm-global\npm\claude.ps1:14 char:3
++   & "$basedir/node_modules/@anthropic-ai/claude-code/bin/claude.exe"  ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warning: no std...or wait longer.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
