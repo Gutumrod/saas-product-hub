@@ -1,9 +1,11 @@
-# BK01 ORDER CAPABILITY â€” Proposal to Portfolio / Parent Governance
+# BK01 ORDER CAPABILITY — Proposal to Portfolio / Parent Governance
 
 **Date:** 2026-09-05 (Asia/Bangkok)
 **Product:** BK01 Booking
 **Proposal type:** Product-boundary expansion / capability addition
-**Status:** PROPOSED â€” prototype validated, production contract not yet authorized
+**Status:** PROPOSED — prototype validated, production contract not yet authorized
+**Disposition: APPROVE PHASE 0 — Owner accepted 2026-09-05; Phase 0A/0B now COMPLETE/LOCKED; Reuse Gate PASS; Order implementation remains unauthorized.**
+**Effective decision record:** `docs/council-bk01-order-capability-2026-09-05/OWNER-OVERRIDE-AND-CORRECTION-2026-09-05.md`
 **Owner intent:** expand BK01 from appointment-only operation into a modular business portal foundation while preserving Booking as an independent capability.
 
 ## Executive summary
@@ -12,7 +14,7 @@ BK01 currently has a locked V1 contract centered on appointment operations. Duri
 
 The proposed product shape is:
 
-`Business Portal â†’ Booking + Order + future Claim integration`
+`Business Portal → Booking + Order + future Claim integration`
 
 This is **not** a proposal to replace the Booking Engine, merge all workflows, or turn BK01 into ERP/POS/warehouse software.
 
@@ -27,7 +29,7 @@ The prototype is now frozen at:
 Approve BK01 to proceed to a formal **Phase 0 Product Boundary + Order V1 Contract** that explicitly supersedes the appointment-only boundary where required, without silently rewriting historical locked documents.
 ## Proposed capability boundary
 
-### Booking â€” remains authoritative for appointments
+### Booking — remains authoritative for appointments
 
 Booking owns:
 
@@ -40,13 +42,13 @@ Booking owns:
 
 Order must not create a second appointment scheduler.
 
-### Order â€” new capability proposed
+### Order — new capability proposed
 
 Order owns:
 
 - product / made-to-order catalog
 - immutable order line snapshots at confirmation
-- order lifecycle: `DRAFT â†’ CONFIRMED â†’ IN_PROGRESS â†’ READY â†’ COMPLETED`, with cancellation rules to be locked
+- order lifecycle: `DRAFT → CONFIRMED → IN_PROGRESS → READY → COMPLETED`, with cancellation rules to be locked
 - order payment status kept separate from order lifecycle
 - production lead days
 - workshop production calendar
@@ -57,12 +59,12 @@ Order owns:
 
 The core business rule is:
 
-`Lead Time + Production Calendar + Available Capacity â†’ earliest available ready date`
+`Lead Time + Production Calendar + Available Capacity → earliest available ready date`
 ## Order â†” Booking relationship
 
 When an Order reaches `READY` and requires installation or another in-person service:
 
-`Order READY â†’ Create Booking â†’ existing Booking Engine checks availability â†’ linked Booking`
+`Order READY → Create Booking → existing Booking Engine checks availability → linked Booking`
 
 Rules already validated in the frozen prototype:
 
@@ -80,7 +82,7 @@ A many-to-many link model should be evaluated in the formal contract rather than
 
 Mobile-first customer flow:
 
-`Select items â†’ choose desired ready date â†’ customer details â†’ order deposit/slip â†’ track order â†’ if READY and installation required, create Booking`
+`Select items → choose desired ready date → customer details → order deposit/slip → track order → if READY and installation required, create Booking`
 
 Customer does not see raw production capacity units. The customer sees only whether a date is too early, closed, full, or available.
 
@@ -117,7 +119,7 @@ Do not expand this proposal into:
 - lift / bay / room / machine resource scheduling
 - generic resource-booking engine
 - automatic cross-module payment aggregation
-- automatic Bookingâ†’Order completion
+- automatic Booking→Order completion
 
 Claim/case handling remains outside Order V1. Future claim integration should reuse the CM01-owned lifecycle rather than duplicate it inside BK01.
 
@@ -135,11 +137,11 @@ This proposal is a material product capability addition, so production work must
 No prototype code should be promoted directly into production merely because the visual flow passed review.
 ## Recommended sequencing if approved
 
-### Phase 0A â€” Product Boundary Decision
+### Phase 0A — Product Boundary Decision
 
 Create a dated Owner/architecture decision that formally allows BK01 to become a modular Business Portal foundation with independent Booking and Order capabilities.
 
-### Phase 0B â€” Order V1 Contract
+### Phase 0B — Order V1 Contract
 
 Lock domain terms, lifecycle, data model, capacity semantics, scheduler behavior, security/RLS, failure cases, audit requirements, acceptance criteria and non-goals.
 

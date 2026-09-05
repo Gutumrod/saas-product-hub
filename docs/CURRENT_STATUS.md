@@ -5,6 +5,18 @@
 **Parent branch/HEAD before this closeout:** `master @ cd7c321`
 **Execution authority:** `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md` revision 3 + later explicit owner decisions
 **Purpose:** current-state overlay. This file does not replace product PRDs, architecture contracts, gate evidence or historical daily logs.
+**Latest Owner overlay:** 2026-09-05
+
+## 2026-09-05 Owner Execution Overlay
+
+- BK01 Order council = `APPROVE PHASE 0` documentation-only; Owner correction D1–D12 is canonical at `docs/council-bk01-order-capability-2026-09-05/OWNER-OVERRIDE-AND-CORRECTION-2026-09-05.md`.
+- Hermes' prior owner-facing decision numbering is superseded; council synthesis remains historical provenance.
+- Codex production master plan remains execution authority and already places BK01 as the first P2 heavy track.
+- **Active heavy track:** BK01 Booking core — resume now. No other product must finish first.
+- **Completed bounded track:** BK01 Order Phase 0A/0B — LOCKED at Booking `82b297d`; Reuse Gate PASS; MT01 Bootstrap PASS; bounded slot returned.
+- Order implementation remains blocked. Default sequencing is Booking V1 release/pilot decision first. Earliest exception requires BK-A + BK-B closure, locked Order contracts, Reuse Gate PASS, MT01 bootstrap record, isolated migration baseline and explicit Owner overlap/risk authorization.
+- The bounded slot is now free after Order Phase 0 closeout. Do not auto-dispatch CM01 or another track; next bounded work still requires Owner/parent sequencing.
+- Priority details: `docs/strategy/BK01-EXECUTION-PRIORITY-2026-09-05.md`.
 
 ## Portfolio Gate State
 
@@ -19,7 +31,7 @@
 | DocCraft Gate 3 / Gate 4 | **CLOSED locally with evidence**; with P0a-C1 now PASS, Phase 4.1 is gated by its mandatory intake/owner plan approval, not the portfolio foundation gate |
 | Payment/billing architecture | **Direction reconciled** - centralized billing-core remains authoritative; 2026-09-01 council adds Stripe-card recurring + PromptPay manual rail + mandatory reconciliation, not a competing core |
 
-## Today's Portfolio Order
+## Historical 2026-09-03 Portfolio Order — superseded by 2026-09-05 Owner overlay
 
 1. **P0a-C1: CLOSED / PASS.** Independent reassessment is recorded in `docs/platform/REVIEW-P0a-C1-2026-09-03.md`; do not repeat the CM01 timezone investigation or the clean-clone debate.
 2. **Daily closeout:** reconcile each active product's current status, daily log and next work brief, then push only evidence-backed changes.
@@ -36,10 +48,10 @@
 
 | Code | Product | Current execution state |
 |---|---|---|
-| BK01 | Booking | P0a-C1 is PASS; BK-A remediation is the next eligible heavy track. 2026-09-03 closeout pushed at `feature/bk-a-v1-contract-remediation @ 908108c`; Stage 4 closed; CONT-03 and DB-backed gates remain open |
+| BK01 | Booking | **ACTIVE HEAVY TRACK** by 2026-09-05 Owner overlay. Booking documentation checkpoint `82b297d` (implementation baseline `213360a`); Stage 4 closed; CONT-03 non-DB verification closed; CONT-04/DB-backed gates remain environment-blocked; Order Phase 0A/0B LOCKED with Reuse Gate PASS + MT01 PASS; Order implementation blocked |
 | PS01 | Pawstia | Phase 13 verification not closed; Project B admission not yet authorized |
 | LK01 | WSTERA Link | Pre-build; hybrid billing/PromptPay reconciliation complete; 2026-09-03 gate refresh pushed at `docs/hybrid-billing-promptpay @ ae7c474`. P0a is PASS but LK01 remains behind applicable P0b/P1 + Phase P4 scheduling |
-| DC01 | DocCraft | Gate 3/4 closed; P0a-C1 PASS. High JSON backup-controls contract finding is OPEN and must be dispositioned before new Phase 4.1 implementation; closeout pushed at `master @ ea5f513` |
+| DC01 | DocCraft | Gate 3/4 closed; P0a-C1 PASS. JSON backup-controls finding has an Owner disposition at current observed `master @ b942a22`; remains a later P3 heavy-track candidate after BK01 release checkpoint and applicable intake/owner-plan gates |
 | MT01 | Multi-Tenant AI | Reference server only; deferred to P5/L0-L5 productization |
 | CM01 | Booking Ticket Module | Owning CI green on `main @ aeaa750` (63/63); no longer the P0a-C1 blocker. Remaining CM-D lint debt is P0b |
 | HC01 | Headless Commerce | Deferred to P5 except explicitly authorized HC-A cleanup |
