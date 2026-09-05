@@ -1,0 +1,9 @@
+{
+  "run": "WS01-Business-Market",
+  "candidate_to_file": {
+    "A": "claude-expert-answer.md",
+    "B": "qwen.md",
+    "C": "agy.md"
+  },
+  "generated_utc": "2026-09-05"
+}

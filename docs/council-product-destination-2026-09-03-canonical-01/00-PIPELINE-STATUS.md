@@ -1,8 +1,8 @@
 # PIPELINE STATUS
 
 Council: WSTERA Product Destination Council — Canonical Run 01
-Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01, PS01 complete
-Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 / LK01 / CM01 = not dispatched**
+Current gate: Business / Market Gate (Release 1B) — MT01, DC01, BK01, PS01, WS01 complete
+Current status: **MT01 = PASS; DC01 = PASS; BK01 = PASS; PS01 = PASS; WS01 = REMEDIATE — OWNER REVIEW REQUIRED; LK01 / CM01 = not dispatched**
 
 Experts: `agent-claude`, `agent-agy`, `agent-qwen`
 Synthesizer: `agent-codex`
@@ -85,10 +85,22 @@ Owner approved Release 1B on 2026-09-04. Dispatch is per-product, one at a time.
 - This PASS is document-level only — NOT build/launch approval
 - Artifacts: `01.5-business-market/PS01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, product-level INDEX.html, raw/, candidates, manifests)
 
+### WS01 Business/Market Gate — REMEDIATE (2026-09-05, Owner Review Required)
+
+- Expert completion: 3/3 (Claude, AGY, Qwen) — raw answers persisted at `01.5-business-market/WS01/raw/`
+- Codex synthesis: `01.5-business-market/WS01/BUSINESS-MARKET-SYNTHESIS.md` — verdict **REMEDIATE** (confidence 64/100)
+- No fatal Business/Market blocker proven: payer (importer/distributor owner-ops), recurring pain, wedge, and monetization direction are all credible across 3/3 candidates.
+- Remediation required before broader build/launch authorization (NOT product-definition reopening): lock a first vertical/beachhead; validate owner-operator pain + willingness-to-pay qualitatively (5–10 owner calls); prove pain is top-pain vs annoyance; prove WSM is seen as allocation-truth/provenance not spreadsheet/order-portal; estimate onboarding effort from real spreadsheet/dealer/supplier data; lock packaging dimensions with prices still TBD.
+- Preserved downstream (NOT blockers): retention/churn, CAC/conversion, admin time saved, dispute reduction, allocation accuracy, ARPU, production billing, runtime/database placement, architecture/security, implementation/deployment.
+- Owner decisions required: D1 (choose first beachhead vertical), D2 (confirm V1 validation does not lock final public prices). Commercial values remain TBD per source-of-truth; no final public prices invented.
+- This REMEDIATE is document-level only — NOT build/launch approval.
+- This gate is **STOP after Owner report; do not dispatch LK01 / Product #6** per brief.
+- Artifacts: `01.5-business-market/WS01/` (synthesis, doc pack, Thai OWNER-BRIEF.md + .html, product-level INDEX.html, raw/, candidates, manifests)
+
 ## Not released
 
 Module Hub Scan, Portfolio Arbitration, Architecture, Risk, Pre-Build, Agent Relay, and implementation are NOT RELEASED.
-Business/Market Gate for WS01, LK01, CM01 is NOT yet dispatched. MT01, DC01, BK01, and PS01 Business/Market gates have completed document-level PASS artifacts. No later gate, Agent Relay, Product #5 dispatch, implementation, launch, or deployment is released by these PASS results.
+WS01 Business/Market Gate has completed a document-level REMEDIATE artifact and requires Owner review; LK01 and CM01 Business/Market gates are NOT yet dispatched. MT01, DC01, BK01, and PS01 Business/Market gates have completed document-level PASS artifacts. No later gate, Agent Relay, Product #6 dispatch, implementation, launch, or deployment is released by these results. Do not dispatch LK01 / Product #6 after WS01 per brief.
 
 ## MT01 procedure deviation (resolved)
 
