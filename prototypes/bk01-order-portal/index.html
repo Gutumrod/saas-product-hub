@@ -1,0 +1,2822 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BK01 Business Portal — Rough Prototype (Order Capability)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & IBM Plex Sans Thai -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'IBM Plex Sans Thai', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', 'IBM Plex Sans Thai', sans-serif; }
+    .badge-draft { background-color: #f1f5f9; color: #475569; }
+    .badge-confirmed { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .badge-in_progress { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-ready { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-completed { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- TOP PROTOTYPE NOTICE BANNER WITH LANGUAGE SWITCHER -->
+  <aside aria-label="Prototype Notice" class="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2 z-50">
+    <div class="flex items-center space-x-2">
+      <span class="bg-amber-200 font-bold px-1.5 py-0.5 rounded text-amber-900 uppercase tracking-wider text-[10px]" data-i18n="proto_badge">Rough Prototype</span>
+      <span><strong>BK01 Business Portal + Order Capability</strong> — <span data-i18n="proto_subtitle">Visual Concept สำหรับ Owner Review (ไม่มี DB / ไม่มี Supabase)</span></span>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <!-- Language Toggle Switcher -->
+      <div class="inline-flex items-center bg-white border border-amber-300 rounded-lg p-0.5 shadow-sm">
+        <button id="lang-btn-th" onclick="setLanguage('th')" class="px-2 py-0.5 rounded text-xs font-bold transition bg-amber-600 text-white flex items-center gap-1">
+          <span>🇹🇭</span> <span>TH</span>
+        </button>
+        <button id="lang-btn-en" onclick="setLanguage('en')" class="px-2 py-0.5 rounded text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
+          <span>🇬🇧</span> <span>EN</span>
+        </button>
+      </div>
+
+      <a href="customer.html" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-md font-bold text-xs flex items-center gap-1 shadow-sm transition">
+        <span>📱</span> <span>หน้าร้านลูกค้า (Customer View)</span>
+      </a>
+
+      <button onclick="openSettingsModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded-md font-medium text-xs flex items-center gap-1 border border-amber-300 transition">
+        <span>⚙️</span> <span data-i18n="btn_toggle_cap">สลับ Capability (Tenant)</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex flex-1 overflow-hidden">
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 select-none">
+      <div>
+        <!-- Brand / Tenant Header -->
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-sky-400"></span>
+              <span class="font-bold text-white text-base tracking-wide">BK01 Portal</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">KMO Rackbar & Tuning</p>
+          </div>
+          <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">PROTOTYPE</span>
+        </div>
+
+        <!-- Capability Badges in Sidebar -->
+        <div class="px-4 py-2 bg-slate-950/60 border-b border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+          <span data-i18n="side_active_mods">Active Modules:</span>
+          <div class="flex gap-1">
+            <span id="badge-cap-booking" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono text-[10px]">BK:ON</span>
+            <span id="badge-cap-order" class="px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono text-[10px]">OD:ON</span>
+            <span id="badge-cap-claim" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-mono text-[10px]">CL:OFF</span>
+          </div>
+        </div>
+
+        <!-- Nav Items -->
+        <nav class="p-3 space-y-4 text-sm">
+          <!-- Main -->
+          <div>
+            <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full text-left px-3 py-2 rounded-lg font-medium flex items-center gap-2.5 transition bg-sky-600 text-white">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              <span data-i18n="nav_dashboard">Dashboard</span>
+            </button>
+          </div>
+
+          <!-- Section: BOOKING -->
+          <div id="section-nav-booking" class="space-y-1">
+            <div class="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span data-i18n="nav_sec_booking">Booking</span>
+              <span class="text-[9px] bg-emerald-900/60 text-emerald-300 px-1 rounded">ON</span>
+            </div>
+            <button onclick="alert(currentLang === 'th' ? 'หน้า Booking Calendar เดิม (ไม่แตะต้อง logic เดิม)' : 'Original Booking Calendar (Original logic preserved)')" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+              <span data-i18n="nav_booking_cal">Calendar</span>
+            </button>
+            <button onclick="openBookingsListModal()" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+              <span data-i18n="nav_booking_list">Bookings</span>
+            </button>
+          </div>
+
+          <!-- Section: ORDER -->
+          <div id="section-nav-order" class="space-y-1">
+            <div class="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span data-i18n="nav_sec_order">Order</span>
+              <span class="text-[9px] bg-sky-900/60 text-sky-300 px-1 rounded font-mono">NEW</span>
+            </div>
+            <button onclick="switchView('orders')" id="nav-orders" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+              <span data-i18n="nav_orders">Orders</span>
+              <span class="ml-auto bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded text-[10px]">3</span>
+            </button>
+            <button onclick="switchView('calendar')" id="nav-calendar" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+              <span data-i18n="nav_prod_calendar">Production Calendar</span>
+            </button>
+            <button onclick="switchView('products')" id="nav-products" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+              <span data-i18n="nav_products">Products</span>
+            </button>
+          </div>
+
+          <!-- Section: CLAIM (Disabled by default) -->
+          <div id="section-nav-claim" class="space-y-1 hidden">
+            <div class="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span data-i18n="nav_sec_claim">Claim</span>
+              <span class="text-[9px] bg-purple-900/60 text-purple-300 px-1 rounded font-mono">OFF</span>
+            </div>
+            <button class="w-full text-left px-3 py-1.5 rounded-lg text-slate-500 flex items-center gap-2.5 text-xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+              <span data-i18n="nav_claims_list">Claims List</span>
+            </button>
+          </div>
+
+          <!-- Section: General -->
+          <div class="pt-2 border-t border-slate-800 space-y-1">
+            <button onclick="alert(currentLang === 'th' ? 'หน้าจัดการฐานข้อมูลลูกค้า (Customers CRM)' : 'Customers CRM view')" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              <span data-i18n="nav_customers">Customers</span>
+            </button>
+            <button onclick="openSettingsModal()" id="nav-settings" class="w-full text-left px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2.5 text-xs transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span data-i18n="nav_settings">Settings</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+
+      <!-- Quick Concept Helper in Footer -->
+      <div class="p-3 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400">
+        <div class="font-medium text-slate-300 mb-1 flex items-center gap-1">
+          <span data-i18n="flow_title">💡 Workflow Flow</span>
+        </div>
+        <p class="leading-relaxed text-slate-400 text-[10px]" data-i18n="flow_desc">
+          Order → Lead Time & Capacity → Ready Date → Produce → <strong class="text-sky-300">Create Booking</strong>
+        </p>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto p-6 lg:p-8">
+
+      <!-- ======================================================== -->
+      <!-- VIEW 1: ADMIN DASHBOARD / HOME                           -->
+      <!-- ======================================================== -->
+      <div id="view-dashboard" class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900" data-i18n="dash_title">Dashboard</h1>
+            <p class="text-sm text-slate-500" data-i18n="dash_desc">ภาพรวมธุรกิจประจำวัน — คิวช่างติดตั้ง & กำลังการผลิตชิ้นงาน</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="switchView('new-order')" class="bg-sky-600 hover:bg-sky-700 text-white px-3.5 py-2 rounded-lg font-medium text-sm shadow-sm flex items-center gap-1.5 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span data-i18n="btn_new_order">+ New Order</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Simple Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: Today's Bookings -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500" data-i18n="stat_today_bookings">Today's Bookings</div>
+            <div class="text-3xl font-bold text-slate-900 mt-2">5</div>
+            <div class="text-xs text-emerald-600 mt-1 font-medium flex items-center gap-1">
+              <span data-i18n="stat_today_bookings_sub">● คิวติดตั้งหน้าร้านวันนี้</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Active Orders -->
+          <div onclick="switchView('orders')" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-sky-300 cursor-pointer transition">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500" data-i18n="stat_active_orders">Active Orders</div>
+            <div class="text-3xl font-bold text-sky-600 mt-2">8</div>
+            <div class="text-xs text-slate-500 mt-1" data-i18n="stat_active_orders_sub">ออร์เดอร์ที่อยู่ระหว่างดำเนินการ</div>
+          </div>
+
+          <!-- Card 3: Orders Ready -->
+          <div onclick="switchView('orders')" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-300 cursor-pointer transition">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500" data-i18n="stat_orders_ready">Orders Ready</div>
+            <div class="text-3xl font-bold text-emerald-600 mt-2">2</div>
+            <div class="text-xs text-emerald-700 mt-1 font-medium" data-i18n="stat_orders_ready_sub">พร้อมรับ/รอสร้างคิวติดตั้ง Booking</div>
+          </div>
+
+          <!-- Card 4: Production Capacity Today -->
+          <div onclick="switchView('calendar')" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-amber-300 cursor-pointer transition">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500" data-i18n="stat_capacity_today">Production Capacity Today</div>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span class="text-3xl font-bold text-amber-600">7</span>
+              <span class="text-lg text-slate-400 font-medium">/ 10</span>
+            </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div class="bg-amber-500 h-full rounded-full" style="width: 70%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Today (Unified View of Booking + Order) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-slate-900 text-base" data-i18n="today_title">Today</h2>
+              <p class="text-xs text-slate-500" data-i18n="today_desc">กำหนดการทั้ง Booking ติดตั้ง และ Order งานผลิตสำหรับวันนี้</p>
+            </div>
+            <span class="text-xs bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded">4 Sep 2026</span>
+          </div>
+
+          <div class="divide-y divide-slate-100 text-sm">
+            <!-- 09:00 Booking -->
+            <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-xs font-semibold text-slate-500 w-14">09:00</span>
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800" data-i18n="badge_booking">Booking</span>
+                <span class="font-medium text-slate-800">Honda ADV350</span>
+                <span class="text-xs text-slate-400" data-i18n="item_adv_desc">ลูกค้า: วรวิทย์ (ติดตั้งชิวหน้า)</span>
+              </div>
+              <span class="text-xs text-slate-500 font-medium" data-i18n="lbl_station_1">ช่าง A (Staff A)</span>
+            </div>
+
+            <!-- 11:00 Booking -->
+            <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-xs font-semibold text-slate-500 w-14">11:00</span>
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800" data-i18n="badge_booking">Booking</span>
+                <span class="font-medium text-slate-800">XMAX 300</span>
+                <span class="text-xs text-slate-400" data-i18n="item_xmax_desc">ลูกค้า: ชานนท์ (เปลี่ยนน้ำมันเครื่อง)</span>
+              </div>
+              <span class="text-xs text-slate-500 font-medium" data-i18n="lbl_station_2">ช่าง B (Staff B)</span>
+            </div>
+
+            <!-- Order OR-0012 -->
+            <div onclick="switchView('order-detail')" class="p-4 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-xs font-semibold text-sky-600 w-14">OR-0012</span>
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-800" data-i18n="badge_order">Order</span>
+                <span class="font-medium text-slate-800">Crash Bar</span>
+                <span class="text-xs text-slate-500" data-i18n="item_crashbar_cap">Capacity 3 units</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200" data-i18n="badge_prod_today">Production Today</span>
+            </div>
+
+            <!-- Order OR-0015 -->
+            <div onclick="switchView('order-detail')" class="p-4 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-xs font-semibold text-sky-600 w-14">OR-0015</span>
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-800" data-i18n="badge_order">Order</span>
+                <span class="font-medium text-slate-800">Rack</span>
+                <span class="text-xs text-slate-500" data-i18n="item_rack_ready">ลูกค้าพร้อมรับ / จองคิวติดตั้งได้</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold" data-i18n="badge_ready">Ready</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: ORDERS LIST                                      -->
+      <!-- ======================================================== -->
+      <div id="view-orders" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900" data-i18n="orders_title">Orders</h1>
+            <p class="text-sm text-slate-500" data-i18n="orders_desc">รายการสั่งผลิตและสั่งซื้อสินค้าทั้งหมดของร้าน</p>
+          </div>
+          <button onclick="switchView('new-order')" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-medium text-sm shadow-sm flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span data-i18n="btn_new_order">+ New Order</span>
+          </button>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 w-fit text-xs font-medium">
+          <button onclick="setOrderFilter('All')" id="filter-All" class="px-3 py-1.5 rounded-md bg-slate-900 text-white"><span data-i18n="filter_all">All</span> (3)</button>
+          <button onclick="setOrderFilter('Confirmed')" id="filter-Confirmed" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900"><span data-i18n="filter_confirmed">Confirmed</span> (1)</button>
+          <button onclick="setOrderFilter('In Progress')" id="filter-InProgress" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900"><span data-i18n="filter_inprogress">In Progress</span> (1)</button>
+          <button onclick="setOrderFilter('Ready')" id="filter-Ready" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900"><span data-i18n="filter_ready">Ready</span> (1)</button>
+          <button onclick="setOrderFilter('Completed')" id="filter-Completed" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900"><span data-i18n="filter_completed">Completed</span> (0)</button>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="px-6 py-3.5" data-i18n="th_order_id">Order ID</th>
+                <th class="px-6 py-3.5" data-i18n="th_customer">Customer</th>
+                <th class="px-6 py-3.5" data-i18n="th_items">Items</th>
+                <th class="px-6 py-3.5" data-i18n="th_status">Status</th>
+                <th class="px-6 py-3.5" data-i18n="th_ready_date">Ready Date</th>
+                <th class="px-6 py-3.5 text-right" data-i18n="th_action">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <!-- Row 1: OR-00125 -->
+              <tr onclick="switchView('order-detail')" class="hover:bg-sky-50/50 cursor-pointer transition">
+                <td class="px-6 py-4 font-mono font-bold text-sky-600">OR-00125</td>
+                <td class="px-6 py-4">
+                  <div class="font-medium text-slate-900 flex items-center gap-1.5">
+                    <span>Somchai</span>
+                    <span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200" title="LINE Linked">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> LINE
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-mono">081-xxx-xxxx</div>
+                </td>
+                <td class="px-6 py-4 text-slate-600">Crash Bar + Rack</td>
+                <td class="px-6 py-4">
+                  <span class="badge-confirmed px-2.5 py-0.5 rounded-full text-xs font-semibold" data-i18n="status_confirmed">Confirmed</span>
+                </td>
+                <td class="px-6 py-4 text-slate-700 font-medium">9 Sep</td>
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sky-600 font-medium text-xs hover:underline" data-i18n="btn_view_detail">View Detail →</span>
+                </td>
+              </tr>
+
+              <!-- Row 2: OR-00126 -->
+              <tr onclick="switchView('order-detail')" class="hover:bg-sky-50/50 cursor-pointer transition">
+                <td class="px-6 py-4 font-mono font-bold text-sky-600">OR-00126</td>
+                <td class="px-6 py-4">
+                  <div class="font-medium text-slate-900 flex items-center gap-1.5">
+                    <span>Narin</span>
+                    <span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200" title="LINE Linked">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> LINE
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-mono">089-xxx-xxxx</div>
+                </td>
+                <td class="px-6 py-4 text-slate-600">Android Screen</td>
+                <td class="px-6 py-4">
+                  <span class="badge-ready px-2.5 py-0.5 rounded-full text-xs font-semibold" data-i18n="status_ready">Ready</span>
+                </td>
+                <td class="px-6 py-4 text-emerald-700 font-bold" data-i18n="txt_today">Today</td>
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sky-600 font-medium text-xs hover:underline" data-i18n="btn_view_detail">View Detail →</span>
+                </td>
+              </tr>
+
+              <!-- Row 3: OR-00127 (Walk-in / Phone Only) -->
+              <tr onclick="switchView('order-detail')" class="hover:bg-sky-50/50 cursor-pointer transition">
+                <td class="px-6 py-4 font-mono font-bold text-sky-600">OR-00127</td>
+                <td class="px-6 py-4">
+                  <div class="font-medium text-slate-900 flex items-center gap-1.5">
+                    <span>Peter</span>
+                    <span class="inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Phone/SMS Only">
+                      📞 Phone
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-mono">092-xxx-xxxx</div>
+                </td>
+                <td class="px-6 py-4 text-slate-600">Custom Bracket</td>
+                <td class="px-6 py-4">
+                  <span class="badge-in_progress px-2.5 py-0.5 rounded-full text-xs font-semibold" data-i18n="status_in_progress">In Progress</span>
+                </td>
+                <td class="px-6 py-4 text-slate-700 font-medium">12 Sep</td>
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sky-600 font-medium text-xs hover:underline" data-i18n="btn_view_detail">View Detail →</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 3: CREATE ORDER                                     -->
+      <!-- ======================================================== -->
+      <div id="view-new-order" class="space-y-6 hidden">
+        <div class="flex items-center gap-3">
+          <button onclick="switchView('orders')" class="text-slate-400 hover:text-slate-700 p-1">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          </button>
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900" data-i18n="new_order_title">New Order</h1>
+            <p class="text-sm text-slate-500" data-i18n="new_order_desc">สร้างออร์เดอร์สั่งทำ/สั่งซื้อ พร้อมคำนวณวันเสร็จจาก Lead Time และ Daily Capacity</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Left: Order Form -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- Customer Card with Multi-channel Awareness -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <h2 class="font-bold text-slate-900 text-sm uppercase tracking-wider" data-i18n="form_customer_header">Customer</h2>
+                <span class="text-[11px] text-slate-400" data-i18n="cust_primary_key_hint">ใช้ค้นหา/จับคู่ลูกค้าเดิมของร้าน</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1" data-i18n="form_customer_name">Customer Name</label>
+                  <input type="text" value="Somchai" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1" data-i18n="form_customer_mobile">Mobile Phone</label>
+                  <input type="text" value="081-xxx-xxxx" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-sky-500">
+                </div>
+              </div>
+
+              <!-- Channel Attachment Indicator -->
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span class="text-slate-700 font-medium" data-i18n="lbl_linked_channel">Linked Channel:</span>
+                  <span class="text-emerald-700 font-bold bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200">🟢 LINE Linked (@somchai_adv)</span>
+                </div>
+                <span class="text-[11px] text-slate-400" data-i18n="lbl_auto_detect_line">Auto-detected from LINE LIFF</span>
+              </div>
+            </div>
+
+            <!-- Items Card -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <h2 class="font-bold text-slate-900 text-sm uppercase tracking-wider" data-i18n="form_items_header">Items</h2>
+                <span class="text-xs text-slate-400" data-i18n="items_selected_count">2 รายการที่เลือก</span>
+              </div>
+
+              <div class="space-y-3">
+                <!-- Item 1: Crash Bar -->
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div class="font-bold text-slate-900 text-base">Crash Bar</div>
+                    <div class="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                      <span><span data-i18n="lbl_price">ราคา:</span> <strong>9,500 THB</strong></span>
+                      <span>Lead Time: <strong>3 days</strong></span>
+                      <span>Capacity: <strong class="text-sky-700">3 units</strong></span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs bg-white px-3 py-1.5 border border-slate-300 rounded-md font-mono">Qty: 1</span>
+                    <button class="text-xs text-slate-400 hover:text-red-500">✕</button>
+                  </div>
+                </div>
+
+                <!-- Item 2: Rack -->
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div class="font-bold text-slate-900 text-base">Rack</div>
+                    <div class="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                      <span><span data-i18n="lbl_price">ราคา:</span> <strong>2,900 THB</strong></span>
+                      <span>Lead Time: <strong>2 days</strong></span>
+                      <span>Capacity: <strong class="text-sky-700">2 units</strong></span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs bg-white px-3 py-1.5 border border-slate-300 rounded-md font-mono">Qty: 1</span>
+                    <button class="text-xs text-slate-400 hover:text-red-500">✕</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Item Button -->
+              <button onclick="alert(currentLang === 'th' ? 'จำลอง: เพิ่มสินค้า Custom Bracket หรือ อะไหล่อื่น' : 'Mock: Add Custom Bracket or other accessory')" class="w-full py-2.5 border-2 border-dashed border-slate-300 hover:border-sky-400 text-slate-600 hover:text-sky-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1.5">
+                <span data-i18n="btn_add_item">+ Add Item</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Order Summary & Capacity Calc -->
+          <div class="space-y-4">
+            <div class="bg-white p-6 rounded-xl border border-sky-200 shadow-sm space-y-4 ring-1 ring-sky-100">
+              <h2 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-3" data-i18n="summary_header">Order Summary</h2>
+
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between items-center text-slate-600">
+                  <span data-i18n="summary_total">Total Amount</span>
+                  <span class="text-xl font-bold text-slate-900">12,400 THB</span>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 space-y-2.5">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-500" data-i18n="summary_req_capacity">Required Capacity</span>
+                    <span class="font-bold text-sky-700 font-mono bg-sky-50 px-2 py-0.5 rounded border border-sky-200">5 units</span>
+                  </div>
+
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-500" data-i18n="summary_min_lead">Minimum Lead</span>
+                    <span class="font-medium text-slate-800" data-i18n="summary_min_lead_val">3 production days</span>
+                  </div>
+
+                  <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
+                    <span class="font-semibold text-slate-900" data-i18n="summary_earliest_ready">Earliest Ready</span>
+                    <span class="text-lg font-bold text-emerald-600">9 Sep</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Automatic calculation explanation box -->
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
+                <div class="font-semibold text-slate-800 flex items-center gap-1">
+                  <span data-i18n="summary_auto_title">⚡ Auto Schedule</span>
+                </div>
+                <p class="text-[11px] leading-relaxed text-slate-500" data-i18n="summary_auto_desc">
+                  Production schedule calculated automatically based on available daily capacity & workshop working days.
+                </p>
+              </div>
+
+              <!-- Confirm Order Button -->
+              <button onclick="confirmOrderMock()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-lg font-bold text-sm shadow-sm transition flex items-center justify-center gap-2">
+                <span data-i18n="btn_confirm_order">Confirm Order</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 4: ORDER DETAIL                                     -->
+      <!-- ======================================================== -->
+      <div id="view-order-detail" class="space-y-6 hidden">
+        <!-- Breadcrumb & Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div class="flex items-center gap-3">
+            <button onclick="switchView('orders')" class="text-slate-400 hover:text-slate-700 p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </button>
+            <div>
+              <div class="flex items-center gap-2.5">
+                <h1 class="text-2xl font-mono font-bold text-slate-900">OR-00125</h1>
+                <span id="detail-status-badge" class="badge-confirmed px-3 py-0.5 rounded-full text-xs font-bold uppercase" data-i18n="status_confirmed_upper">CONFIRMED</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200" data-i18n="payment_partially_paid">Payment: PARTIALLY PAID</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1" data-i18n="created_date_txt">สร้างเมื่อ 4 Sep 2026</p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="updateOrderStatus('In Progress')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition" data-i18n="btn_start_prod">
+              Start Production
+            </button>
+            <button onclick="updateOrderStatus('Ready')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition" data-i18n="btn_mark_ready">
+              Mark Ready
+            </button>
+            <button onclick="updateOrderStatus('Completed')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition" data-i18n="btn_complete_order">
+              Complete Order
+            </button>
+            <button onclick="alert(currentLang === 'th' ? 'จำลอง: ยกเลิกออร์เดอร์และคืนโควตา Capacity' : 'Mock: Cancel order and release reserved capacity')" class="text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg text-xs font-medium transition" data-i18n="btn_cancel">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- 5-Step Status Timeline -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4" data-i18n="timeline_header">Production Timeline</div>
+          <div class="grid grid-cols-5 gap-2 text-center text-xs">
+            <!-- Step 1: Draft -->
+            <div class="space-y-1.5">
+              <div class="h-2 rounded-full bg-emerald-500"></div>
+              <div class="font-medium text-slate-500" data-i18n="step_draft">Draft</div>
+            </div>
+            <!-- Step 2: Confirmed -->
+            <div class="space-y-1.5">
+              <div id="timeline-step-confirmed" class="h-2 rounded-full bg-sky-600"></div>
+              <div class="font-bold text-sky-700" data-i18n="step_confirmed">Confirmed</div>
+            </div>
+            <!-- Step 3: In Progress -->
+            <div class="space-y-1.5">
+              <div id="timeline-step-inprogress" class="h-2 rounded-full bg-slate-200"></div>
+              <div class="font-medium text-slate-400" data-i18n="step_inprogress">In Progress</div>
+            </div>
+            <!-- Step 4: Ready -->
+            <div class="space-y-1.5">
+              <div id="timeline-step-ready" class="h-2 rounded-full bg-slate-200"></div>
+              <div class="font-medium text-slate-400" data-i18n="step_ready">Ready</div>
+            </div>
+            <!-- Step 5: Completed -->
+            <div class="space-y-1.5">
+              <div id="timeline-step-completed" class="h-2 rounded-full bg-slate-200"></div>
+              <div class="font-medium text-slate-400" data-i18n="step_completed">Completed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Left: Customer & Items -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- Customer Details with Linked Channel info -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider" data-i18n="cust_header">Customer</h2>
+                <span class="text-[10px] text-slate-400">ID: CUST-8831</span>
+              </div>
+
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div class="text-base font-bold text-slate-900">Somchai</div>
+                  <div class="text-sm text-slate-600 font-mono mt-0.5">📞 081-xxx-xxxx <span class="text-xs text-slate-400 font-sans" data-i18n="lbl_primary_channel">(Primary)</span></div>
+                </div>
+
+                <!-- Linked LINE Badge (SaaS Platform Way) -->
+                <div class="flex flex-col items-start sm:items-end">
+                  <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span data-i18n="channel_line_linked">🟢 LINE Linked (@somchai_adv)</span>
+                  </span>
+                  <span class="text-[10px] text-slate-400 mt-1 font-mono">UID: U9a2b8...f41</span>
+                </div>
+              </div>
+
+              <!-- Automated notification status banner -->
+              <div class="p-2.5 bg-emerald-50/50 rounded-lg border border-emerald-100 flex items-center justify-between text-xs text-emerald-800">
+                <span class="flex items-center gap-1.5">
+                  <span>💬</span>
+                  <span data-i18n="channel_auto_notify">ระบบส่งแจ้งเตือนสถานะผลิตผ่าน LINE อัตโนมัติ</span>
+                </span>
+                <button onclick="alert(currentLang === 'th' ? 'จำลอง: ส่งข้อความแจ้งเตือนผ่าน LINE OA สำเร็จ' : 'Mock: LINE notification pushed successfully')" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold underline">
+                  <span data-i18n="btn_test_notify">Test Push</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Items -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider" data-i18n="items_header">Items</h2>
+              <div class="divide-y divide-slate-100">
+                <div class="py-2.5 flex justify-between items-center">
+                  <div>
+                    <span class="font-medium text-slate-900">Crash Bar</span>
+                    <span class="text-xs text-slate-400 ml-2">×1</span>
+                  </div>
+                  <span class="font-mono text-sm text-slate-700">9,500 THB</span>
+                </div>
+                <div class="py-2.5 flex justify-between items-center">
+                  <div>
+                    <span class="font-medium text-slate-900">Rack</span>
+                    <span class="text-xs text-slate-400 ml-2">×1</span>
+                  </div>
+                  <span class="font-mono text-sm text-slate-700">2,900 THB</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200 flex justify-between items-center font-bold text-slate-900">
+                <span data-i18n="txt_total">Total</span>
+                <span class="text-base">12,400 THB</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Production & Booking Link -->
+          <div class="space-y-6">
+            <!-- Production Box -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 text-xs">
+              <h2 class="font-semibold text-slate-500 uppercase tracking-wider" data-i18n="prod_status_header">Production Status</h2>
+
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500" data-i18n="confirmed_date">Confirmed Date</span>
+                <span class="font-medium text-slate-800">4 Sep</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500" data-i18n="prod_date">Production Date</span>
+                <span class="font-bold text-sky-700">9 Sep</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500" data-i18n="promised_ready_date">Promised Ready Date</span>
+                <span class="font-bold text-emerald-700">9 Sep</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-500" data-i18n="capacity_reserved">Capacity Reserved</span>
+                <span class="font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">5 units</span>
+              </div>
+            </div>
+
+            <!-- Customer Notifications Block (BK01 Central OA) -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 text-xs">
+              <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Customer Notifications</h3>
+                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">BK01 Central OA</span>
+              </div>
+              <div class="space-y-2 text-slate-600">
+                <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                  <span class="text-slate-500">LINE Connected:</span>
+                  <span class="font-bold text-emerald-600 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    ✓ Yes
+                  </span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Last notification:</span>
+                  <span class="font-medium text-slate-800">Order Confirmed <span class="text-slate-400 text-[10px]">(5 Sep 10:32)</span></span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                  <span class="text-slate-500">Next notification:</span>
+                  <span class="font-bold text-sky-600">Order Ready</span>
+                </div>
+              </div>
+              <div class="p-2 bg-slate-50 rounded-lg text-[11px] text-slate-500">
+                💡 ข้อความจะถูกส่งผ่าน BK01 Central OA อัตโนมัติเมื่อสถานะอัปเดตเป็น <strong>Ready</strong>
+              </div>
+            </div>
+
+            <!-- BOOKING HOOK (Crucial Flow: Order -> Booking) -->
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 rounded-xl border border-emerald-200 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-800" data-i18n="booking_hook_title">Installation Booking</span>
+                <span class="text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded font-mono">BK01 Engine</span>
+              </div>
+
+              <!-- State 1: No Booking Created -->
+              <div id="booking-block-empty" class="space-y-3">
+                <p class="text-xs text-emerald-900 font-medium" data-i18n="booking_hook_status">
+                  No booking created
+                </p>
+                <p class="text-[11px] text-emerald-700 leading-relaxed" data-i18n="booking_hook_desc">
+                  เมื่อชิ้นงานผลิตพร้อม (9 Sep) สามารถสร้าง Booking นัดหมายบริการติดตั้งหน้าร้านตามคิวช่างที่ว่างจริงได้ทันที
+                </p>
+
+                <div id="booking-gating-msg" class="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                  🔒 รอสินค้าผลิตเสร็จ (สถานะ READY) ก่อน จึงจะสามารถสร้าง Booking นัดคิวติดตั้งได้
+                </div>
+
+                <button id="btn-create-booking" onclick="openCreateBookingMock()" disabled class="w-full bg-slate-300 text-slate-500 py-2 rounded-lg font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-not-allowed transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span data-i18n="btn_create_booking">[ Create Booking ]</span>
+                </button>
+              </div>
+
+              <!-- State 2: Linked Booking Active -->
+              <div id="booking-block-linked" class="hidden space-y-3 pt-1">
+                <div class="p-3 bg-white/90 rounded-lg border border-emerald-300 space-y-2 text-xs shadow-sm">
+                  <div class="flex items-center justify-between">
+                    <span id="linked-booking-id" class="font-mono font-bold text-emerald-800">Linked: BK-2026-0910</span>
+                    <span id="linked-booking-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">CONFIRMED</span>
+                  </div>
+                  <div class="space-y-1 text-[11px] text-slate-700">
+                    <div>📅 <strong id="linked-booking-datetime">10 Sep 2026, 10:00–12:00</strong></div>
+                    <div>👤 Staff: <strong id="linked-booking-staff" class="text-slate-900">ช่าง A (Staff A)</strong></div>
+                    <div>⏱️ Service: <strong id="linked-booking-service">บริการติดตั้งชิ้นงาน (120 min)</strong></div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="openViewBookingModal()" class="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition">
+                    <span>View Booking ↗</span>
+                  </button>
+                  <button onclick="unlinkBookingMock()" class="py-2 px-3 bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 rounded-lg text-xs font-medium transition">
+                    <span>Prototype Reset</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 5: PRODUCTION CALENDAR (Core Highlight)             -->
+      <!-- ======================================================== -->
+      <div id="view-calendar" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900" data-i18n="cal_title">Production Calendar</h1>
+            <p class="text-sm text-slate-500" data-i18n="cal_desc">ตารางตรวจสอบกำลังการผลิตชิ้นงานรายสัปดาห์ (Daily Capacity Management)</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 font-medium">
+              <span data-i18n="lbl_daily_limit">Daily Limit:</span> <strong>10 units / day</strong>
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Weekly Grid (Left 2 Cols) -->
+          <div class="lg:col-span-2 space-y-4">
+            <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider" data-i18n="cal_weekly_header">Production Capacity (7 – 12 Sep 2026)</h2>
+
+            <div class="space-y-3">
+              <!-- Mon 7 Sep -->
+              <div onclick="selectCalendarDate('Mon 7 Sep', 6, 10, 'NORMAL', [{id:'OR-00120', item:'Crash Bar', cap:3}, {id:'OR-00121', item:'Custom Mount', cap:3}])" id="cal-day-mon" class="p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition shadow-sm flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900">Mon 7 Sep</div>
+                  <div class="text-xs text-slate-500 mt-0.5" data-i18n="cal_mon_sub">2 Orders Scheduled</div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <span class="text-base font-bold text-emerald-600 font-mono">6 / 10 units</span>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                      <div class="bg-emerald-500 h-full rounded-full" style="width: 60%"></div>
+                    </div>
+                  </div>
+                  <span class="text-xs text-slate-400">→</span>
+                </div>
+              </div>
+
+              <!-- Tue 8 Sep (CLOSED) -->
+              <div onclick="selectCalendarDate('Tue 8 Sep', 0, 0, 'CLOSED', [])" id="cal-day-tue" class="p-4 bg-slate-100/70 rounded-xl border border-dashed border-slate-300 cursor-pointer transition flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-500">Tue 8 Sep</div>
+                  <div class="text-xs text-slate-400 mt-0.5" data-i18n="cal_tue_sub">วันหยุดโรงกลึง / ช่างพักประจำสัปดาห์</div>
+                </div>
+                <span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-600" data-i18n="badge_closed">CLOSED</span>
+              </div>
+
+              <!-- Wed 9 Sep (FULL - Highlighted) -->
+              <div onclick="selectCalendarDate('Wed 9 Sep', 10, 10, 'FULL', [{id:'OR-00125', item:'Crash Bar + Rack', cap:5}, {id:'OR-00130', item:'Custom Work', cap:5}])" id="cal-day-wed" class="p-4 bg-white rounded-xl border-2 border-rose-400 hover:border-rose-500 cursor-pointer transition shadow-sm flex items-center justify-between ring-2 ring-rose-100">
+                <div>
+                  <div class="font-bold text-slate-900 flex items-center gap-2">
+                    <span>Wed 9 Sep</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200" data-i18n="badge_full">FULL</span>
+                  </div>
+                  <div class="text-xs text-rose-600 font-medium mt-0.5" data-i18n="cal_wed_sub">ความจุเต็ม 100% (2 Orders Scheduled)</div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <span class="text-base font-bold text-rose-600 font-mono">10 / 10 units</span>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                      <div class="bg-rose-500 h-full rounded-full" style="width: 100%"></div>
+                    </div>
+                  </div>
+                  <span class="text-xs text-rose-400 font-bold">●</span>
+                </div>
+              </div>
+
+              <!-- Thu 10 Sep -->
+              <div onclick="selectCalendarDate('Thu 10 Sep', 4, 10, 'NORMAL', [{id:'OR-00128', item:'Rack', cap:2}, {id:'OR-00129', item:'Bracket', cap:2}])" class="p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition shadow-sm flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900">Thu 10 Sep</div>
+                  <div class="text-xs text-slate-500 mt-0.5" data-i18n="cal_thu_sub">2 Orders Scheduled</div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <span class="text-base font-bold text-emerald-600 font-mono">4 / 10 units</span>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                      <div class="bg-emerald-500 h-full rounded-full" style="width: 40%"></div>
+                    </div>
+                  </div>
+                  <span class="text-xs text-slate-400">→</span>
+                </div>
+              </div>
+
+              <!-- Fri 11 Sep -->
+              <div onclick="selectCalendarDate('Fri 11 Sep', 7, 10, 'NORMAL', [{id:'OR-00132', item:'Full Exhaust Mount', cap:7}])" class="p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition shadow-sm flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900">Fri 11 Sep</div>
+                  <div class="text-xs text-slate-500 mt-0.5" data-i18n="cal_fri_sub">1 Large Order Scheduled</div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <span class="text-base font-bold text-amber-600 font-mono">7 / 10 units</span>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                      <div class="bg-amber-500 h-full rounded-full" style="width: 70%"></div>
+                    </div>
+                  </div>
+                  <span class="text-xs text-slate-400">→</span>
+                </div>
+              </div>
+
+              <!-- Sat 12 Sep -->
+              <div onclick="selectCalendarDate('Sat 12 Sep', 2, 10, 'NORMAL', [{id:'OR-00135', item:'Screen Visor', cap:2}])" class="p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition shadow-sm flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900">Sat 12 Sep</div>
+                  <div class="text-xs text-slate-500 mt-0.5" data-i18n="cal_sat_sub">1 Order Scheduled</div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <span class="text-base font-bold text-emerald-600 font-mono">2 / 10 units</span>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                      <div class="bg-emerald-500 h-full rounded-full" style="width: 20%"></div>
+                    </div>
+                  </div>
+                  <span class="text-xs text-slate-400">→</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Side Inspector Panel -->
+          <div class="space-y-4">
+            <div id="calendar-day-detail-panel" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 sticky top-6">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 id="panel-date-title" class="text-xl font-bold text-slate-900">Wed 9 Sep</h3>
+                  <p class="text-xs text-slate-500" data-i18n="cal_panel_sub">Day Details & Scheduled Orders</p>
+                </div>
+                <span id="panel-capacity-badge" class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-rose-100 text-rose-700">10 / 10 Full</span>
+              </div>
+
+              <!-- Capacity breakdown -->
+              <div class="space-y-3">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider" data-i18n="cal_scheduled_work">Scheduled Work</div>
+
+                <div id="panel-orders-list" class="space-y-2.5">
+                  <!-- Order 1 -->
+                  <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex justify-between items-center hover:bg-slate-100/80 transition cursor-pointer" onclick="switchView('order-detail')">
+                    <div>
+                      <span class="font-mono font-bold text-sky-600">OR-00125</span>
+                      <p class="text-slate-800 font-medium mt-0.5">Crash Bar + Rack</p>
+                    </div>
+                    <span class="font-mono font-semibold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200">5 units</span>
+                  </div>
+
+                  <!-- Order 2 -->
+                  <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex justify-between items-center hover:bg-slate-100/80 transition cursor-pointer" onclick="switchView('order-detail')">
+                    <div>
+                      <span class="font-mono font-bold text-sky-600">OR-00130</span>
+                      <p class="text-slate-800 font-medium mt-0.5">Custom Work</p>
+                    </div>
+                    <span class="font-mono font-semibold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200">5 units</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions for Admin -->
+              <div class="pt-4 border-t border-slate-100 space-y-2">
+                <button onclick="alert(currentLang === 'th' ? 'จำลอง: ขยายโควตาผลิตเป็นพิเศษ (Override Capacity ชั่วคราว เช่น เพิ่มโอที)' : 'Mock: Temporarily override daily capacity (e.g. approved overtime)')" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg text-xs font-semibold transition" data-i18n="btn_override_cap">
+                  Override Capacity
+                </button>
+                <button onclick="alert(currentLang === 'th' ? 'จำลอง: ปิดรับงานวันนี้ชั่วคราว (Close Day)' : 'Mock: Close workshop day for new orders')" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 py-2 rounded-lg text-xs font-semibold transition" data-i18n="btn_close_day">
+                  Close Day
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 6: PRODUCTS / ORDER CATALOG                         -->
+      <!-- ======================================================== -->
+      <div id="view-products" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900" data-i18n="prod_title">Products & Order Catalog</h1>
+            <p class="text-sm text-slate-500" data-i18n="prod_desc">กำหนดรายการสินค้า ราคา Lead Time ในการผลิต และจำนวน Capacity Units ที่ต้องใช้</p>
+          </div>
+          <button onclick="openEditProductModal(currentLang === 'th' ? 'สินค้าใหม่' : 'New Product', 0, 1, 1, true)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-medium text-sm shadow-sm flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span data-i18n="btn_add_product">+ Add Product</span>
+          </button>
+        </div>
+
+        <!-- Products Table -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="px-6 py-3.5" data-i18n="th_product_name">Product Name</th>
+                <th class="px-6 py-3.5" data-i18n="th_default_price">Default Price</th>
+                <th class="px-6 py-3.5" data-i18n="th_lead_days">Production Lead Days</th>
+                <th class="px-6 py-3.5" data-i18n="th_capacity_units">Capacity Units</th>
+                <th class="px-6 py-3.5" data-i18n="th_status">Status</th>
+                <th class="px-6 py-3.5 text-right" data-i18n="th_action">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <!-- Item 1: Crash Bar -->
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-6 py-4 font-bold text-slate-900">Crash Bar</td>
+                <td class="px-6 py-4 font-mono text-slate-700">9,500 THB</td>
+                <td class="px-6 py-4 text-slate-700">3 days</td>
+                <td class="px-6 py-4">
+                  <span class="font-mono bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded font-bold">3 units</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold" data-i18n="status_active">Active</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button onclick="openEditProductModal('Crash Bar', 9500, 3, 3, true)" class="text-sky-600 hover:text-sky-800 font-medium text-xs" data-i18n="btn_edit">Edit</button>
+                </td>
+              </tr>
+
+              <!-- Item 2: Rack -->
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-6 py-4 font-bold text-slate-900">Rack</td>
+                <td class="px-6 py-4 font-mono text-slate-700">2,900 THB</td>
+                <td class="px-6 py-4 text-slate-700">2 days</td>
+                <td class="px-6 py-4">
+                  <span class="font-mono bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded font-bold">2 units</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold" data-i18n="status_active">Active</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button onclick="openEditProductModal('Rack', 2900, 2, 2, true)" class="text-sky-600 hover:text-sky-800 font-medium text-xs" data-i18n="btn_edit">Edit</button>
+                </td>
+              </tr>
+
+              <!-- Item 3: Custom Bracket -->
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-6 py-4 font-bold text-slate-900">Custom Bracket</td>
+                <td class="px-6 py-4 font-mono text-slate-700">1,500 THB</td>
+                <td class="px-6 py-4 text-slate-700">5 days</td>
+                <td class="px-6 py-4">
+                  <span class="font-mono bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-bold">5 units</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold" data-i18n="status_active">Active</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button onclick="openEditProductModal('Custom Bracket', 1500, 5, 5, true)" class="text-sky-600 hover:text-sky-800 font-medium text-xs" data-i18n="btn_edit">Edit</button>
+                </td>
+              </tr>
+
+              <!-- Item 4: Android Screen -->
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-6 py-4 font-bold text-slate-900">Android Screen</td>
+                <td class="px-6 py-4 font-mono text-slate-700">6,900 THB</td>
+                <td class="px-6 py-4 text-slate-700"><span data-i18n="prod_lead_ready">0 days (มีของพร้อม)</span></td>
+                <td class="px-6 py-4">
+                  <span class="font-mono bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold">1 unit</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold" data-i18n="status_active">Active</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button onclick="openEditProductModal('Android Screen', 6900, 0, 1, true)" class="text-sky-600 hover:text-sky-800 font-medium text-xs" data-i18n="btn_edit">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: EDIT PRODUCT                                      -->
+  <!-- ======================================================== -->
+  <div id="modal-edit-product" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-900 text-base" data-i18n="modal_edit_prod_title">Edit Product</h3>
+        <button onclick="closeEditProductModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1" data-i18n="lbl_modal_prod_name">Product Name</label>
+          <input id="prod-input-name" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1" data-i18n="lbl_modal_prod_price">Default Price (THB)</label>
+          <input id="prod-input-price" type="number" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1" data-i18n="lbl_modal_lead_days">Lead Days (วันผลิต)</label>
+            <input id="prod-input-lead" type="number" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1" data-i18n="lbl_modal_cap_units">Capacity Units (ความจุ)</label>
+            <input id="prod-input-cap" type="number" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <input id="prod-input-active" type="checkbox" checked class="w-4 h-4 text-sky-600 rounded">
+          <label class="text-xs font-medium text-slate-700" data-i18n="lbl_modal_active">Active (เปิดรับออร์เดอร์)</label>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button onclick="closeEditProductModal()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-50" data-i18n="btn_cancel">Cancel</button>
+        <button onclick="saveProductMock()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold" data-i18n="btn_save_changes">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: SETTINGS & TENANT CAPABILITIES                    -->
+  <!-- ======================================================== -->
+  <div id="modal-settings" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="font-bold text-slate-900 text-lg" data-i18n="modal_settings_title">Settings</h3>
+          <p class="text-xs text-slate-500" data-i18n="modal_settings_sub">Tenant Capability & Order Configuration</p>
+        </div>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <!-- Section A: Tenant Capabilities (Live Toggle Demonstration) -->
+      <div class="p-4 bg-sky-50/70 border border-sky-200 rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="font-bold text-sky-900 text-sm" data-i18n="sec_tenant_cap_title">Tenant Capabilities</h4>
+            <p class="text-[11px] text-sky-700" data-i18n="sec_tenant_cap_sub">เปิด-ปิด โมดูลของร้านค้า (UI จะซ่อนเมนูที่ disabled อัตโนมัติ)</p>
+          </div>
+          <span class="text-[10px] bg-sky-200 text-sky-900 px-2 py-0.5 rounded font-mono font-bold">Multi-tenant</span>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <!-- Booking Capability -->
+          <label class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-sky-100 cursor-pointer">
+            <div>
+              <span class="text-xs font-bold text-slate-900" data-i18n="cap_booking_name">Booking Module</span>
+              <p class="text-[10px] text-slate-400" data-i18n="cap_booking_desc">ระบบปฏิทินและนัดหมายคิวติดตั้งหน้าร้าน</p>
+            </div>
+            <input type="checkbox" id="cap-booking-toggle" checked onchange="toggleCapabilities()" class="w-4 h-4 text-sky-600 rounded">
+          </label>
+
+          <!-- Order Capability -->
+          <label class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-sky-100 cursor-pointer">
+            <div>
+              <span class="text-xs font-bold text-slate-900" data-i18n="cap_order_name">Order Capability (NEW)</span>
+              <p class="text-[10px] text-slate-400" data-i18n="cap_order_desc">ระบบสั่งผลิต คำนวณ Lead Time & Daily Capacity</p>
+            </div>
+            <input type="checkbox" id="cap-order-toggle" checked onchange="toggleCapabilities()" class="w-4 h-4 text-sky-600 rounded">
+          </label>
+
+          <!-- Claim Capability -->
+          <label class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-sky-100 cursor-pointer">
+            <div>
+              <span class="text-xs font-bold text-slate-900" data-i18n="cap_claim_name">Claim Module</span>
+              <p class="text-[10px] text-slate-400" data-i18n="cap_claim_desc">ระบบรับเรื่องเคลมประกันและซ่อมบำรุง</p>
+            </div>
+            <input type="checkbox" id="cap-claim-toggle" onchange="toggleCapabilities()" class="w-4 h-4 text-sky-600 rounded">
+          </label>
+        </div>
+      </div>
+
+      <!-- Section B: Customer Communication & LINE Settings (Delta Brief Spec) -->
+      <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+        <div>
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-slate-900 text-sm">Customer Communication</h4>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">BK01 Managed</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-0.5">ช่องทางติดต่อของร้าน และการส่งข้อความแจ้งเตือนสถานะออเดอร์</p>
+        </div>
+
+        <!-- Inputs for Phone & Merchant LINE OA -->
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Primary Contact Phone (เบอร์โทรติดต่อหลักของร้าน)</label>
+            <input type="text" value="089-876-5432" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="font-medium text-slate-700">Merchant LINE OA (ลิงก์ LINE OA ของร้าน)</label>
+              <span class="text-[10px] text-slate-400 bg-slate-200/60 px-1.5 py-0.2 rounded">Optional</span>
+            </div>
+            <input type="text" value="https://lin.ee/kmo-tuning" placeholder="https://lin.ee/xxxx" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+            <p class="text-[10px] text-slate-400 mt-1">💡 ใส่เพื่อให้มีปุ่ม "แชทร้านทาง LINE" ในหน้ารายละเอียดคำสั่งซื้อของลูกค้า (ร้านไม่จำเป็นต้องมี)</p>
+          </div>
+
+          <!-- Central BK01 Notification Toggle -->
+          <div class="p-3 bg-white border border-slate-200 rounded-lg space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900">BK01 LINE Notifications</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">ON</span>
+            </div>
+            <p class="text-[11px] text-slate-500 leading-relaxed">
+              ลูกค้าจะได้รับข้อความแจ้งเตือนสถานะออเดอร์อัตโนมัติผ่าน <strong>BK01 Central LINE OA</strong> โดยที่ร้านค้าไม่จำเป็นต้องสมัครหรือเสียค่าบริการ LINE Messaging API เพิ่มเติม
+            </p>
+          </div>
+        </div>
+
+        <!-- Section B.2: Notification Policy (Cost Control) -->
+        <div class="pt-3 border-t border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-900 text-xs">Order Notification Policy</span>
+            <span class="text-[10px] text-slate-400">ควบคุมจำนวนข้อความ</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs text-slate-700">
+            <label class="flex items-center gap-2 p-2 bg-white rounded border border-slate-200 cursor-pointer">
+              <input type="checkbox" checked class="text-sky-600 rounded">
+              <span>Order Confirmed (ON)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white rounded border border-slate-200 cursor-pointer">
+              <input type="checkbox" class="text-sky-600 rounded">
+              <span class="text-slate-400">Production Started (OFF)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white rounded border border-slate-200 cursor-pointer">
+              <input type="checkbox" checked class="text-sky-600 rounded">
+              <span>Order Ready (ON)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white rounded border border-slate-200 cursor-pointer">
+              <input type="checkbox" class="text-sky-600 rounded">
+              <span class="text-slate-400">Order Completed (OFF)</span>
+            </label>
+          </div>
+          <p class="text-[10px] text-slate-400">* ค่าเริ่มต้นเลือกเฉพาะตอนยืนยันและของพร้อมส่ง เพื่อไม่ให้ส่งข้อความรบกวนลูกค้าเกินจำเป็น</p>
+        </div>
+
+        <!-- Section B.3: LINE Notification Usage (Platform Quota) -->
+        <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-lg space-y-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-amber-900">LINE Notification Usage (เดือนนี้)</span>
+            <span class="font-bold font-mono text-amber-800">1,240 / 15,000 ข้อความ</span>
+          </div>
+          <div class="w-full bg-amber-200/80 h-2 rounded-full overflow-hidden">
+            <div class="bg-amber-500 h-full rounded-full" style="width: 8%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-amber-700">
+            <span>ใช้ไปแล้ว 8% (Plan Allowance)</span>
+            <span>โควต้ารวมของแพลตฟอร์ม</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section C: Order Settings -->
+      <div class="space-y-4">
+        <h4 class="font-bold text-slate-900 text-sm uppercase tracking-wider" data-i18n="sec_order_settings_title">Order Settings</h4>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block font-medium text-slate-600 mb-1" data-i18n="lbl_default_lead">Default Lead Time</label>
+            <input type="text" value="2 days" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 mb-1" data-i18n="lbl_daily_capacity">Daily Capacity</label>
+            <input type="text" value="10 units" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-sky-700">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1" data-i18n="lbl_max_orders">Max Orders Per Day</label>
+          <input type="text" id="input-max-orders" value="No Limit (Controlled by Capacity Units)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-600" readonly>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-2" data-i18n="lbl_overflow_behavior">Overflow Behavior (เมื่อโควตาวันนั้นเต็ม)</label>
+          <div class="space-y-1.5 text-xs text-slate-700">
+            <label class="flex items-center gap-2">
+              <input type="radio" name="overflow" checked class="text-sky-600">
+              <span data-i18n="opt_overflow_auto">● Auto Next Available (เลื่อนไปหาวันทำการถัดไปที่มี Capacity ว่างอัตโนมัติ)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="radio" name="overflow" class="text-sky-600">
+              <span data-i18n="opt_overflow_stop">○ Stop Accepting (หยุดรับออร์เดอร์ชั่วคราว)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-900" data-i18n="lbl_prod_week">Production Week (วันทำการผลิต)</label>
+            <span class="text-[10px] text-sky-600 font-medium" data-i18n="hint_click_to_toggle">คลิกที่วันเพื่อสลับ เปิด/ปิด</span>
+          </div>
+
+          <!-- Schedule Sync vs Custom Mode -->
+          <div class="space-y-1.5 text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="prod_schedule_sync" id="radio-prod-custom" checked onchange="toggleScheduleSync(false)" class="text-sky-600">
+              <span data-i18n="opt_schedule_custom">กำหนดวันผลิตแยกอิสระ (Custom Workshop Schedule)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="prod_schedule_sync" id="radio-prod-sync" onchange="toggleScheduleSync(true)" class="text-sky-600">
+              <span data-i18n="opt_schedule_sync">ใช้วันทำการเดียวกับหน้าร้าน (Sync with Shop Hours - Mon-Sat)</span>
+            </label>
+          </div>
+
+          <!-- Clickable Days Grid -->
+          <div id="production-week-grid" class="grid grid-cols-7 gap-1 text-center text-xs pt-1">
+            <button type="button" onclick="toggleProductionDay('mon')" id="day-btn-mon" class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition shadow-sm">
+              Mon<br><span id="day-status-mon" class="text-[10px] font-normal">ON</span>
+            </button>
+            <button type="button" onclick="toggleProductionDay('tue')" id="day-btn-tue" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-300 font-bold transition shadow-sm">
+              Tue<br><span id="day-status-tue" class="text-[10px] font-bold text-rose-600">OFF</span>
+            </button>
+            <button type="button" onclick="toggleProductionDay('wed')" id="day-btn-wed" class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition shadow-sm">
+              Wed<br><span id="day-status-wed" class="text-[10px] font-normal">ON</span>
+            </button>
+            <button type="button" onclick="toggleProductionDay('thu')" id="day-btn-thu" class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition shadow-sm">
+              Thu<br><span id="day-status-thu" class="text-[10px] font-normal">ON</span>
+            </button>
+            <button type="button" onclick="toggleProductionDay('fri')" id="day-btn-fri" class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition shadow-sm">
+              Fri<br><span id="day-status-fri" class="text-[10px] font-normal">ON</span>
+            </button>
+            <button type="button" onclick="toggleProductionDay('sat')" id="day-btn-sat" class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition shadow-sm">
+              Sat<br><span id="day-status-sat" class="text-[10px] font-normal">ON</span>
+            </button>
+            <button type="button" onclick="toggleProductionDay('sun')" id="day-btn-sun" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-300 font-bold transition shadow-sm">
+              Sun<br><span id="day-status-sun" class="text-[10px] font-bold text-rose-600">OFF</span>
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1 leading-relaxed" data-i18n="prod_week_impact_hint">* วันที่ตั้งเป็น OFF ระบบจะไม่นำมาคำนวณใน Lead Time และในปฏิทินจะขึ้นสถานะ CLOSED</p>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex justify-end">
+        <button onclick="closeSettingsModal()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition" data-i18n="btn_close_settings">
+          Close Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CREATE BOOKING SIMULATOR (From Order Ready)       -->
+  <!-- ======================================================== -->
+  <div id="modal-create-booking" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <h3 class="font-bold text-slate-900 text-base" data-i18n="modal_booking_title">Create Installation Booking</h3>
+        </div>
+        <button onclick="closeCreateBookingMock()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-600">
+        <!-- Connected Order Card -->
+        <div class="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200 text-emerald-950 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold" data-i18n="modal_booking_connected">เชื่อมต่อจาก Order OR-00125 (Somchai)</span>
+            <span class="text-[10px] bg-emerald-200/60 text-emerald-900 font-mono px-1.5 py-0.5 rounded">081-xxx-xxxx</span>
+          </div>
+          <div class="text-[11px] text-emerald-800 flex flex-wrap gap-x-3">
+            <span><span data-i18n="lbl_items">สินค้า:</span> <strong>Crash Bar ×1, Rack ×1</strong></span>
+            <span><span data-i18n="lbl_ready_date">วันพร้อมรับ:</span> <strong>9 Sep 2026</strong></span>
+          </div>
+        </div>
+
+        <!-- 1. Duration Selection (Flexible Duration Selector) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-slate-800 flex items-center gap-1">
+              <span>⏱️</span> <span>ระยะเวลาบริการติดตั้ง (Installation Duration)</span>
+            </label>
+            <span class="text-[11px] text-slate-400" id="duration-summary-text">Default: 120 นาที</span>
+          </div>
+          <p class="text-[11px] text-slate-500">
+            ระบบตั้งค่าเริ่มต้นตามชิ้นงานในออเดอร์ แอดมินสามารถปรับได้ตามรุ่นรถและความยากง่ายหน้างาน:
+          </p>
+          <div class="grid grid-cols-4 gap-2 pt-1">
+            <button type="button" onclick="selectBookingDuration(30)" id="btn-duration-30" class="py-1.5 px-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition text-center">30 นาที</button>
+            <button type="button" onclick="selectBookingDuration(60)" id="btn-duration-60" class="py-1.5 px-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition text-center">60 นาที</button>
+            <button type="button" onclick="selectBookingDuration(90)" id="btn-duration-90" class="py-1.5 px-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition text-center">90 นาที</button>
+            <button type="button" onclick="selectBookingDuration(120)" id="btn-duration-120" class="py-1.5 px-2 rounded-lg bg-sky-600 text-white font-bold border border-sky-600 shadow-sm transition text-center">120 นาที</button>
+          </div>
+          <!-- Custom Duration Input (P2.8) -->
+          <div class="flex items-center gap-2 pt-1.5">
+            <span class="text-[11px] text-slate-500 font-medium">หรือระบุเวลาเอง:</span>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="input-custom-duration" min="15" max="480" step="15" placeholder="เช่น 45, 150" oninput="handleCustomDurationInput(this.value)" class="w-24 px-2.5 py-1 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:border-sky-500">
+              <span class="text-[11px] text-slate-500">นาที</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Staff Selection (Authority: Staff + Time) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-800 mb-1">
+              <span>👤 ช่างผู้รับผิดชอบ (Staff Authority)</span>
+            </label>
+            <select id="booking-staff-select" onchange="renderBookingSlots()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-sky-500">
+              <option value="staff_a">ช่าง A (Staff A - ผู้เชี่ยวชาญชิ้นงานแร็ค)</option>
+              <option value="staff_b">ช่าง B (Staff B - ช่างทั่วไป)</option>
+              <option value="any">Any Staff (ช่างคนใดก็ได้ที่ว่าง)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-800 mb-1" data-i18n="lbl_pick_date">เลือกวันนัดหมายติดตั้ง</label>
+            <input type="date" id="booking-date-select" value="2026-09-10" min="2026-09-09" onchange="renderBookingSlots()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- 3. Available Slots Container (Collision Detection Live Demonstration) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-slate-800 flex items-center gap-1">
+              <span>📅 รอบเวลาที่ว่างจริง (Available Slots)</span>
+            </label>
+            <span class="text-[10px] text-slate-400 font-mono" id="current-duration-label">ตรวจเช็คช่วงเวลา 120 นาที</span>
+          </div>
+
+          <div id="booking-slots-list" class="space-y-2 pt-1">
+            <!-- Dynamic Slots rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Authority Callout Box -->
+        <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1 text-amber-950">
+          <div class="font-semibold text-amber-900 flex items-center gap-1">
+            <span>🛡️ Collision Guard & Single Source of Truth:</span>
+          </div>
+          <p class="text-[11px] leading-relaxed text-amber-800">
+            BK01 ตรวจ Availability จาก <strong>Staff + Time</strong> เท่านั้น (ไม่มีการจัดสรร Bay/Lift) และ <strong>Order-linked Booking ไม่มีสิทธิ์แทรกคิว</strong> หากคิวทับกับเวลานัดหมายเดิมของช่าง ระบบจะล็อกไม่อนุญาตให้เลือก
+          </p>
+        </div>
+
+        <!-- Deposit Note Box (Strict Decoupled Payment Rule) -->
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 space-y-1">
+          <div class="font-semibold text-slate-800 flex items-center justify-between">
+            <span>💳 การชำระเงิน (Decoupled Payments)</span>
+            <span class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono">Not configured</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            <em>Booking Deposit: Not configured for Order-linked Booking</em> — ยอดมัดจำและยอดคงเหลือสินค้าถูกดูแลโดย Order Engine แยกเป็นเอกเทศ ไม่มีการรวมยอดอัตโนมัติเข้ากับ Booking
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button onclick="closeCreateBookingMock()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-50" data-i18n="btn_cancel">Cancel</button>
+        <button onclick="submitBookingMock()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition" data-i18n="btn_confirm_booking">Confirm Booking</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: VIEW LINKED BOOKING (Bi-directional Link & Decoupled Lifecycle) -->
+  <!-- ======================================================== -->
+  <div id="modal-view-booking" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Booking Details</h3>
+            <p class="text-[11px] font-mono text-slate-500">BK-2026-0910</p>
+          </div>
+        </div>
+        <button onclick="closeViewBookingModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600">
+        <!-- Bi-Directional Link Card -->
+        <div class="p-3 bg-sky-50 rounded-xl border border-sky-200 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-sky-700">Related Order (ผูกกับออร์เดอร์)</span>
+            <p class="font-mono font-bold text-slate-900 text-sm mt-0.5">OR-00125 (Crash Bar + Rack)</p>
+          </div>
+          <button onclick="closeViewBookingModal(); switchView('order-detail');" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm">
+            <span>View Order ↗</span>
+          </button>
+        </div>
+
+        <!-- Appointment Info -->
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex justify-between items-center py-1 border-b border-slate-200">
+            <span class="text-slate-500">Customer:</span>
+            <span class="font-medium text-slate-900">Somchai (081-234-5678)</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-200">
+            <span class="text-slate-500">Date & Time:</span>
+            <span id="view-modal-datetime" class="font-bold text-slate-900 font-mono">10 Sep 2026, 10:00–12:00</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-200">
+            <span class="text-slate-500">Duration:</span>
+            <span class="font-medium text-slate-800" id="view-modal-duration-txt">120 นาที (Installation Service)</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-200">
+            <span class="text-slate-500">Assigned Staff:</span>
+            <span id="view-modal-staff" class="font-bold text-slate-900">ช่าง A (Staff A)</span>
+          </div>
+          <div class="flex justify-between items-center py-1">
+            <span class="text-slate-500">Booking Status:</span>
+            <span id="booking-modal-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">CONFIRMED</span>
+          </div>
+        </div>
+
+        <!-- Decoupled Lifecycle Simulator Action -->
+        <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
+          <div class="font-bold text-purple-950 text-xs flex items-center justify-between">
+            <span>⚙️ Decoupled Lifecycle Demonstration:</span>
+            <span class="text-[10px] text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded font-mono">Core Rule</span>
+          </div>
+          <p class="text-[11px] text-purple-900 leading-relaxed">
+            กดปุ่มด้านล่างเพื่อจำลองว่า <strong>ช่างติดตั้งเสร็จแล้ว (Booking COMPLETED)</strong> — สังเกตว่า <strong>Order OR-00125 จะยังคงสถานะ READY</strong> ไม่ถูกเปลี่ยนเป็น Completed โดยอัตโนมัติ
+          </p>
+          <button id="btn-complete-booking" onclick="completeBookingFromModal()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-sm">
+            ✓ Complete Booking (ช่างติดตั้งเสร็จแล้ว)
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
+        <button onclick="closeViewBookingModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: BOOKINGS LIST (Table with Related Order Reference) -->
+  <!-- ======================================================== -->
+  <div id="modal-bookings-list" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base" data-i18n="nav_booking_list">Bookings List</h3>
+          <p class="text-xs text-slate-500">ตารางการจองคิวบริการหน้าร้าน (Single Source of Truth: Staff + Time)</p>
+        </div>
+        <button onclick="closeBookingsListModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+            <tr>
+              <th class="px-3 py-2.5">Booking ID</th>
+              <th class="px-3 py-2.5">Customer</th>
+              <th class="px-3 py-2.5">Service / Time</th>
+              <th class="px-3 py-2.5">Staff</th>
+              <th class="px-3 py-2.5">Related Order</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-3 py-3 font-mono font-bold text-slate-800">BK-2026-0901</td>
+              <td class="px-3 py-3">วรวิทย์ (082-xxx-xxxx)</td>
+              <td class="px-3 py-3">ติดตั้งชิวหน้า ADV350<br><span class="text-slate-400 font-mono">09:00–09:45 (45m)</span></td>
+              <td class="px-3 py-3 font-medium text-slate-700">ช่าง A</td>
+              <td class="px-3 py-3 text-slate-400 font-mono">—</td>
+            </tr>
+            <tr>
+              <td class="px-3 py-3 font-mono font-bold text-slate-800">BK-2026-0902</td>
+              <td class="px-3 py-3">ชานนท์ (089-xxx-xxxx)</td>
+              <td class="px-3 py-3">เปลี่ยนน้ำมันเครื่อง XMAX<br><span class="text-slate-400 font-mono">11:00–11:45 (45m)</span></td>
+              <td class="px-3 py-3 font-medium text-slate-700">ช่าง B</td>
+              <td class="px-3 py-3 text-slate-400 font-mono">—</td>
+            </tr>
+            <tr class="bg-amber-50/40">
+              <td class="px-3 py-3 font-mono font-bold text-amber-800">BK-2026-0903</td>
+              <td class="px-3 py-3">อภิสิทธิ์ (084-xxx-xxxx)</td>
+              <td class="px-3 py-3">เซอร์วิสเช็คระยะ MT-09<br><span class="text-amber-700 font-mono font-bold">14:00–14:30 (30m)</span></td>
+              <td class="px-3 py-3 font-bold text-slate-900">ช่าง A</td>
+              <td class="px-3 py-3 text-slate-400 font-mono">—</td>
+            </tr>
+            <tr id="booking-list-row-linked" class="bg-emerald-50/50">
+              <td class="px-3 py-3 font-mono font-bold text-emerald-700">BK-2026-0910</td>
+              <td class="px-3 py-3 font-medium">Somchai (081-xxx-xxxx)</td>
+              <td id="booking-list-service-time" class="px-3 py-3">บริการติดตั้งพาร์ต<br><span class="text-emerald-700 font-mono font-bold">10:00–12:00 (120m)</span></td>
+              <td id="booking-list-staff" class="px-3 py-3 font-bold text-slate-900">ช่าง A</td>
+              <td class="px-3 py-3">
+                <button onclick="closeBookingsListModal(); switchView('order-detail');" class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 px-2 py-1 rounded transition border border-sky-300">
+                  <span>OR-00125 (Crash Bar)</span>
+                  <span>↗</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+        💡 สังเกตแถว <strong>BK-2026-0903 (ช่าง A, 14:00–14:30)</strong>: นี่คือเหตุผลที่ช่วงเวลา 13:00–15:00 ไม่ว่างสำหรับงาน 120 นาที เพราะติดคิวนี้อยู่ และ Order ไม่มีสิทธิ์แทรกคิว!
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
+        <button onclick="closeBookingsListModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 transform translate-y-20 opacity-0 transition duration-300 z-50">
+    <span id="toast-icon">✅</span>
+    <span id="toast-text">Success message</span>
+  </div>
+
+  <!-- JAVASCRIPT STATE CONTROLLER WITH REAL-TIME I18N -->
+  <script>
+    // i18n Translation Dictionary
+    let currentLang = 'th';
+
+    const translations = {
+      th: {
+        proto_badge: "Rough Prototype",
+        proto_subtitle: "Visual Concept สำหรับ Owner Review (ไม่มี DB / ไม่มี Supabase)",
+        btn_toggle_cap: "สลับ Capability (Tenant)",
+        side_active_mods: "Active Modules:",
+        nav_dashboard: "Dashboard",
+        nav_sec_booking: "Booking",
+        nav_booking_cal: "Calendar",
+        nav_booking_list: "Bookings",
+        nav_sec_order: "Order",
+        nav_orders: "Orders",
+        nav_prod_calendar: "Production Calendar",
+        nav_products: "Products",
+        nav_sec_claim: "Claim",
+        nav_claims_list: "Claims List",
+        nav_customers: "Customers",
+        nav_settings: "Settings",
+        flow_title: "💡 Workflow Flow",
+        flow_desc: "Order → Lead Time & Capacity → Ready Date → Produce → <strong class=\"text-sky-300\">Create Booking</strong>",
+        dash_title: "Dashboard",
+        dash_desc: "ภาพรวมธุรกิจประจำวัน — คิวช่างติดตั้ง & กำลังการผลิตชิ้นงาน",
+        btn_new_order: "+ New Order",
+        stat_today_bookings: "Today's Bookings",
+        stat_today_bookings_sub: "● คิวติดตั้งหน้าร้านวันนี้",
+        stat_active_orders: "Active Orders",
+        stat_active_orders_sub: "ออร์เดอร์ที่อยู่ระหว่างดำเนินการ",
+        stat_orders_ready: "Orders Ready",
+        stat_orders_ready_sub: "พร้อมรับ/รอสร้างคิวติดตั้ง Booking",
+        stat_capacity_today: "Production Capacity Today",
+        today_title: "Today",
+        today_desc: "กำหนดการทั้ง Booking ติดตั้ง และ Order งานผลิตสำหรับวันนี้",
+        badge_booking: "Booking",
+        badge_order: "Order",
+        item_adv_desc: "ลูกค้า: วรวิทย์ (ติดตั้งชิวหน้า)",
+        item_xmax_desc: "ลูกค้า: ชานนท์ (เปลี่ยนน้ำมันเครื่อง)",
+        item_crashbar_cap: "Capacity 3 units",
+        badge_prod_today: "Production Today",
+        item_rack_ready: "ลูกค้าพร้อมรับ / จองคิวติดตั้งได้",
+        badge_ready: "Ready",
+        lbl_station_1: "ช่าง A (Staff A)",
+        lbl_station_2: "ช่าง B (Staff B)",
+        orders_title: "Orders",
+        orders_desc: "รายการสั่งผลิตและสั่งซื้อสินค้าทั้งหมดของร้าน",
+        filter_all: "All",
+        filter_confirmed: "Confirmed",
+        filter_inprogress: "In Progress",
+        filter_ready: "Ready",
+        filter_completed: "Completed",
+        th_order_id: "Order ID",
+        th_customer: "Customer",
+        th_items: "Items",
+        th_status: "Status",
+        th_ready_date: "Ready Date",
+        th_action: "Action",
+        status_confirmed: "Confirmed",
+        status_ready: "Ready",
+        status_in_progress: "In Progress",
+        txt_today: "Today",
+        btn_view_detail: "View Detail →",
+        new_order_title: "New Order",
+        new_order_desc: "สร้างออร์เดอร์สั่งทำ/สั่งซื้อ พร้อมคำนวณวันเสร็จจาก Lead Time และ Daily Capacity",
+        form_customer_header: "Customer",
+        cust_primary_key_hint: "ใช้ค้นหา/จับคู่ลูกค้าเดิมของร้าน",
+        form_customer_name: "Customer Name",
+        form_customer_mobile: "Mobile Phone (เบอร์โทรศัพท์)",
+        lbl_linked_channel: "Linked Channel:",
+        lbl_auto_detect_line: "ตรวจพบและผูกจาก LINE LIFF อัตโนมัติ",
+        form_items_header: "Items",
+        items_selected_count: "2 รายการที่เลือก",
+        lbl_price: "ราคา:",
+        btn_add_item: "+ Add Item",
+        summary_header: "Order Summary",
+        summary_total: "Total Amount",
+        summary_req_capacity: "Required Capacity",
+        summary_min_lead: "Minimum Lead",
+        summary_min_lead_val: "3 production days",
+        summary_earliest_ready: "Earliest Ready",
+        summary_auto_title: "⚡ Auto Schedule",
+        summary_auto_desc: "Production schedule calculated automatically based on available daily capacity & workshop working days.",
+        btn_confirm_order: "Confirm Order",
+        status_confirmed_upper: "CONFIRMED",
+        payment_partially_paid: "Payment: PARTIALLY PAID",
+        created_date_txt: "สร้างเมื่อ 4 Sep 2026",
+        btn_start_prod: "Start Production",
+        btn_mark_ready: "Mark Ready",
+        btn_complete_order: "Complete Order",
+        btn_cancel: "Cancel",
+        timeline_header: "Production Timeline",
+        step_draft: "Draft",
+        step_confirmed: "Confirmed",
+        step_inprogress: "In Progress",
+        step_ready: "Ready",
+        step_completed: "Completed",
+        cust_header: "Customer",
+        lbl_primary_channel: "(หลัก)",
+        channel_line_linked: "🟢 LINE Linked (@somchai_adv)",
+        channel_auto_notify: "ระบบส่งแจ้งเตือนสถานะผลิตผ่าน LINE อัตโนมัติ",
+        btn_test_notify: "ทดสอบส่งแจ้งเตือน",
+        items_header: "Items",
+        txt_total: "Total",
+        prod_status_header: "Production Status",
+        confirmed_date: "Confirmed Date",
+        prod_date: "Production Date",
+        promised_ready_date: "Promised Ready Date",
+        capacity_reserved: "Capacity Reserved",
+        booking_hook_title: "Installation Booking",
+        booking_hook_status: "No appointment created",
+        booking_hook_desc: "เมื่อชิ้นงานผลิตพร้อม (9 Sep) สามารถสร้าง Booking นัดหมายบริการติดตั้งหน้าร้านตามคิวช่างที่ว่างจริงได้ทันที",
+        btn_create_booking: "[ Create Booking ]",
+        cal_title: "Production Calendar",
+        cal_desc: "ตารางตรวจสอบกำลังการผลิตชิ้นงานรายสัปดาห์ (Daily Capacity Management)",
+        lbl_daily_limit: "Daily Limit:",
+        cal_weekly_header: "Production Capacity (7 – 12 Sep 2026)",
+        cal_mon_sub: "2 Orders Scheduled",
+        cal_tue_sub: "วันหยุดโรงกลึง / ช่างพักประจำสัปดาห์",
+        badge_closed: "CLOSED",
+        badge_full: "FULL",
+        cal_wed_sub: "ความจุเต็ม 100% (2 Orders Scheduled)",
+        cal_thu_sub: "2 Orders Scheduled",
+        cal_fri_sub: "1 Large Order Scheduled",
+        cal_sat_sub: "1 Order Scheduled",
+        cal_panel_sub: "Day Details & Scheduled Orders",
+        cal_scheduled_work: "Scheduled Work",
+        btn_override_cap: "Override Capacity",
+        btn_close_day: "Close Day",
+        prod_title: "Products & Order Catalog",
+        prod_desc: "กำหนดรายการสินค้า ราคา Lead Time ในการผลิต และจำนวน Capacity Units ที่ต้องใช้",
+        btn_add_product: "+ Add Product",
+        th_product_name: "Product Name",
+        th_default_price: "Default Price",
+        th_lead_days: "Production Lead Days",
+        th_capacity_units: "Capacity Units",
+        status_active: "Active",
+        btn_edit: "Edit",
+        prod_lead_ready: "0 days (มีของพร้อม)",
+        modal_edit_prod_title: "Edit Product",
+        lbl_modal_prod_name: "Product Name",
+        lbl_modal_prod_price: "Default Price (THB)",
+        lbl_modal_lead_days: "Lead Days (วันผลิต)",
+        lbl_modal_cap_units: "Capacity Units (ความจุ)",
+        lbl_modal_active: "Active (เปิดรับออร์เดอร์)",
+        btn_save_changes: "Save Changes",
+        modal_settings_title: "Settings",
+        modal_settings_sub: "Tenant Capability & Order Configuration",
+        sec_tenant_cap_title: "Tenant Capabilities",
+        sec_tenant_cap_sub: "เปิด-ปิด โมดูลของร้านค้า (UI จะซ่อนเมนูที่ disabled อัตโนมัติ)",
+        cap_booking_name: "Booking Module",
+        cap_booking_desc: "ระบบปฏิทินและนัดหมายคิวติดตั้งหน้าร้าน",
+        cap_order_name: "Order Capability (NEW)",
+        cap_order_desc: "ระบบสั่งผลิต คำนวณ Lead Time & Daily Capacity",
+        cap_claim_name: "Claim Module",
+        cap_claim_desc: "ระบบรับเรื่องเคลมประกันและซ่อมบำรุง",
+        sec_notification_settings: "Customer Notification & Auth Channel",
+        sec_notification_sub: "กำหนดนโยบายการยืนยันตัวตนลูกค้าสำหรับการสั่งและจองคิวออนไลน์",
+        opt_auth_flexible_title: "● ยืดหยุ่นสูงสุด (แนะนำสำหรับ Multi-Tenant SaaS)",
+        opt_auth_flexible_desc: "ใช้เบอร์โทรศัพท์เป็นหลัก ลูกค้าไม่จำเป็นต้องแอด LINE แต่ถ้าเข้าผ่าน LINE LIFF ระบบจะผูก UID แจ้งเตือนให้อัตโนมัติ (ไม่เสียลูกค้า Walk-in)",
+        opt_auth_strict_title: "○ บังคับผูก LINE OA ก่อนจอง (ร้านสไตล์คอมมูนิตี้)",
+        opt_auth_strict_desc: "ลูกค้าที่กดสั่ง/จองผ่านลิงก์ออนไลน์ต้องเพิ่มเพื่อน LINE OA เพื่อรับสถานะผลิต (เหมาะกับร้านที่มี LINE OA Verified)",
+        opt_auth_phone_title: "○ เบอร์โทรศัพท์อย่างเดียว (สำหรับอู่/ร้านบ้านๆ)",
+        opt_auth_phone_desc: "ไม่เชื่อมต่อ LINE เหมาะสำหรับร้านช่างรุ่นเก๋าที่ไม่มีทีมงานตอบแอดมิน LINE",
+        sec_order_settings_title: "Order Settings",
+        lbl_default_lead: "Default Lead Time",
+        lbl_daily_capacity: "Daily Capacity",
+        lbl_max_orders: "Max Orders Per Day",
+        lbl_overflow_behavior: "Overflow Behavior (เมื่อโควตาวันนั้นเต็ม)",
+        opt_overflow_auto: "● Auto Next Available (เลื่อนไปหาวันทำการถัดไปที่มี Capacity ว่างอัตโนมัติ)",
+        opt_overflow_stop: "○ Stop Accepting (หยุดรับออร์เดอร์ชั่วคราว)",
+        lbl_prod_week: "Production Week (วันทำการผลิต)",
+        hint_click_to_toggle: "คลิกที่วันเพื่อสลับ เปิด/ปิด",
+        opt_schedule_custom: "กำหนดวันผลิตแยกอิสระ (Custom Workshop Schedule)",
+        opt_schedule_sync: "ใช้วันทำการเดียวกับหน้าร้าน (Sync with Shop Hours - Mon-Sat)",
+        prod_week_impact_hint: "* วันที่ตั้งเป็น OFF ระบบจะไม่นำมาคำนวณใน Lead Time และในปฏิทินจะขึ้นสถานะ CLOSED",
+        btn_close_settings: "Close Settings",
+        modal_booking_title: "Create Installation Booking",
+        modal_booking_connected: "เชื่อมต่อจาก Order OR-00125 (Somchai)",
+        lbl_items: "สินค้า:",
+        lbl_ready_date: "วันที่สินค้าผลิตพร้อม:",
+        lbl_pick_date: "เลือกวันนัดหมายติดตั้ง (Earliest: 9 Sep)",
+        lbl_bay_slot: "รอบเวลาที่ว่างจริง (Available Time Slots)",
+        modal_booking_hint: "💡 จุดนี้จะส่งต่อข้อมูลไปยัง <strong>Booking Engine เดิม</strong> โดยไม่ต้องทำข้อมูลซ้ำ ลูกค้าจะได้รับข้อความแจ้งเตือนทาง LINE หรือ SMS",
+        btn_confirm_booking: "Confirm Booking"
+      },
+      en: {
+        proto_badge: "Rough Prototype",
+        proto_subtitle: "Visual Concept for Owner Review (No DB / No Supabase)",
+        btn_toggle_cap: "Tenant Capabilities",
+        side_active_mods: "Active Modules:",
+        nav_dashboard: "Dashboard",
+        nav_sec_booking: "Booking",
+        nav_booking_cal: "Calendar",
+        nav_booking_list: "Bookings",
+        nav_sec_order: "Order",
+        nav_orders: "Orders",
+        nav_prod_calendar: "Production Calendar",
+        nav_products: "Products",
+        nav_sec_claim: "Claim",
+        nav_claims_list: "Claims List",
+        nav_customers: "Customers",
+        nav_settings: "Settings",
+        flow_title: "💡 Workflow Flow",
+        flow_desc: "Order → Lead Time & Capacity → Ready Date → Produce → <strong class=\"text-sky-300\">Create Booking</strong>",
+        dash_title: "Dashboard",
+        dash_desc: "Daily Business Overview — Technician Schedule & Production Capacity",
+        btn_new_order: "+ New Order",
+        stat_today_bookings: "Today's Bookings",
+        stat_today_bookings_sub: "● Today's on-site installation bookings",
+        stat_active_orders: "Active Orders",
+        stat_active_orders_sub: "Orders currently in pipeline",
+        stat_orders_ready: "Orders Ready",
+        stat_orders_ready_sub: "Ready for pickup / ready for Booking",
+        stat_capacity_today: "Production Capacity Today",
+        today_title: "Today",
+        today_desc: "Combined schedule: Shop Bookings & Production Orders for today",
+        badge_booking: "Booking",
+        badge_order: "Order",
+        item_adv_desc: "Customer: Worawit (Windshield fitment)",
+        item_xmax_desc: "Customer: Chanon (Oil change service)",
+        item_crashbar_cap: "Capacity 3 units",
+        badge_prod_today: "Production Today",
+        item_rack_ready: "Customer ready for pickup / Booking ready",
+        badge_ready: "Ready",
+        lbl_station_1: "Staff A (Technician A)",
+        lbl_station_2: "Staff B (Technician B)",
+        orders_title: "Orders",
+        orders_desc: "All custom fabrication and product orders for this shop",
+        filter_all: "All",
+        filter_confirmed: "Confirmed",
+        filter_inprogress: "In Progress",
+        filter_ready: "Ready",
+        filter_completed: "Completed",
+        th_order_id: "Order ID",
+        th_customer: "Customer",
+        th_items: "Items",
+        th_status: "Status",
+        th_ready_date: "Ready Date",
+        th_action: "Action",
+        status_confirmed: "Confirmed",
+        status_ready: "Ready",
+        status_in_progress: "In Progress",
+        txt_today: "Today",
+        btn_view_detail: "View Detail →",
+        new_order_title: "New Order",
+        new_order_desc: "Create fabrication/sales order with automated lead time & daily capacity scheduling",
+        form_customer_header: "Customer",
+        cust_primary_key_hint: "Used to match existing customer records",
+        form_customer_name: "Customer Name",
+        form_customer_mobile: "Mobile Phone",
+        lbl_linked_channel: "Linked Channel:",
+        lbl_auto_detect_line: "Auto-detected from LINE LIFF",
+        form_items_header: "Items",
+        items_selected_count: "2 items selected",
+        lbl_price: "Price:",
+        btn_add_item: "+ Add Item",
+        summary_header: "Order Summary",
+        summary_total: "Total Amount",
+        summary_req_capacity: "Required Capacity",
+        summary_min_lead: "Minimum Lead",
+        summary_min_lead_val: "3 production days",
+        summary_earliest_ready: "Earliest Ready",
+        summary_auto_title: "⚡ Auto Schedule",
+        summary_auto_desc: "Production schedule calculated automatically based on available daily capacity & workshop working days.",
+        btn_confirm_order: "Confirm Order",
+        status_confirmed_upper: "CONFIRMED",
+        payment_partially_paid: "Payment: PARTIALLY PAID",
+        created_date_txt: "Created on 4 Sep 2026",
+        btn_start_prod: "Start Production",
+        btn_mark_ready: "Mark Ready",
+        btn_complete_order: "Complete Order",
+        btn_cancel: "Cancel",
+        timeline_header: "Production Timeline",
+        step_draft: "Draft",
+        step_confirmed: "Confirmed",
+        step_inprogress: "In Progress",
+        step_ready: "Ready",
+        step_completed: "Completed",
+        cust_header: "Customer",
+        lbl_primary_channel: "(Primary)",
+        channel_line_linked: "🟢 LINE Linked (@somchai_adv)",
+        channel_auto_notify: "Automated production updates active via LINE",
+        btn_test_notify: "Test Push",
+        items_header: "Items",
+        txt_total: "Total",
+        prod_status_header: "Production Status",
+        confirmed_date: "Confirmed Date",
+        prod_date: "Production Date",
+        promised_ready_date: "Promised Ready Date",
+        capacity_reserved: "Capacity Reserved",
+        booking_hook_title: "Installation Booking",
+        booking_hook_status: "No appointment created",
+        booking_hook_desc: "When product is ready (9 Sep), shop can create an installation booking based on real technician availability.",
+        btn_create_booking: "[ Create Booking ]",
+        cal_title: "Production Calendar",
+        cal_desc: "Weekly workshop load & capacity balance (Daily Capacity Management)",
+        lbl_daily_limit: "Daily Limit:",
+        cal_weekly_header: "Production Capacity (7 – 12 Sep 2026)",
+        cal_mon_sub: "2 Orders Scheduled",
+        cal_tue_sub: "Workshop Closed / Weekly Rest Day",
+        badge_closed: "CLOSED",
+        badge_full: "FULL",
+        cal_wed_sub: "100% Full Capacity (2 Orders Scheduled)",
+        cal_thu_sub: "2 Orders Scheduled",
+        cal_fri_sub: "1 Large Order Scheduled",
+        cal_sat_sub: "1 Order Scheduled",
+        cal_panel_sub: "Day Details & Scheduled Orders",
+        cal_scheduled_work: "Scheduled Work",
+        btn_override_cap: "Override Capacity",
+        btn_close_day: "Close Day",
+        prod_title: "Products & Order Catalog",
+        prod_desc: "Configure products, pricing, production lead time, and capacity unit requirements",
+        btn_add_product: "+ Add Product",
+        th_product_name: "Product Name",
+        th_default_price: "Default Price",
+        th_lead_days: "Production Lead Days",
+        th_capacity_units: "Capacity Units",
+        status_active: "Active",
+        btn_edit: "Edit",
+        prod_lead_ready: "0 days (Ready in stock)",
+        modal_edit_prod_title: "Edit Product",
+        lbl_modal_prod_name: "Product Name",
+        lbl_modal_prod_price: "Default Price (THB)",
+        lbl_modal_lead_days: "Lead Days",
+        lbl_modal_cap_units: "Capacity Units",
+        lbl_modal_active: "Active (Accepting orders)",
+        btn_save_changes: "Save Changes",
+        modal_settings_title: "Settings",
+        modal_settings_sub: "Tenant Capability & Order Configuration",
+        sec_tenant_cap_title: "Tenant Capabilities",
+        sec_tenant_cap_sub: "Toggle shop capabilities (UI automatically hides disabled modules)",
+        cap_booking_name: "Booking Module",
+        cap_booking_desc: "Shop technician schedule & appointment booking",
+        cap_order_name: "Order Capability (NEW)",
+        cap_order_desc: "Fabrication ordering, lead times & daily capacity",
+        cap_claim_name: "Claim Module",
+        cap_claim_desc: "Warranty claims & maintenance requests",
+        sec_notification_settings: "Customer Notification & Auth Channel",
+        sec_notification_sub: "Define customer identity policy for online order & booking",
+        opt_auth_flexible_title: "● Maximum Flexibility (Recommended for Multi-Tenant SaaS)",
+        opt_auth_flexible_desc: "Phone number as universal primary ID. Customers don't have to add LINE, but auto-links if they use LINE LIFF.",
+        opt_auth_strict_title: "○ Require LINE OA (Community Style Shops)",
+        opt_auth_strict_desc: "Customers must add LINE OA before booking online (Ideal for shops with verified LINE OA & heavy broadcast)",
+        opt_auth_phone_title: "○ Phone Number Only (Traditional Garages)",
+        opt_auth_phone_desc: "No LINE connection. Suitable for traditional workshops without staff to manage LINE chat",
+        sec_order_settings_title: "Order Settings",
+        lbl_default_lead: "Default Lead Time",
+        lbl_daily_capacity: "Daily Capacity",
+        lbl_max_orders: "Max Orders Per Day",
+        lbl_overflow_behavior: "Overflow Behavior (When day capacity is full)",
+        opt_overflow_auto: "● Auto Next Available (Automatically push to next working day with available capacity)",
+        opt_overflow_stop: "○ Stop Accepting (Pause receiving new orders)",
+        lbl_prod_week: "Production Week (Working Days)",
+        hint_click_to_toggle: "Click day to toggle ON/OFF",
+        opt_schedule_custom: "Custom Workshop Schedule (Independent of shop hours)",
+        opt_schedule_sync: "Sync with Shop Operating Hours (Mon-Sat ON, Sun OFF)",
+        prod_week_impact_hint: "* Days marked as OFF are excluded from lead times and displayed as CLOSED in calendar",
+        btn_close_settings: "Close Settings",
+        modal_booking_title: "Create Installation Booking",
+        modal_booking_connected: "Connected from Order OR-00125 (Somchai)",
+        lbl_items: "Items:",
+        lbl_ready_date: "Ready Date:",
+        lbl_pick_date: "Select Installation Date (Earliest: 9 Sep)",
+        lbl_bay_slot: "Available Time Slots",
+        modal_booking_hint: "💡 This seamlessly feeds into the <strong>Original Booking Engine</strong> without re-entering data. Customers receive automatic LINE or SMS alerts.",
+        btn_confirm_booking: "Confirm Booking"
+      }
+    };
+
+    // Set Language Function
+    function setLanguage(lang) {
+      currentLang = lang;
+      const dict = translations[lang] || translations.th;
+
+      // Update toggle buttons UI
+      const btnTh = document.getElementById('lang-btn-th');
+      const btnEn = document.getElementById('lang-btn-en');
+      if (lang === 'th') {
+        btnTh.className = "px-2 py-0.5 rounded text-xs font-bold transition bg-amber-600 text-white flex items-center gap-1";
+        btnEn.className = "px-2 py-0.5 rounded text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1";
+      } else {
+        btnTh.className = "px-2 py-0.5 rounded text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1";
+        btnEn.className = "px-2 py-0.5 rounded text-xs font-bold transition bg-amber-600 text-white flex items-center gap-1";
+      }
+
+      // Update all elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.innerHTML = dict[key];
+        }
+      });
+
+      // Update input max orders text
+      const maxOrdersInput = document.getElementById('input-max-orders');
+      if (maxOrdersInput) {
+        maxOrdersInput.value = 'No Limit (Controlled by Capacity Units)';
+      }
+
+      showToast(lang === 'th' ? 'เปลี่ยนภาษาเป็น: ภาษาไทย (TH)' : 'Language switched to: English (EN)');
+    }
+
+    // View Switcher
+    function switchView(viewName) {
+      const views = ['dashboard', 'orders', 'new-order', 'order-detail', 'calendar', 'products'];
+      views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        if (el) el.classList.add('hidden');
+      });
+
+      const target = document.getElementById('view-' + viewName);
+      if (target) {
+        target.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // Update sidebar nav active state
+      const navButtons = ['dashboard', 'orders', 'calendar', 'products'];
+      navButtons.forEach(n => {
+        const btn = document.getElementById('nav-' + n);
+        if (btn) {
+          if (n === viewName || (n === 'orders' && (viewName === 'new-order' || viewName === 'order-detail'))) {
+            btn.classList.add('bg-sky-600', 'text-white');
+            btn.classList.remove('text-slate-300', 'hover:bg-slate-800/60');
+          } else {
+            btn.classList.remove('bg-sky-600', 'text-white');
+            btn.classList.add('text-slate-300', 'hover:bg-slate-800/60');
+          }
+        }
+      });
+    }
+
+    // Orders Filter
+    function setOrderFilter(filter) {
+      const filters = ['All', 'Confirmed', 'InProgress', 'Ready', 'Completed'];
+      filters.forEach(f => {
+        const btn = document.getElementById('filter-' + f);
+        if (btn) {
+          if (f === filter.replace(' ', '')) {
+            btn.className = 'px-3 py-1.5 rounded-md bg-slate-900 text-white font-medium';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900';
+          }
+        }
+      });
+      showToast(currentLang === 'th' ? 'กรองแสดงออร์เดอร์สถานะ: ' + filter : 'Filtered orders by status: ' + filter);
+    }
+
+    // Confirm Order Mock Action
+    function confirmOrderMock() {
+      showToast(currentLang === 'th' ? 'สร้างออร์เดอร์ OR-00125 และจองโควตา Capacity สำเร็จ!' : 'Order OR-00125 created & capacity reserved!');
+      setTimeout(() => {
+        switchView('order-detail');
+      }, 500);
+    }
+
+    // Current Order OR-00125 State
+    let currentOrderStatus = 'Confirmed';
+
+    // Update Status in Order Detail
+    function updateOrderStatus(status) {
+      currentOrderStatus = status;
+      const badge = document.getElementById('detail-status-badge');
+      const stepConfirmed = document.getElementById('timeline-step-confirmed');
+      const stepInProgress = document.getElementById('timeline-step-inprogress');
+      const stepReady = document.getElementById('timeline-step-ready');
+      const stepCompleted = document.getElementById('timeline-step-completed');
+
+      // Reset
+      stepConfirmed.className = 'h-2 rounded-full bg-slate-200';
+      stepInProgress.className = 'h-2 rounded-full bg-slate-200';
+      stepReady.className = 'h-2 rounded-full bg-slate-200';
+      stepCompleted.className = 'h-2 rounded-full bg-slate-200';
+
+      if (status === 'Confirmed') {
+        badge.className = 'badge-confirmed px-3 py-0.5 rounded-full text-xs font-bold uppercase';
+        badge.innerText = 'CONFIRMED';
+        stepConfirmed.className = 'h-2 rounded-full bg-sky-600';
+      } else if (status === 'In Progress') {
+        badge.className = 'badge-in_progress px-3 py-0.5 rounded-full text-xs font-bold uppercase';
+        badge.innerText = 'IN PROGRESS';
+        stepConfirmed.className = 'h-2 rounded-full bg-emerald-500';
+        stepInProgress.className = 'h-2 rounded-full bg-amber-500';
+      } else if (status === 'Ready') {
+        badge.className = 'badge-ready px-3 py-0.5 rounded-full text-xs font-bold uppercase';
+        badge.innerText = 'READY';
+        stepConfirmed.className = 'h-2 rounded-full bg-emerald-500';
+        stepInProgress.className = 'h-2 rounded-full bg-emerald-500';
+        stepReady.className = 'h-2 rounded-full bg-emerald-500';
+      } else if (status === 'Completed') {
+        badge.className = 'badge-completed px-3 py-0.5 rounded-full text-xs font-bold uppercase';
+        badge.innerText = 'COMPLETED';
+        stepConfirmed.className = 'h-2 rounded-full bg-emerald-500';
+        stepInProgress.className = 'h-2 rounded-full bg-emerald-500';
+        stepReady.className = 'h-2 rounded-full bg-emerald-500';
+        stepCompleted.className = 'h-2 rounded-full bg-purple-600';
+      }
+
+      // Sync booking creation eligibility
+      if (typeof updateBookingGatingUI === 'function') {
+        updateBookingGatingUI();
+      }
+
+      showToast(currentLang === 'th' ? 'อัปเดตสถานะออร์เดอร์เป็น: ' + status : 'Order status updated to: ' + status);
+    }
+
+    // Production Calendar Date Selector
+    function selectCalendarDate(dateStr, cap, maxCap, status, orders) {
+      document.getElementById('panel-date-title').innerText = dateStr;
+      const badge = document.getElementById('panel-capacity-badge');
+      const ordersContainer = document.getElementById('panel-orders-list');
+
+      if (status === 'CLOSED') {
+        badge.className = 'px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-slate-200 text-slate-600';
+        badge.innerText = 'CLOSED';
+        ordersContainer.innerHTML = `
+          <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-center text-slate-400 text-xs">
+            ${currentLang === 'th' ? 'วันหยุดทำการ — ไม่มีคิวงานผลิต' : 'Workshop Closed — No orders scheduled'}
+          </div>
+        `;
+        return;
+      }
+
+      if (status === 'FULL') {
+        badge.className = 'px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-rose-100 text-rose-700';
+        badge.innerText = `${cap} / ${maxCap} Full`;
+      } else {
+        badge.className = 'px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-100 text-emerald-700';
+        badge.innerText = `${cap} / ${maxCap} units`;
+      }
+
+      if (orders && orders.length > 0) {
+        let html = '';
+        orders.forEach(o => {
+          html += `
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex justify-between items-center hover:bg-slate-100/80 transition cursor-pointer" onclick="switchView('order-detail')">
+              <div>
+                <span class="font-mono font-bold text-sky-600">${o.id}</span>
+                <p class="text-slate-800 font-medium mt-0.5">${o.item}</p>
+              </div>
+              <span class="font-mono font-semibold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200">${o.cap} units</span>
+            </div>
+          `;
+        });
+        ordersContainer.innerHTML = html;
+      } else {
+        ordersContainer.innerHTML = `
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg text-center text-slate-400 text-xs">
+            ${currentLang === 'th' ? 'ไม่มีคิวงานผลิตในวันนี้' : 'No production orders scheduled today'}
+          </div>
+        `;
+      }
+      showToast(currentLang === 'th' ? 'ดูตารางงานวันที่: ' + dateStr : 'Viewing schedule for: ' + dateStr);
+    }
+
+    // Product Modal
+    function openEditProductModal(name, price, lead, cap, active) {
+      document.getElementById('prod-input-name').value = name;
+      document.getElementById('prod-input-price').value = price;
+      document.getElementById('prod-input-lead').value = lead;
+      document.getElementById('prod-input-cap').value = cap;
+      document.getElementById('prod-input-active').checked = active;
+      document.getElementById('modal-edit-product').classList.remove('hidden');
+    }
+
+    function closeEditProductModal() {
+      document.getElementById('modal-edit-product').classList.add('hidden');
+    }
+
+    function saveProductMock() {
+      closeEditProductModal();
+      showToast(currentLang === 'th' ? 'บันทึกข้อมูลสินค้าเรียบร้อย' : 'Product details saved successfully');
+    }
+
+    // Settings Modal & Capabilities
+    function openSettingsModal() {
+      document.getElementById('modal-settings').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('modal-settings').classList.add('hidden');
+    }
+
+    function toggleCapabilities() {
+      const isBooking = document.getElementById('cap-booking-toggle').checked;
+      const isOrder = document.getElementById('cap-order-toggle').checked;
+      const isClaim = document.getElementById('cap-claim-toggle').checked;
+
+      // Sidebar sections
+      const bookingSec = document.getElementById('section-nav-booking');
+      const orderSec = document.getElementById('section-nav-order');
+      const claimSec = document.getElementById('section-nav-claim');
+
+      if (bookingSec) bookingSec.style.display = isBooking ? 'block' : 'none';
+      if (orderSec) orderSec.style.display = isOrder ? 'block' : 'none';
+      if (claimSec) {
+        if (isClaim) {
+          claimSec.classList.remove('hidden');
+          claimSec.style.display = 'block';
+        } else {
+          claimSec.classList.add('hidden');
+          claimSec.style.display = 'none';
+        }
+      }
+
+      // Sidebar badges
+      document.getElementById('badge-cap-booking').innerText = isBooking ? 'BK:ON' : 'BK:OFF';
+      document.getElementById('badge-cap-booking').className = isBooking ? 'px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono text-[10px]' : 'px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-mono text-[10px]';
+
+      document.getElementById('badge-cap-order').innerText = isOrder ? 'OD:ON' : 'OD:OFF';
+      document.getElementById('badge-cap-order').className = isOrder ? 'px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono text-[10px]' : 'px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-mono text-[10px]';
+
+      document.getElementById('badge-cap-claim').innerText = isClaim ? 'CL:ON' : 'CL:OFF';
+      document.getElementById('badge-cap-claim').className = isClaim ? 'px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-mono text-[10px]' : 'px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-mono text-[10px]';
+
+      showToast(currentLang === 'th' ? 'อัปเดต Capability ตามสิทธิ์ร้านค้าแล้ว' : 'Tenant Capabilities updated successfully');
+    }
+
+    // Production Week Interactive State
+    let productionWeekState = {
+      mon: true,
+      tue: false, // Default Tuesday is closed
+      wed: true,
+      thu: true,
+      fri: true,
+      sat: true,
+      sun: false
+    };
+
+    function toggleProductionDay(day) {
+      productionWeekState[day] = !productionWeekState[day];
+      updateProductionDayUI(day);
+
+      // If Tuesday was toggled, dynamically update the weekly Production Calendar view!
+      if (day === 'tue') {
+        const calTue = document.getElementById('cal-day-tue');
+        if (calTue) {
+          if (productionWeekState.tue) {
+            calTue.className = "p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition shadow-sm flex items-center justify-between";
+            calTue.innerHTML = `
+              <div>
+                <div class="font-bold text-slate-900">Tue 8 Sep</div>
+                <div class="text-xs text-slate-500 mt-0.5">${currentLang === 'th' ? 'เปิดรับคิวผลิตตามปกติ (0 Orders)' : 'Open for production orders (0 Orders)'}</div>
+              </div>
+              <div class="flex items-center gap-4">
+                <div class="text-right">
+                  <span class="text-base font-bold text-emerald-600 font-mono">0 / 10 units</span>
+                  <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+                <span class="text-xs text-slate-400">→</span>
+              </div>
+            `;
+            calTue.setAttribute('onclick', "selectCalendarDate('Tue 8 Sep', 0, 10, 'NORMAL', [])");
+          } else {
+            calTue.className = "p-4 bg-slate-100/70 rounded-xl border border-dashed border-slate-300 cursor-pointer transition flex items-center justify-between";
+            calTue.innerHTML = `
+              <div>
+                <div class="font-bold text-slate-500">Tue 8 Sep</div>
+                <div class="text-xs text-slate-400 mt-0.5">${currentLang === 'th' ? 'วันหยุดโรงกลึง / ช่างพักประจำสัปดาห์' : 'Workshop Closed / Weekly Rest Day'}</div>
+              </div>
+              <span class="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-600">CLOSED</span>
+            `;
+            calTue.setAttribute('onclick', "selectCalendarDate('Tue 8 Sep', 0, 0, 'CLOSED', [])");
+          }
+        }
+      }
+
+      const dayNames = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+      const statusText = productionWeekState[day] ? (currentLang === 'th' ? 'เปิดทำการผลิต (ON)' : 'Open for Production (ON)') : (currentLang === 'th' ? 'วันหยุดโรงผลิต (OFF / Closed)' : 'Workshop Closed (OFF)');
+      showToast(`${dayNames[day]}: ${statusText}`);
+    }
+
+    function updateProductionDayUI(day) {
+      const btn = document.getElementById('day-btn-' + day);
+      const dayNames = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+      if (!btn) return;
+
+      if (productionWeekState[day]) {
+        btn.className = "p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition shadow-sm";
+        btn.innerHTML = `${dayNames[day]}<br><span id="day-status-${day}" class="text-[10px] font-normal text-emerald-700">ON</span>`;
+      } else {
+        btn.className = "p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-300 font-bold transition shadow-sm";
+        btn.innerHTML = `${dayNames[day]}<br><span id="day-status-${day}" class="text-[10px] font-bold text-rose-600">OFF</span>`;
+      }
+    }
+
+    function toggleScheduleSync(syncWithShop) {
+      if (syncWithShop) {
+        // Sync with Shop: Mon-Sat ON, Sun OFF
+        ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'].forEach(d => {
+          productionWeekState[d] = true;
+          updateProductionDayUI(d);
+        });
+        productionWeekState['sun'] = false;
+        updateProductionDayUI('sun');
+
+        // Ensure Tue in calendar opens
+        const calTue = document.getElementById('cal-day-tue');
+        if (calTue) {
+          calTue.className = "p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition shadow-sm flex items-center justify-between";
+          calTue.innerHTML = `
+            <div>
+              <div class="font-bold text-slate-900">Tue 8 Sep</div>
+              <div class="text-xs text-slate-500 mt-0.5">${currentLang === 'th' ? 'เปิดรับคิวผลิตตามปกติ (0 Orders)' : 'Open for production orders (0 Orders)'}</div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="text-base font-bold text-emerald-600 font-mono">0 / 10 units</span>
+                <div class="w-24 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <span class="text-xs text-slate-400">→</span>
+            </div>
+          `;
+          calTue.setAttribute('onclick', "selectCalendarDate('Tue 8 Sep', 0, 10, 'NORMAL', [])");
+        }
+
+        showToast(currentLang === 'th' ? 'Sync กับวันเปิดหน้าร้านเรียบร้อย (Mon-Sat ON, Sun OFF)' : 'Synced with shop operating hours (Mon-Sat ON, Sun OFF)');
+      } else {
+        showToast(currentLang === 'th' ? 'สลับเป็นโหมดกำหนดวันผลิตแยกอิสระ' : 'Switched to custom workshop schedule');
+      }
+    }
+
+    // Booking Engine State & Authority Model (Staff + Time)
+    let selectedBookingDuration = 120; // Default 120 minutes
+    let isBookingCreated = false;
+    let linkedBookingStatus = 'CONFIRMED'; // CONFIRMED or COMPLETED
+    let activeBooking = null;
+
+    // Gating UI update according to Order Status (P1.1)
+    function updateBookingGatingUI() {
+      const btnCreate = document.getElementById('btn-create-booking');
+      const gatingMsg = document.getElementById('booking-gating-msg');
+      if (!btnCreate) return;
+
+      if (currentOrderStatus === 'Ready') {
+        btnCreate.disabled = false;
+        btnCreate.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer";
+        if (gatingMsg) {
+          gatingMsg.className = "p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-[11px] text-emerald-800 leading-relaxed";
+          gatingMsg.innerHTML = currentLang === 'th'
+            ? '✅ สินค้าผลิตเสร็จแล้ว (READY) พร้อมสำหรับสร้าง Booking นัดหมายบริการติดตั้งหน้าร้าน'
+            : '✅ Order is READY. Ready to create installation booking.';
+        }
+      } else {
+        btnCreate.disabled = true;
+        btnCreate.className = "w-full bg-slate-300 text-slate-500 py-2 rounded-lg font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-not-allowed transition";
+        if (gatingMsg) {
+          gatingMsg.className = "p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-800 leading-relaxed";
+          gatingMsg.innerHTML = currentLang === 'th'
+            ? '🔒 รอสินค้าผลิตเสร็จ (สถานะ READY) ก่อน จึงจะสามารถสร้าง Booking นัดคิวติดตั้งได้'
+            : '🔒 Waiting for Order to be READY before creating installation booking.';
+        }
+      }
+    }
+
+    function selectBookingDuration(mins, isCustom = false) {
+      selectedBookingDuration = mins;
+      const pills = [30, 60, 90, 120];
+      pills.forEach(p => {
+        const btn = document.getElementById('btn-duration-' + p);
+        if (btn) {
+          if (!isCustom && p === mins) {
+            btn.className = "py-1.5 px-2 rounded-lg bg-sky-600 text-white font-bold border border-sky-600 shadow-sm transition text-center";
+          } else {
+            btn.className = "py-1.5 px-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition text-center";
+          }
+        }
+      });
+
+      const customInput = document.getElementById('input-custom-duration');
+      if (customInput && !isCustom) {
+        customInput.value = '';
+      }
+
+      const summaryText = document.getElementById('duration-summary-text');
+      if (summaryText) {
+        summaryText.innerText = isCustom ? `Custom: ${mins} นาที` : `Selected: ${mins} นาที`;
+      }
+      const label = document.getElementById('current-duration-label');
+      if (label) {
+        label.innerText = `ตรวจเช็คช่วงเวลา ${mins} นาที`;
+      }
+      renderBookingSlots();
+    }
+
+    function handleCustomDurationInput(val) {
+      const mins = parseInt(val, 10);
+      if (mins && mins >= 15 && mins <= 480) {
+        selectBookingDuration(mins, true);
+      }
+    }
+
+    // Dynamic slot calculator helper
+    function addMinutesToTime(startStr, minsToAdd) {
+      const [h, m] = startStr.split(':').map(Number);
+      const totalMins = h * 60 + m + minsToAdd;
+      const endH = Math.floor(totalMins / 60);
+      const endM = totalMins % 60;
+      return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    }
+
+    function renderBookingSlots() {
+      const container = document.getElementById('booking-slots-list');
+      if (!container) return;
+
+      const staffSelect = document.getElementById('booking-staff-select');
+      const staffVal = staffSelect ? staffSelect.value : 'staff_a';
+      const dateInput = document.getElementById('booking-date-select');
+      const dateVal = dateInput ? dateInput.value : '2026-09-10';
+
+      // 1. Check Date Constraints (P1.3 / P2)
+      if (dateVal === '2026-09-08') {
+        container.innerHTML = `
+          <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs space-y-1">
+            <div class="font-bold flex items-center gap-1.5">
+              <span>🚫 วันอังคาร 8 ก.ย. ร้านปิดทำการ (Shop Closed) & สินค้ายังไม่พร้อมรับ</span>
+            </div>
+            <p class="text-[11px] text-rose-700 leading-relaxed">
+              วันหยุดประจำสัปดาห์ของช่าง/โรงกลึง และสินค้าของออเดอร์นี้มีกำหนดเสร็จเร็วที่สุดคือ <strong>9 Sep 2026</strong> จึงไม่สามารถสร้างคิวนัดติดตั้งได้
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      if (dateVal < '2026-09-09') {
+        container.innerHTML = `
+          <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs space-y-1">
+            <div class="font-bold flex items-center gap-1.5">
+              <span>⚠️ วันที่เลือกไม่ถูกต้อง (สินค้ายังไม่พร้อมรับ)</span>
+            </div>
+            <p class="text-[11px] text-rose-700 leading-relaxed">
+              สินค้าของออเดอร์นี้มีกำหนดเสร็จเร็วที่สุดคือ <strong>9 Sep 2026</strong> จึงไม่สามารถสร้างคิวนัดติดตั้งก่อนวันสินค้าพร้อมรับได้
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      const dayOfWeek = new Date(dateVal + 'T12:00:00Z').getUTCDay();
+      if (dayOfWeek === 0) { // Sunday
+        container.innerHTML = `
+          <div class="p-4 bg-slate-100 border border-slate-300 rounded-xl text-slate-600 text-xs text-center space-y-1">
+            <div class="font-bold text-slate-800">🚫 วันอาทิตย์ ร้านปิดทำการ (Shop Closed)</div>
+            <p class="text-[11px] text-slate-500">ไม่มีคิวบริการติดตั้งในวันอาทิตย์ กรุณาเลือกวันจันทร์ - เสาร์</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Special case: 9 Sep (Ready Date) - Respects selected staff authority (P1)
+      if (dateVal === '2026-09-09') {
+        const slot1End = addMinutesToTime('16:30', selectedBookingDuration);
+        let html = `
+          <div class="p-2.5 bg-sky-50 border border-sky-200 rounded-lg text-xs text-sky-900 mb-2">
+            💡 <strong>9 ก.ย. วันสินค้าพร้อมรับ:</strong> ชิ้นงานผลิตเสร็จช่วงบ่าย 16:00 น. มีเฉพาะรอบบริการช่วงเย็นที่สามารถจองได้
+          </div>
+        `;
+        if (selectedBookingDuration <= 90) {
+          let assignedStaff = '';
+          let subText = '';
+          if (staffVal === 'staff_a') {
+            assignedStaff = 'ช่าง A (Staff A)';
+            subText = 'ช่าง A ว่าง (หลังรับมอบชิ้นงาน 16:00 น.)';
+          } else if (staffVal === 'staff_b') {
+            assignedStaff = 'ช่าง B (Staff B)';
+            subText = 'ช่าง B ว่าง (หลังรับมอบชิ้นงาน 16:00 น.)';
+          } else {
+            // Any staff: resolve an actually available staff
+            assignedStaff = 'ช่าง A (Staff A)';
+            subText = 'ทั้งช่าง A และช่าง B ว่าง (จัดสรรช่าง A ผู้เชี่ยวชาญ)';
+          }
+
+          html += `
+            <label class="p-3 bg-white border border-slate-200 hover:border-emerald-400 rounded-xl flex items-center justify-between cursor-pointer transition shadow-xs">
+              <div class="flex items-center gap-2.5">
+                <input type="radio" name="booking-slot" value="16:30 - ${slot1End}" checked class="text-emerald-600 focus:ring-emerald-500" data-slot-text="16:30–${slot1End}" data-assigned-staff="${assignedStaff}">
+                <div>
+                  <div class="font-bold text-slate-900">16:30 - ${slot1End} น. (${selectedBookingDuration} นาที)</div>
+                  <div class="text-[11px] text-emerald-700 font-medium">✓ ${subText}</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">AVAILABLE</span>
+            </label>
+          `;
+        } else {
+          html += `
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+              ⚠️ งานบริการ ${selectedBookingDuration} นาที เกินเวลาทำการหลังสินค้าผลิตเสร็จ (เปิดถึง 18:00 น.) แนะนำเลือกวันถัดไป (10 ก.ย.)
+            </div>
+          `;
+        }
+        container.innerHTML = html;
+        return;
+      }
+
+      // Base Slots configuration
+      const baseStarts = ['10:00', '13:00', '15:00'];
+      let slots = [];
+
+      baseStarts.forEach(start => {
+        const end = addMinutesToTime(start, selectedBookingDuration);
+        const timeRangeText = `${start} - ${end} น. (${selectedBookingDuration} นาที)`;
+
+        let staffAFree = true;
+        let staffBFree = true;
+        let staffAReason = 'ช่าง A ว่าง';
+        let staffBReason = 'ช่าง B ว่าง';
+
+        if (dateVal === '2026-09-10') {
+          // Staff A has BK-2026-0903 at 14:00-14:30
+          if (start === '13:00') {
+            if (selectedBookingDuration > 60) {
+              staffAFree = false;
+              staffAReason = '⚠️ ช่าง A ติดคิวเดิม BK-2026-0903 (14:00–14:30 น.)';
+            } else {
+              staffAReason = '✓ จองได้ (ไม่ทับคิว 14:00–14:30 น.)';
+            }
+          }
+
+          // Staff B has BK-2026-0902 at 11:00-11:45
+          if (start === '10:00') {
+            if (selectedBookingDuration > 60) {
+              staffBFree = false;
+              staffBReason = '⚠️ ช่าง B ติดคิวเดิม BK-2026-0902 (11:00–11:45 น.)';
+            } else {
+              staffBReason = '✓ จองได้ (ไม่ทับคิว 11:00–11:45 น.)';
+            }
+          }
+        } else if (dateVal === '2026-09-11') {
+          // Staff A is free all day on 11 Sep
+          // Staff B has service check at 13:30-15:00
+          if (start === '13:00') {
+            if (selectedBookingDuration > 30) {
+              staffBFree = false;
+              staffBReason = '⚠️ ช่าง B ติดคิวเช็คระยะ (13:30–15:00 น.)';
+            }
+          }
+        } else if (dateVal === '2026-09-12') {
+          // Saturday busy morning
+          if (start === '10:00') {
+            staffAFree = false;
+            staffBFree = false;
+            staffAReason = '⚠️ เสาร์เช้าคิวเต็ม';
+            staffBReason = '⚠️ เสาร์เช้าคิวเต็ม';
+          }
+        }
+
+        // Determine availability based on selected staff
+        let isAvailable = false;
+        let subText = '';
+        let assignedStaff = '';
+
+        if (staffVal === 'staff_a') {
+          isAvailable = staffAFree;
+          subText = staffAReason;
+          assignedStaff = 'ช่าง A (Staff A)';
+        } else if (staffVal === 'staff_b') {
+          isAvailable = staffBFree;
+          subText = staffBReason;
+          assignedStaff = 'ช่าง B (Staff B)';
+        } else {
+          // Any Staff
+          if (staffAFree && staffBFree) {
+            isAvailable = true;
+            subText = 'ทั้งช่าง A และช่าง B ว่าง';
+            assignedStaff = 'ช่าง A (Staff A)';
+          } else if (staffAFree) {
+            isAvailable = true;
+            subText = 'มีช่าง A ว่าง (ช่าง B ไม่ว่าง)';
+            assignedStaff = 'ช่าง A (Staff A)';
+          } else if (staffBFree) {
+            isAvailable = true;
+            subText = 'มีช่าง B ว่าง (ช่าง A ไม่ว่าง)';
+            assignedStaff = 'ช่าง B (Staff B)';
+          } else {
+            isAvailable = false;
+            subText = 'ช่างทุกคนติดคิวบริการอื่น';
+            assignedStaff = '';
+          }
+        }
+
+        slots.push({
+          start,
+          end,
+          timeRangeText,
+          isAvailable,
+          subText,
+          assignedStaff
+        });
+      });
+
+      // Render slots
+      let hasCheckedFirst = false;
+      let slotsHtml = slots.map(slot => {
+        if (slot.isAvailable) {
+          const checkedAttr = !hasCheckedFirst ? 'checked' : '';
+          if (!hasCheckedFirst) hasCheckedFirst = true;
+          return `
+            <label class="p-3 bg-white border border-slate-200 hover:border-emerald-400 rounded-xl flex items-center justify-between cursor-pointer transition shadow-xs">
+              <div class="flex items-center gap-2.5">
+                <input type="radio" name="booking-slot" value="${slot.start} - ${slot.end}" ${checkedAttr} class="text-emerald-600 focus:ring-emerald-500" data-slot-text="${slot.start}–${slot.end}" data-assigned-staff="${slot.assignedStaff}">
+                <div>
+                  <div class="font-bold text-slate-900">${slot.timeRangeText}</div>
+                  <div class="text-[11px] text-slate-500">${slot.subText}</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">AVAILABLE</span>
+            </label>
+          `;
+        } else {
+          return `
+            <label class="p-3 bg-slate-100/70 border border-rose-200 rounded-xl flex items-center justify-between opacity-75 cursor-not-allowed">
+              <div class="flex items-center gap-2.5">
+                <input type="radio" name="booking-slot" value="${slot.start} - ${slot.end}" disabled class="text-slate-400">
+                <div>
+                  <div class="font-bold text-slate-500 line-through">${slot.timeRangeText}</div>
+                  <div class="text-[11px] text-rose-600 font-medium">${slot.subText}</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">UNAVAILABLE</span>
+            </label>
+          `;
+        }
+      }).join('');
+
+      container.innerHTML = slotsHtml;
+    }
+
+    // Booking Modal Hook (P1.1 Gating Guard)
+    function openCreateBookingMock() {
+      if (currentOrderStatus !== 'Ready') {
+        alert(currentLang === 'th'
+          ? 'ไม่สามารถสร้าง Booking ได้ในขณะที่ออเดอร์ยังไม่เสร็จ (สถานะปัจจุบัน: ' + currentOrderStatus + ')\nกรุณารอหรือกด "Mark Ready" ให้สินค้าพร้อมรับก่อน'
+          : 'Cannot create booking while order is not READY (Current: ' + currentOrderStatus + ')');
+        return;
+      }
+      selectBookingDuration(120);
+      document.getElementById('modal-create-booking').classList.remove('hidden');
+    }
+
+    function closeCreateBookingMock() {
+      document.getElementById('modal-create-booking').classList.add('hidden');
+    }
+
+    // Confirm Booking with Value Persistence (P1.4)
+    function submitBookingMock() {
+      const selectedSlotRadio = document.querySelector('input[name="booking-slot"]:checked');
+      if (!selectedSlotRadio) {
+        alert(currentLang === 'th' ? 'กรุณาเลือกรอบเวลาที่ต้องการจอง' : 'Please select a time slot.');
+        return;
+      }
+
+      const slotTime = selectedSlotRadio.value;
+      const staffSelect = document.getElementById('booking-staff-select');
+      const staffVal = staffSelect ? staffSelect.value : 'staff_a';
+      const dateInput = document.getElementById('booking-date-select');
+      const selectedDate = dateInput ? dateInput.value : '2026-09-10';
+
+      // Resolve staff directly from the selected slot's dataset.assignedStaff
+      // to guarantee availability staff === persisted Booking staff 100%
+      let staffLabel = selectedSlotRadio.dataset.assignedStaff;
+      if (!staffLabel) {
+        if (staffVal === 'staff_b') staffLabel = 'ช่าง B (Staff B)';
+        else staffLabel = 'ช่าง A (Staff A)';
+      }
+
+      // Format date for display: e.g. 2026-09-10 -> 10 Sep 2026
+      const dateParts = selectedDate.split('-');
+      const d = parseInt(dateParts[2], 10);
+      const mIndex = parseInt(dateParts[1], 10);
+      const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const formattedDate = `${d} ${months[mIndex]} ${dateParts[0]}`;
+
+      activeBooking = {
+        id: 'BK-2026-0910',
+        date: selectedDate,
+        dateFormatted: formattedDate,
+        slot: slotTime,
+        duration: selectedBookingDuration,
+        staff: staffLabel,
+        status: 'CONFIRMED'
+      };
+
+      closeCreateBookingMock();
+      isBookingCreated = true;
+      linkedBookingStatus = 'CONFIRMED';
+
+      const emptyBlock = document.getElementById('booking-block-empty');
+      const linkedBlock = document.getElementById('booking-block-linked');
+      const badge = document.getElementById('linked-booking-status-badge');
+      if (emptyBlock) emptyBlock.classList.add('hidden');
+      if (linkedBlock) linkedBlock.classList.remove('hidden');
+      if (badge) {
+        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+        badge.innerText = 'CONFIRMED';
+      }
+
+      // Persist values in Linked Booking Block (Order Detail)
+      const elDt = document.getElementById('linked-booking-datetime');
+      if (elDt) elDt.innerText = `${formattedDate}, ${slotTime}`;
+      const elStaff = document.getElementById('linked-booking-staff');
+      if (elStaff) elStaff.innerText = staffLabel;
+      const elService = document.getElementById('linked-booking-service');
+      if (elService) elService.innerText = `บริการติดตั้งชิ้นงาน (${selectedBookingDuration} min)`;
+
+      // Persist values in View Booking Modal
+      const modalDt = document.getElementById('view-modal-datetime');
+      if (modalDt) modalDt.innerText = `${formattedDate}, ${slotTime}`;
+      const modalStaff = document.getElementById('view-modal-staff');
+      if (modalStaff) modalStaff.innerText = staffLabel;
+      const modalDur = document.getElementById('view-modal-duration-txt');
+      if (modalDur) modalDur.innerText = `${selectedBookingDuration} นาที (Installation Service)`;
+
+      // Persist values in Bookings List Modal
+      const listTime = document.getElementById('booking-list-service-time');
+      if (listTime) listTime.innerHTML = `บริการติดตั้งพาร์ต<br><span class="text-emerald-700 font-mono font-bold">${slotTime} (${selectedBookingDuration}m)</span>`;
+      const listStaff = document.getElementById('booking-list-staff');
+      if (listStaff) listStaff.innerText = staffLabel.split(' ')[0] + ' ' + (staffLabel.split(' ')[1] || '');
+
+      showToast(currentLang === 'th'
+        ? `สร้างคิว ${activeBooking.id} (${staffLabel}, ${slotTime}) สำเร็จ! (สถานะ Order ยังคงเป็น READY ตามกฎ Decoupled)`
+        : `Booking ${activeBooking.id} (${staffLabel}) created! (Order status remains READY via Decoupled rule)`);
+    }
+
+    // Prototype Reset (P2.10)
+    function unlinkBookingMock() {
+      isBookingCreated = false;
+      activeBooking = null;
+      const emptyBlock = document.getElementById('booking-block-empty');
+      const linkedBlock = document.getElementById('booking-block-linked');
+      if (emptyBlock) emptyBlock.classList.remove('hidden');
+      if (linkedBlock) linkedBlock.classList.add('hidden');
+      showToast(currentLang === 'th' ? 'รีเซ็ตสถานะ Booking จำลองเรียบร้อย' : 'Mock booking state reset');
+    }
+
+    // View Linked Booking Modal
+    function openViewBookingModal() {
+      const modalBadge = document.getElementById('booking-modal-status-badge');
+      const btnComplete = document.getElementById('btn-complete-booking');
+      const durText = document.getElementById('view-modal-duration-txt');
+      if (durText && activeBooking) {
+        durText.innerText = `${activeBooking.duration} นาที (Installation Service)`;
+      }
+
+      if (modalBadge) {
+        if (linkedBookingStatus === 'COMPLETED') {
+          modalBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200';
+          modalBadge.innerText = 'COMPLETED';
+          if (btnComplete) {
+            btnComplete.innerText = '✓ Completed (ติดตั้งเสร็จเรียบร้อย)';
+            btnComplete.disabled = true;
+            btnComplete.className = 'w-full py-2 bg-slate-300 text-slate-500 rounded-lg text-xs font-bold cursor-not-allowed';
+          }
+        } else {
+          modalBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+          modalBadge.innerText = 'CONFIRMED';
+          if (btnComplete) {
+            btnComplete.innerText = '✓ Complete Booking (ช่างติดตั้งเสร็จแล้ว)';
+            btnComplete.disabled = false;
+            btnComplete.className = 'w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-sm';
+          }
+        }
+      }
+      document.getElementById('modal-view-booking').classList.remove('hidden');
+    }
+
+    function closeViewBookingModal() {
+      document.getElementById('modal-view-booking').classList.add('hidden');
+    }
+
+    function completeBookingFromModal() {
+      linkedBookingStatus = 'COMPLETED';
+      const modalBadge = document.getElementById('booking-modal-status-badge');
+      const detailBadge = document.getElementById('linked-booking-status-badge');
+      const btnComplete = document.getElementById('btn-complete-booking');
+
+      if (modalBadge) {
+        modalBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200';
+        modalBadge.innerText = 'COMPLETED';
+      }
+      if (detailBadge) {
+        detailBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200';
+        detailBadge.innerText = 'COMPLETED';
+      }
+      if (btnComplete) {
+        btnComplete.innerText = '✓ Completed (ติดตั้งเสร็จเรียบร้อย)';
+        btnComplete.disabled = true;
+        btnComplete.className = 'w-full py-2 bg-slate-300 text-slate-500 rounded-lg text-xs font-bold cursor-not-allowed';
+      }
+
+      alert(currentLang === 'th'
+        ? '✅ Booking สถานะเป็น COMPLETED แล้ว!\n\nสังเกต: Order OR-00125 ยังคงสถานะ READY (ไม่เปลี่ยนเป็น Completed อัตโนมัติ)\nแอดมินต้องตรวจรับมอบสินค้าและเช็คยอดชำระเงินก่อนกด "Complete Order" ในหน้ารายละเอียดออเดอร์ด้วยตนเอง'
+        : '✅ Booking is now COMPLETED!\n\nNotice: Order OR-00125 remains READY (no auto-completion).\nAdmin must inspect delivered parts and balance payment before clicking "Complete Order" manually.');
+
+      showToast(currentLang === 'th' ? 'Booking: COMPLETED (Order ยังคง READY)' : 'Booking: COMPLETED (Order remains READY)');
+    }
+
+    // Bookings List Modal
+    function openBookingsListModal() {
+      document.getElementById('modal-bookings-list').classList.remove('hidden');
+    }
+
+    function closeBookingsListModal() {
+      document.getElementById('modal-bookings-list').classList.add('hidden');
+    }
+
+    // Initialize gating state on load
+    window.addEventListener('DOMContentLoaded', () => {
+      updateBookingGatingUI();
+    });
+
+    // Toast Notification helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      if (toast && text) {
+        text.innerText = msg;
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0');
+        }, 2600);
+      }
+    }
+  </script>
+</body>
+</html>

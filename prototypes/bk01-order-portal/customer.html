@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KMO Fabrication & Studio — สั่งซื้อสินค้าล่วงหน้า (Pre-Order)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Kanit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            slate: {
+              950: '#0b0f19',
+              900: '#111827',
+              850: '#162032',
+              800: '#1f2937',
+              700: '#374151',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-300">
+
+  <!-- Desktop Mobile Frame Wrapper (Centered for desktop, 100% on mobile) -->
+  <div class="max-w-md mx-auto w-full min-h-screen flex flex-col bg-slate-900 border-x border-slate-800 shadow-2xl relative">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <button id="header-back-btn" onclick="handlePrevStep()" class="hidden -ml-1 p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="ย้อนกลับ">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center font-bold text-slate-950 text-sm shadow-md shadow-amber-500/20">
+          K
+        </div>
+        <div>
+          <h1 class="text-xs font-bold text-white tracking-wide">KMO RACING & FABRICATION</h1>
+          <p class="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            เปิดรับออเดอร์ผลิต (Pre-Order)
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Link to Admin Portal -->
+      <a href="index.html" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-medium border border-slate-700/60 transition flex items-center gap-1.5">
+        <span>🏢 หลังบ้าน</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+    </header>
+
+    <!-- Stepper Progress Bar (Only for Step 1 - 4) -->
+    <div id="step-indicator-bar" class="bg-slate-900/60 border-b border-slate-800/60 px-4 py-2.5 flex items-center justify-between text-[11px]">
+      <div class="flex items-center gap-1.5 text-amber-400 font-medium" id="step-badge-1">
+        <span class="w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-[10px]">1</span>
+        <span>สินค้า</span>
+      </div>
+      <div class="w-4 h-0.5 bg-slate-800" id="step-line-1"></div>
+      <div class="flex items-center gap-1.5 text-slate-500 font-medium" id="step-badge-2">
+        <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px]">2</span>
+        <span>วันรับของ</span>
+      </div>
+      <div class="w-4 h-0.5 bg-slate-800" id="step-line-2"></div>
+      <div class="flex items-center gap-1.5 text-slate-500 font-medium" id="step-badge-3">
+        <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px]">3</span>
+        <span>ผู้สั่ง</span>
+      </div>
+      <div class="w-4 h-0.5 bg-slate-800" id="step-line-3"></div>
+      <div class="flex items-center gap-1.5 text-slate-500 font-medium" id="step-badge-4">
+        <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px]">4</span>
+        <span>มัดจำ</span>
+      </div>
+    </div>
+
+    <!-- MAIN BODY CONTAINER -->
+    <main class="flex-1 p-4 pb-28">
+
+      <!-- =============================================================== -->
+      <!-- STEP 1: CATALOG / SELECT PRODUCTS -->
+      <!-- =============================================================== -->
+      <section id="view-step-1" class="space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-white">เลือกสินค้าที่ต้องการสั่งทำ</h2>
+          <p class="text-xs text-slate-400">สินค้าสั่งผลิตตามคิว กรุณาเผื่อเวลาเตรียมของตามที่ระบุ</p>
+        </div>
+
+        <!-- Product Cards Container -->
+        <div class="space-y-3" id="product-list-container">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- STEP 2: DATE PICKER WITH CAPACITY ENGINE -->
+      <!-- =============================================================== -->
+      <section id="view-step-2" class="space-y-4 hidden">
+        <div>
+          <button onclick="goToStep(1)" class="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 mb-2 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            ย้อนกลับไปเลือกสินค้า
+          </button>
+          <h2 class="text-base font-bold text-white">อยากรับสินค้าวันไหน?</h2>
+          <p class="text-xs text-slate-400">ระบบคำนวณจากระยะเวลาผลิต + ปฏิทินร้านค้า เพื่อให้ได้วันรับของที่แม่นยำที่สุด</p>
+        </div>
+
+        <!-- Earliest Ready Highlight Card (Consumer Friendly) -->
+        <div class="bg-gradient-to-r from-emerald-950/40 to-slate-950 border border-emerald-500/30 rounded-xl p-3.5 space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-300 font-medium">วันที่พร้อมส่งมอบเร็วที่สุด:</span>
+            <span class="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30" id="calc-earliest-date">พฤหัส 10 ก.ย. 2026</span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            คำนวณจากระยะเวลาเตรียมของ <span class="text-amber-400 font-bold" id="calc-lead-time">3 วันทำการ</span> และคิวงานปัจจุบันของร้าน
+          </p>
+        </div>
+
+        <!-- Interactive 7-Day Calendar (Disabled for Full/Closed days) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-slate-200">ต้องการวันอื่น? เลือกวันรับที่สะดวก:</span>
+            <span class="text-[11px] text-slate-400">สัปดาห์ 7–13 ก.ย.</span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-2" id="calendar-day-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Interactive Capacity Warning Banner (When user clicks a full day) -->
+        <div id="capacity-alert-box" class="hidden p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs space-y-2 animate-fade-in">
+          <div class="flex items-start gap-2 text-rose-300">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>
+              <p class="font-bold" id="capacity-alert-title">วันที่ 9 ก.ย. คิวผลิตเต็มแล้ว!</p>
+              <p class="text-[11px] text-rose-300/80 mt-0.5">โรงงานมีภาระงานเต็มโควต้า ไม่สามารถแทรกงานได้ วันที่พร้อมรับเร็วที่สุดคือ <span class="font-bold text-emerald-300">วันพฤหัส 10 ก.ย.</span></p>
+            </div>
+          </div>
+          <button onclick="selectDate('2026-09-10')" class="w-full py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 rounded-lg font-bold text-xs transition border border-rose-500/40">
+            👉 เลือกวันพฤหัส 10 ก.ย. (วันที่เร็วที่สุด)
+          </button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- STEP 3: CUSTOMER DETAILS (NO MANUAL LINE ID)                    -->
+      <!-- =============================================================== -->
+      <section id="view-step-3" class="space-y-4 hidden">
+        <div>
+          <button onclick="goToStep(2)" class="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 mb-2 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            ย้อนกลับไปเลือกวัน
+          </button>
+          <h2 class="text-base font-bold text-white">ข้อมูลผู้สั่งซื้อ</h2>
+          <p class="text-xs text-slate-400">ใช้เบอร์โทรศัพท์เพื่อค้นหาประวัติและรับแจ้งเตือนเมื่อสินค้าพร้อมรับ</p>
+        </div>
+
+        <form id="customer-form" class="space-y-3" onsubmit="event.preventDefault(); goToStep(4);">
+          <div>
+            <label class="block text-xs text-slate-300 font-medium mb-1">ชื่อ-นามสกุล ผู้สั่งซื้อ *</label>
+            <input type="text" id="cust-name" required value="สมชาย มั่นคง" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none transition">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-300 font-medium mb-1">เบอร์โทรศัพท์มือถือ * (ใช้ค้นหา/จับคู่ลูกค้าเดิมของร้าน)</label>
+            <input type="tel" id="cust-phone" required value="081-234-5678" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white font-mono focus:border-amber-500 focus:outline-none transition">
+            <p class="text-[10px] text-slate-500 mt-1">💡 ระบบจะตรวจสอบกับฐานข้อมูลร้าน หากเคยสั่งซื้อแล้วจะดึงประวัติให้อัตโนมัติ</p>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-300 font-medium mb-1">หมายเหตุเพิ่มเติมถึงร้าน (ถ้ามี)</label>
+            <textarea id="cust-note" rows="2" placeholder="เช่น สีพาวเดอร์โค้ทดำด้าน, ช่วยโทรแจ้งก่อนส่ง" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none transition"></textarea>
+          </div>
+
+          <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
+            <span>💬</span>
+            <span>ไม่ต้องพิมพ์ LINE ID — หลังสั่งซื้อเสร็จคุณสามารถกดปุ่มเชื่อมต่อเพื่อรับแจ้งเตือนสถานะผ่าน LINE ได้ทันที</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- STEP 4: DEPOSIT PAYMENT & SLIP UPLOAD -->
+      <!-- =============================================================== -->
+      <section id="view-step-4" class="space-y-4 hidden">
+        <div>
+          <button onclick="goToStep(3)" class="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 mb-2 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            ย้อนกลับไปแก้ไขข้อมูล
+          </button>
+          <h2 class="text-base font-bold text-white">ชำระเงินมัดจำ</h2>
+          <p class="text-xs text-slate-400">โอนเงินมัดจำเพื่อยืนยันคิวผลิต ยอดที่เหลือชำระในวันรับสินค้า</p>
+        </div>
+
+        <!-- Financial Snapshot Card (Immutable once created) -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-slate-400">
+            <span>ยอดรวมสินค้าทั้งสิ้น (Total Amount)</span>
+            <span class="font-mono text-white font-bold text-sm" id="pay-total-amount">12,400 ฿</span>
+          </div>
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <span class="text-amber-400 font-medium">ยอดมัดจำที่ต้องชำระ (Deposit Due)</span>
+            <span class="font-mono text-amber-400 font-bold text-base" id="pay-deposit-due">3,850 ฿</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>ยอดคงเหลือชำระวันรับของ (Balance on Pickup)</span>
+            <span class="font-mono text-slate-400" id="pay-balance-due">8,550 ฿</span>
+          </div>
+          <div class="pt-1 text-[10px] text-slate-500 flex items-center gap-1">
+            <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Snapshot ยอดมัดจำเรียบร้อย ไม่มีการปรับขึ้นย้อนหลัง
+          </div>
+        </div>
+
+        <!-- PromptPay QR Code Box -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-center space-y-3">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-[11px] font-medium">
+            <span>พร้อมเพย์ (PromptPay QR)</span>
+          </div>
+
+          <!-- QR Simulation SVG -->
+          <div class="w-44 h-44 mx-auto bg-white p-2.5 rounded-xl flex items-center justify-center shadow-lg">
+            <svg class="w-full h-full text-slate-900" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14-2h4v2h-4v-2zm-4 0h2v4h-2v-4zm2 4h2v4h-2v-4zm4 0h2v4h-2v-4zm-4-8h2v2h-2V6zm2 2h2v2h-2V8zm-2 2h2v2h-2v-2zm4-2h2v2h-2V8zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm12 0h2v2h-2V6zM6 18h2v2H6v-2z"/>
+            </svg>
+          </div>
+
+          <div class="text-xs space-y-0.5">
+            <p class="text-slate-400">บัญชีร้านค้า: <span class="font-bold text-white">นายพัฒนพงษ์ (KMO Studio)</span></p>
+            <p class="font-mono text-slate-300">PromptPay ID: 089-876-5432</p>
+          </div>
+        </div>
+
+        <!-- Slip Upload Simulation -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-medium text-slate-300">แนบสลิปหลักฐานการโอนเงิน *</label>
+          <div id="slip-dropzone" onclick="simulateSlipUpload()" class="border-2 border-dashed border-slate-700 hover:border-amber-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-slate-950/40">
+            <div id="slip-empty-state" class="space-y-1">
+              <svg class="w-7 h-7 mx-auto text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <p class="text-xs text-slate-300 font-medium">แตะเพื่อจำลองอัปโหลดสลิป</p>
+              <p class="text-[10px] text-slate-500">รองรับไฟล์ JPG, PNG</p>
+            </div>
+            <div id="slip-attached-state" class="hidden flex items-center justify-between">
+              <div class="flex items-center gap-2 text-left">
+                <div class="w-8 h-8 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">✓</div>
+                <div>
+                  <p class="text-xs font-bold text-emerald-400">แนบสลิปเรียบร้อย</p>
+                  <p class="text-[10px] text-slate-400 font-mono">slip_20260905_1204.png (3,850 ฿)</p>
+                </div>
+              </div>
+              <span class="text-[10px] text-slate-400 underline">เปลี่ยนรูป</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- STEP 5: ORDER TRACKING (OPAQUE TOKEN VIEW) -->
+      <!-- =============================================================== -->
+      <section id="view-step-5" class="space-y-4 hidden">
+        <!-- Opaque Token Security Note -->
+        <div class="p-2.5 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-[10px] text-slate-400 font-mono">
+          <span class="truncate">🔗 /order/track?token=tk_live_98a7f1bc</span>
+          <span class="text-emerald-400 shrink-0 ml-2 font-sans font-medium">🔒 Opaque Token</span>
+        </div>
+
+        <!-- Post-Submit Confirmation Header Card (Delta Brief Item B.2) -->
+        <div class="p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-2xl text-center space-y-1.5 shadow-lg">
+          <div class="w-9 h-9 mx-auto rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base font-bold">✓</div>
+          <h2 class="text-base font-bold text-white">รับคำสั่งซื้อเรียบร้อยแล้ว</h2>
+          <p class="text-xs text-slate-300 font-mono">รหัสออเดอร์: <span class="font-bold text-emerald-400 text-sm">OR-00125</span></p>
+          <p class="text-xs text-slate-400">คาดว่าสินค้าพร้อม: <span class="text-amber-300 font-bold" id="track-confirmed-date">พฤหัส 10 ก.ย. 2026</span></p>
+        </div>
+
+        <!-- BK01 LINE Notification Card (Delta Brief Item B.2 & B.3) -->
+        <div id="line-optin-card" class="p-4 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700/80 rounded-2xl space-y-2.5 text-xs shadow-md">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <h3 class="font-bold text-white">การแจ้งเตือนสถานะผ่าน LINE</h3>
+            </div>
+            <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">BK01 Central OA</span>
+          </div>
+
+          <div id="line-unbound-state" class="space-y-2">
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              รู้ทันทีเมื่อร้านยืนยันออเดอร์ หรือสินค้าผลิตเสร็จพร้อมรับ โดยไม่ต้องคอยกดรีเฟรชหน้าเว็บ
+            </p>
+            <button onclick="bindLineNotification()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-emerald-950/40">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.87 1.5 5.42 3.84 7.02-.17.6-.62 2.18-.71 2.52-.11.43.16.42.33.31.24-.16 2.76-1.87 3.88-2.63.85.24 1.74.38 2.66.38 5.52 0 10-4.03 10-9s-4.48-9-10-9z"/></svg>
+              <span>รับการแจ้งเตือนผ่าน LINE</span>
+            </button>
+          </div>
+
+          <div id="line-bound-state" class="hidden p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
+            <div class="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+              <span>✓</span>
+              <span>เชื่อมต่อรับการแจ้งเตือนผ่าน LINE เรียบร้อย</span>
+            </div>
+            <p class="text-[10px] text-slate-400">ระบบจะส่งข้อความแจ้งเตือนผ่าน <strong>BK01 Central LINE OA</strong> ทันทีเมื่อออเดอร์มีอัปเดต</p>
+          </div>
+        </div>
+
+        <!-- Order Header Card -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">สถานะคำสั่งซื้อ</span>
+              <h2 class="text-sm font-bold text-white font-mono" id="track-order-code">OR-00125</h2>
+            </div>
+            <div id="track-main-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              กำลังตรวจสอบการชำระเงิน
+            </div>
+          </div>
+
+          <div class="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
+            <div class="flex justify-between">
+              <span class="text-slate-400">ผู้สั่งซื้อ:</span>
+              <span class="font-medium" id="track-cust-name">สมชาย มั่นคง (081-234-5678)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">วันที่ลูกค้าอยากรับ (Requested):</span>
+              <span class="font-bold text-amber-300" id="track-requested-date">พฤหัส 10 ก.ย. 2026</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">วันที่ร้านสัญญาพร้อมมอบ (Promised):</span>
+              <span class="font-bold text-emerald-400" id="track-promised-date">พฤหัส 10 ก.ย. 2026</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Merchant Section (Delta Brief Item B.4) -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-300">ติดต่อร้านค้า</h3>
+            <span class="text-[10px] text-slate-500">KMO Studio</span>
+          </div>
+
+          <!-- Clearly Separated Contact Buttons -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <!-- Merchant Own LINE OA -->
+            <a href="https://lin.ee/kmo-tuning" target="_blank" class="p-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-700/80 rounded-xl flex items-center justify-center gap-1.5 text-slate-200 font-medium transition text-center shadow-sm">
+              <span class="text-emerald-400">💬</span>
+              <span>แชทร้านทาง LINE</span>
+            </a>
+            <!-- Phone Call -->
+            <a href="tel:0898765432" class="p-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-700/80 rounded-xl flex items-center justify-center gap-1.5 text-slate-200 font-medium transition text-center shadow-sm">
+              <span>📞</span>
+              <span>โทรหาร้าน</span>
+            </a>
+          </div>
+
+          <!-- Explanatory Footnote preventing confusion -->
+          <div class="flex flex-col sm:flex-row justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/80 gap-1">
+            <span>• รับแจ้งสถานะอัตโนมัติ $\rightarrow$ <strong class="text-emerald-400">BK01 LINE</strong></span>
+            <span>• สอบถาม/คุยงานช่าง $\rightarrow$ <strong class="text-amber-400">Merchant LINE</strong></span>
+          </div>
+        </div>
+
+        <!-- Customer-Friendly Stepper Timeline -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <h3 class="text-xs font-bold text-slate-300">ขั้นตอนการดำเนินงาน</h3>
+
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center gap-3" id="timeline-step-1">
+              <div class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-[11px] shrink-0">1</div>
+              <div>
+                <p class="font-bold text-amber-400">กำลังตรวจสอบการชำระเงิน</p>
+                <p class="text-[10px] text-slate-500">แนบสลิปมัดจำแล้ว รอเจ้าหน้าที่ร้านยืนยันยอด</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 opacity-40" id="timeline-step-2">
+              <div class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[11px] shrink-0">2</div>
+              <div>
+                <p class="font-bold text-slate-300">ยืนยันออเดอร์และล็อกคิวผลิต</p>
+                <p class="text-[10px] text-slate-500">จองสล็อตในปฏิทินช่างเรียบร้อยแล้ว</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 opacity-40" id="timeline-step-3">
+              <div class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[11px] shrink-0">3</div>
+              <div>
+                <p class="font-bold text-slate-300">กำลังผลิต / เตรียมของ</p>
+                <p class="text-[10px] text-slate-500">ช่างกำลังดำเนินการตัด ดัด และทำสีตามสเปก</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 opacity-40" id="timeline-step-4">
+              <div class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[11px] shrink-0">4</div>
+              <div>
+                <p class="font-bold text-slate-300">สินค้าพร้อมส่งมอบแล้ว (Ready)</p>
+                <p class="text-[10px] text-slate-500">สามารถมารับหน้าร้าน หรือนัดหมายบริการติดตั้งหน้าร้าน</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- THE READY BRIDGE: CONNECT TO BOOKING ENGINE -->
+        <!-- =============================================================== -->
+        <div id="ready-bridge-card" class="hidden p-4 bg-gradient-to-br from-emerald-950/60 to-slate-950 border border-emerald-500/40 rounded-2xl space-y-3 animate-fade-in shadow-xl shadow-emerald-950/30">
+          <div class="flex items-center gap-2 text-emerald-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <h4 class="text-xs font-bold uppercase tracking-wider">🎉 สินค้าผลิตเสร็จเรียบร้อยแล้ว!</h4>
+          </div>
+          <p class="text-xs text-slate-300">ของพร้อมส่งมอบตามนัด หากต้องการให้ช่างที่ร้านติดตั้งให้ สามารถนัดหมายบริการติดตั้งหน้าร้านได้ทันทีโดยไม่ต้องกรอกข้อมูลใหม่</p>
+
+          <button onclick="openBookingBridgeModal()" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            📅 นัดคิวช่างติดตั้งหน้าร้าน (Booking Service)
+          </button>
+        </div>
+
+        <!-- Interactive Admin Simulator Bar (For Testing Statuses) -->
+        <div class="p-3 bg-slate-800/40 border border-slate-700/60 rounded-xl space-y-2 text-xs">
+          <p class="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+            <span>🛠️ กล่องทดสอบจำลองเหตุการณ์หลังบ้าน:</span>
+          </p>
+          <div class="grid grid-cols-3 gap-1.5 text-[10px]">
+            <button onclick="simulateOrderState('verifying')" class="py-1 px-2 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">1. รอตรวจสลิป</button>
+            <button onclick="simulateOrderState('in_progress')" class="py-1 px-2 bg-sky-900/60 hover:bg-sky-800 text-sky-200 rounded">2. ช่างกำลังทำ</button>
+            <button onclick="simulateOrderState('ready')" class="py-1 px-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded">3. ของเสร็จ (READY)</button>
+          </div>
+        </div>
+
+        <!-- Technical Decoupled Architecture Inspector (Collapsible) -->
+        <details class="text-xs bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 space-y-2 group">
+          <summary class="cursor-pointer font-mono text-[11px] text-amber-400 font-bold flex items-center justify-between">
+            <span>🔍 ตรวจสอบโครงสร้าง Data Contract (Decoupled Fields)</span>
+            <span class="group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="pt-2 text-[11px] font-mono space-y-1 text-slate-300 border-t border-slate-800">
+            <p><span class="text-slate-500">order_lifecycle:</span> <span class="text-emerald-400 font-bold" id="debug-lifecycle">CONFIRMED</span></p>
+            <p><span class="text-slate-500">payment_status:</span> <span class="text-sky-400" id="debug-payment">PARTIALLY_PAID</span></p>
+            <p><span class="text-slate-500">deposit_verification:</span> <span class="text-amber-400" id="debug-deposit">VERIFIED</span></p>
+            <p><span class="text-slate-500">earliest_ready_date:</span> 2026-09-10</p>
+            <p><span class="text-slate-500">requested_ready_date:</span> <span id="debug-requested">2026-09-10</span></p>
+            <p><span class="text-slate-500">promised_ready_date:</span> 2026-09-10</p>
+            <p><span class="text-slate-500">customer_matched:</span> phone = 0812345678 (id: cust_0991)</p>
+          </div>
+        </details>
+
+        <!-- Return to Home / New Order Button -->
+        <div class="pt-2 pb-2">
+          <button onclick="goToStep(1)" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <span>ย้อนกลับหน้าหลัก (สั่งทำรายการอื่น)</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- STICKY BOTTOM ACTION BAR (Steps 1 to 4) -->
+    <footer id="sticky-action-bar" class="sticky bottom-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-4 py-3 flex items-center justify-between">
+      <div id="cart-summary-text">
+        <p class="text-[11px] text-slate-400">เลือก <span class="text-white font-bold" id="cart-count">2</span> ชิ้น</p>
+        <p class="text-sm font-bold text-white font-mono"><span id="cart-total">12,400</span> ฿ <span class="text-[10px] font-normal text-amber-400">(มัดจำ <span id="cart-deposit">3,850</span> ฿)</span></p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-prev-action" onclick="handlePrevStep()" class="hidden px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs border border-slate-700/80 transition flex items-center gap-1 shadow-sm">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          <span>ย้อนกลับ</span>
+        </button>
+
+        <button id="btn-next-action" onclick="handleNextStep()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
+          <span id="btn-next-label">เลือกวันรับของ</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- BOOKING BRIDGE MODAL (CONNECTING TO BK01 BOOKING ENGINE) -->
+  <div id="modal-booking-bridge" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl animate-fade-in">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <h3 class="text-sm font-bold text-white">นัดหมายบริการติดตั้งหน้าร้าน (Booking)</h3>
+        </div>
+        <button onclick="closeBookingBridgeModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="text-xs space-y-3 text-slate-300">
+        <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+          <p class="text-slate-400 text-[10px]">อ้างอิงออเดอร์สินค้า:</p>
+          <p class="font-bold text-amber-400">OR-00125 (Crash Bar ADV350 + Rear Rack)</p>
+          <p class="text-[11px] text-slate-400">ผู้จอง: คุณสมชาย มั่นคง (081-234-5678)</p>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[11px] mb-1">บริการ & ระยะเวลาติดตั้ง (Duration)</label>
+          <div class="p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 flex justify-between items-center">
+            <span>บริการติดตั้งชิ้นงานพาร์ต</span>
+            <span class="font-bold text-sky-400 font-mono">120 นาที</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[11px] mb-1">ช่างผู้ให้บริการ (Staff Authority)</label>
+          <div class="p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200">
+            <span>ช่าง A (Staff A - ผู้เชี่ยวชาญชิ้นงานแร็ค)</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[11px] mb-1">เลือกวันและรอบเวลาที่ช่างว่างจริง</label>
+          <div class="space-y-1.5">
+            <input type="date" value="2026-09-10" min="2026-09-10" class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+            <select class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+              <option value="10-12">10:00 - 12:00 น. (ว่าง — แนะนำ)</option>
+              <option value="13-15" disabled class="text-slate-500">13:00 - 15:00 น. (ไม่ว่าง — ช่างติดคิวอื่น)</option>
+              <option value="15-17">15:00 - 17:00 น. (ว่าง)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-medium">💳 การชำระเงินมัดจำคิวติดตั้ง:</span>
+            <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono border border-slate-700">Not configured</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            <em>Booking Deposit: Not configured for Order-linked Booking</em> — นโยบายมัดจำสำหรับ Order-linked Booking ยังไม่ได้กำหนดใน Prototype นี้ (ยอดมัดจำสินค้าถูกแยกดูแลผ่าน Order Engine เป็นเอกเทศ และไม่สามารถลัดคิวช่างเดิมของร้านได้)
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button onclick="confirmBookingBridge()" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition">
+          ยืนยันการนัดหมาย
+        </button>
+        <button onclick="closeBookingBridgeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl transition">
+          ยกเลิก
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC & STATE MACHINE -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. DATA CONTRACTS & STATE
+    // -------------------------------------------------------------
+    const PRODUCTS = [
+      {
+        id: 'prod_1',
+        sku: 'CB-ADV350-T',
+        name: 'Crash Bar ทรงทัวร์ริ่ง (ADV350)',
+        desc: 'ท่อสแตนเลส 304 ไร้รอยต่อ ดัดเข้ารูปพร้อมจุดยึดสปอตไลท์',
+        price: 9500,
+        depositType: 'PERCENT',
+        depositValue: 30, // 30% = 2,850
+        leadTimeDays: 3,
+        capacityUnits: 2,
+        icon: '🛡️'
+      },
+      {
+        id: 'prod_2',
+        sku: 'RR-ADV350-S',
+        name: 'แร็คท้ายสแตนเลส (Rear Rack)',
+        desc: 'งานตัดเลเซอร์ CNC หนา 4 มม. รองรับกล่องท้ายทุกแบรนด์',
+        price: 2900,
+        depositType: 'FIXED',
+        depositValue: 1000, // Fixed 1,000
+        leadTimeDays: 2,
+        capacityUnits: 1,
+        icon: '📦'
+      },
+      {
+        id: 'prod_3',
+        sku: 'HG-CNC-X',
+        name: 'การ์ดแฮนด์ CNC อลูมิเนียมเกรด 6061',
+        desc: 'แข็งแรง ป้องกันก้านเบรก สีอโนไดซ์พรีเมียม',
+        price: 1800,
+        depositType: 'FIXED',
+        depositValue: 500,
+        leadTimeDays: 1,
+        capacityUnits: 1,
+        icon: '🧤'
+      },
+      {
+        id: 'prod_4',
+        sku: 'EX-TITAN-ADV',
+        name: 'ท่อไอเสีย Titanium Full System',
+        desc: 'น้ำหนักเบา คอท่อดัดพิเศษพร้อมห้องพักเสียงมาตรฐาน',
+        price: 14500,
+        depositType: 'PERCENT',
+        depositValue: 50,
+        leadTimeDays: 5,
+        capacityUnits: 3,
+        icon: '💨'
+      }
+    ];
+
+    // Current Cart State (Default with items for immediate preview)
+    let cart = {
+      'prod_1': 1,
+      'prod_2': 1
+    };
+
+    let currentStep = 1;
+    let selectedRequestedDate = '2026-09-10'; // Default valid earliest date
+    let slipAttached = false;
+
+    // Base Production Capacity Schedule (Week of 7-13 Sep 2026)
+    const BASE_WORKSHOP_SCHEDULE = [
+      { date: '2026-09-07', dayName: 'จันทร์ 7 ก.ย.', isClosed: false, used: 6, max: 10, label: 'เปิดรับคิวผลิต' },
+      { date: '2026-09-08', dayName: 'อังคาร 8 ก.ย.', isClosed: true, used: 0, max: 0, label: 'ร้านปิดทำการ (วันหยุดประจำสัปดาห์)' },
+      { date: '2026-09-09', dayName: 'พุธ 9 ก.ย.', isClosed: false, used: 10, max: 10, label: 'คิวผลิตเต็มแล้ว' },
+      { date: '2026-09-10', dayName: 'พฤหัส 10 ก.ย.', isClosed: false, used: 4, max: 10, label: 'เปิดรับคิวผลิต' },
+      { date: '2026-09-11', dayName: 'ศุกร์ 11 ก.ย.', isClosed: false, used: 7, max: 10, label: 'เปิดรับคิวผลิต' },
+      { date: '2026-09-12', dayName: 'เสาร์ 12 ก.ย.', isClosed: false, used: 2, max: 10, label: 'เปิดรับคิวผลิต' },
+      { date: '2026-09-13', dayName: 'อาทิตย์ 13 ก.ย.', isClosed: true, used: 0, max: 0, label: 'ร้านปิดทำการ (วันอาทิตย์)' }
+    ];
+
+    // -------------------------------------------------------------
+    // 2. RENDER CATALOG (STEP 1)
+    // -------------------------------------------------------------
+    function renderCatalog() {
+      const container = document.getElementById('product-list-container');
+      container.innerHTML = '';
+
+      PRODUCTS.forEach(p => {
+        const qty = cart[p.id] || 0;
+        const depositLabel = p.depositType === 'PERCENT' ? `มัดจำ ${p.depositValue}%` : `มัดจำ ${p.depositValue.toLocaleString()} ฿`;
+
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-xl border transition ${qty > 0 ? 'bg-slate-900 border-amber-500/50 shadow-md shadow-amber-950/20' : 'bg-slate-950 border-slate-800'}`;
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center text-lg shrink-0">
+              ${p.icon}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h3 class="text-xs font-bold text-white">${p.name}</h3>
+              </div>
+              <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${p.desc}</p>
+
+              <!-- Badges -->
+              <div class="flex items-center gap-1.5 mt-2 flex-wrap text-[10px]">
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">⏱️ ${p.leadTimeDays} วัน</span>
+                <span class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-medium">${depositLabel}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-800/80">
+            <div>
+              <span class="text-xs text-slate-500">ราคาเต็ม</span>
+              <p class="text-sm font-bold text-white font-mono">${p.price.toLocaleString()} ฿</p>
+            </div>
+
+            <!-- Stepper / Add Button -->
+            <div>
+              ${qty === 0 ? `
+                <button onclick="addToCart('${p.id}')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition border border-slate-700">
+                  + สั่งทำ
+                </button>
+              ` : `
+                <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg p-1">
+                  <button onclick="updateQty('${p.id}', -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold flex items-center justify-center text-xs">-</button>
+                  <span class="text-xs font-mono font-bold text-amber-400 w-4 text-center">${qty}</span>
+                  <button onclick="updateQty('${p.id}', 1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold flex items-center justify-center text-xs">+</button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      updateCartSummary();
+    }
+
+    function addToCart(productId) {
+      cart[productId] = 1;
+      renderCatalog();
+    }
+
+    function updateQty(productId, delta) {
+      cart[productId] = (cart[productId] || 0) + delta;
+      if (cart[productId] <= 0) {
+        delete cart[productId];
+      }
+      renderCatalog();
+    }
+
+    // -------------------------------------------------------------
+    // 3. CART & CAPACITY CALCULATION ENGINE
+    // -------------------------------------------------------------
+    function calculateCartMetrics() {
+      let totalAmount = 0;
+      let totalDeposit = 0;
+      let maxLeadDays = 0;
+      let totalCapacityUnits = 0;
+      let totalItems = 0;
+
+      for (const [id, qty] of Object.entries(cart)) {
+        const prod = PRODUCTS.find(p => p.id === id);
+        if (!prod || qty <= 0) continue;
+
+        totalItems += qty;
+        totalAmount += prod.price * qty;
+
+        // Deposit calculation (PERCENT vs FIXED)
+        if (prod.depositType === 'PERCENT') {
+          totalDeposit += (prod.price * (prod.depositValue / 100)) * qty;
+        } else {
+          totalDeposit += prod.depositValue * qty;
+        }
+
+        // Capacity units: Sum of workload units
+        totalCapacityUnits += prod.capacityUnits * qty;
+
+        // Lead time: Max lead day constraint
+        if (prod.leadTimeDays > maxLeadDays) {
+          maxLeadDays = prod.leadTimeDays;
+        }
+      }
+
+      return { totalItems, totalAmount, totalDeposit, maxLeadDays, totalCapacityUnits };
+    }
+
+    function updateCartSummary() {
+      const { totalItems, totalAmount, totalDeposit } = calculateCartMetrics();
+      document.getElementById('cart-count').innerText = totalItems;
+      document.getElementById('cart-total').innerText = totalAmount.toLocaleString();
+      document.getElementById('cart-deposit').innerText = Math.round(totalDeposit).toLocaleString();
+
+      const nextBtn = document.getElementById('btn-next-action');
+      if (totalItems === 0) {
+        nextBtn.disabled = true;
+        nextBtn.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('opacity-40', 'pointer-events-none');
+      }
+
+      // Re-render calendar if currently on step 2 (P1.6)
+      if (currentStep === 2) {
+        renderCalendar();
+      }
+    }
+
+    // Dynamic Earliest Ready Date Calculation (P1.6)
+    function calcEarliestReadyDate() {
+      const { maxLeadDays, totalCapacityUnits } = calculateCartMetrics();
+      if (totalCapacityUnits === 0) return null;
+
+      let openWorkingDays = 0;
+      for (const day of BASE_WORKSHOP_SCHEDULE) {
+        if (day.isClosed) continue;
+        openWorkingDays++;
+
+        const availableCap = day.max - day.used;
+        // Must meet both:
+        // 1. Elapsed open working days >= required max lead time
+        // 2. Day must have available capacity for this order
+        if (openWorkingDays >= maxLeadDays && availableCap >= totalCapacityUnits) {
+          return {
+            date: day.date,
+            dayName: day.dayName,
+            maxLeadDays,
+            totalCapacityUnits
+          };
+        }
+      }
+
+      return {
+        date: '2026-09-14',
+        dayName: 'จันทร์ 14 ก.ย.',
+        maxLeadDays,
+        totalCapacityUnits
+      };
+    }
+
+    // -------------------------------------------------------------
+    // 4. RENDER CALENDAR WITH CAPACITY LOGIC (STEP 2)
+    // -------------------------------------------------------------
+    function renderCalendar() {
+      const { maxLeadDays, totalCapacityUnits } = calculateCartMetrics();
+      const earliest = calcEarliestReadyDate();
+
+      if (!earliest) {
+        document.getElementById('calc-lead-time').innerText = `0 วันทำการ`;
+        document.getElementById('calc-earliest-date').innerText = `-`;
+        return;
+      }
+
+      document.getElementById('calc-lead-time').innerText = `${maxLeadDays} วันทำการ`;
+      document.getElementById('calc-earliest-date').innerText = `${earliest.dayName} 2026`;
+
+      // Auto-select earliest date if current selection is invalid, closed, full or earlier than earliest
+      if (!selectedRequestedDate || selectedRequestedDate < earliest.date) {
+        selectedRequestedDate = earliest.date;
+      }
+
+      const listContainer = document.getElementById('calendar-day-list');
+      listContainer.innerHTML = '';
+
+      let openWorkingDays = 0;
+      BASE_WORKSHOP_SCHEDULE.forEach(day => {
+        let isClosed = day.isClosed;
+        let isTooEarly = false;
+        let isFull = false;
+
+        if (!isClosed) {
+          openWorkingDays++;
+          if (openWorkingDays < maxLeadDays) {
+            isTooEarly = true;
+          } else if ((day.max - day.used) < totalCapacityUnits) {
+            isFull = true;
+          }
+        }
+
+        const isEarliest = (day.date === earliest.date);
+        const isSelected = (selectedRequestedDate === day.date);
+
+        let badgeHtml = '';
+        let labelText = '';
+
+        if (isClosed) {
+          badgeHtml = `<span class="text-[10px] px-2 py-0.5 rounded border border-slate-800 text-slate-500 font-medium">ร้านปิด</span>`;
+          labelText = day.label;
+        } else if (isTooEarly) {
+          badgeHtml = `<span class="text-[10px] px-2 py-0.5 rounded border border-amber-500/30 text-amber-400 font-medium bg-amber-500/10">ผลิตไม่ทัน</span>`;
+          labelText = `ต้องการเวลาผลิตอย่างน้อย ${maxLeadDays} วันทำการ`;
+        } else if (isFull) {
+          badgeHtml = `<span class="text-[10px] px-2 py-0.5 rounded border border-rose-500/30 text-rose-400 font-bold bg-rose-500/10">คิวเต็ม</span>`;
+          labelText = `คิวผลิตเต็มแล้ว (${day.used}/${day.max} units)`;
+        } else if (isEarliest) {
+          badgeHtml = `<span class="text-[10px] px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-300 font-bold bg-emerald-500/10">เร็วที่สุด (แนะนำ)</span>`;
+          labelText = `พร้อมส่งมอบ — วันที่เร็วที่สุด!`;
+        } else {
+          badgeHtml = `<span class="text-[10px] px-2 py-0.5 rounded border border-slate-700 text-slate-300 font-medium">พร้อมรับ</span>`;
+          labelText = `พร้อมส่งมอบตามกำหนด`;
+        }
+
+        const row = document.createElement('div');
+        row.className = `p-3 rounded-xl border flex items-center justify-between transition ${
+          isSelected
+            ? 'bg-amber-500/10 border-amber-500 text-white shadow-md'
+            : isClosed
+              ? 'bg-slate-950/40 border-slate-800/40 opacity-40 cursor-not-allowed'
+              : (isFull || isTooEarly)
+                ? 'bg-slate-950/70 border-slate-800 hover:border-rose-500/40 cursor-pointer'
+                : 'bg-slate-950 border-slate-800 hover:border-slate-700 cursor-pointer'
+        }`;
+
+        row.onclick = () => {
+          if (isClosed) return;
+          if (isFull || isTooEarly) {
+            const reason = isFull ? 'คิวผลิตเต็มแล้ว' : `ต้องการเวลาผลิตอย่างน้อย ${maxLeadDays} วันทำการ`;
+            showCapacityAlert(day.dayName, reason, earliest);
+            return;
+          }
+          hideCapacityAlert();
+          selectDate(day.date);
+        };
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <input type="radio" name="requested_date" ${isSelected ? 'checked' : ''} ${isClosed ? 'disabled' : ''} class="text-amber-500 focus:ring-0">
+            <div>
+              <p class="text-xs font-bold ${isSelected ? 'text-amber-300' : (isFull || isTooEarly) ? 'text-slate-400' : 'text-slate-200'}">${day.dayName}</p>
+              <p class="text-[10px] ${(isFull || isTooEarly) ? 'text-rose-400' : 'text-slate-500'}">${labelText}</p>
+            </div>
+          </div>
+          ${badgeHtml}
+        `;
+        listContainer.appendChild(row);
+      });
+    }
+
+    function selectDate(dateStr) {
+      selectedRequestedDate = dateStr;
+      hideCapacityAlert();
+      renderCalendar();
+    }
+
+    function showCapacityAlert(dayName, reason, earliest) {
+      const box = document.getElementById('capacity-alert-box');
+      const title = document.getElementById('capacity-alert-title');
+      const desc = box.querySelector('p:nth-child(2)');
+      const btn = box.querySelector('button');
+
+      if (title) title.innerText = `${dayName} ไม่สามารถเลือกได้ (${reason})`;
+      if (desc && earliest) {
+        desc.innerHTML = `โรงงานไม่สามารถส่งมอบงานในวันนี้ได้ วันที่พร้อมรับเร็วที่สุดตามคิวงานและระยะเวลาผลิตคือ <span class="font-bold text-emerald-300">${earliest.dayName}</span>`;
+      }
+      if (btn && earliest) {
+        btn.innerText = `👉 เลือก ${earliest.dayName} (วันที่เร็วที่สุด)`;
+        btn.setAttribute('onclick', `selectDate('${earliest.date}')`);
+      }
+      box.classList.remove('hidden');
+    }
+
+    function hideCapacityAlert() {
+      document.getElementById('capacity-alert-box').classList.add('hidden');
+    }
+
+    // LINE Notification Binding Simulation (Delta Brief B.2)
+    let lineBound = false;
+    function bindLineNotification() {
+      lineBound = true;
+      const unbound = document.getElementById('line-unbound-state');
+      const bound = document.getElementById('line-bound-state');
+      if (unbound) unbound.classList.add('hidden');
+      if (bound) bound.classList.remove('hidden');
+      alert('🟢 จำลองเปิดรับการแจ้งเตือนสำเร็จ!\nระบบได้เชื่อมต่อกับ BK01 Central LINE OA แล้ว คุณจะได้รับแจ้งเตือนอัตโนมัติเมื่อร้านค้ายืนยัน หรือสินค้าผลิตเสร็จ');
+    }
+
+    // -------------------------------------------------------------
+    // 5. STEPPER NAVIGATION & LIFECYCLE
+    // -------------------------------------------------------------
+    function goToStep(step) {
+      currentStep = step;
+
+      // Hide all views
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`view-step-${i}`);
+        if (el) el.classList.add('hidden');
+      }
+
+      // Show active view
+      const activeEl = document.getElementById(`view-step-${step}`);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      // Stepper Bar visibility & Clickability
+      const stepperBar = document.getElementById('step-indicator-bar');
+      if (stepperBar) {
+        if (step === 5) {
+          stepperBar.classList.add('hidden');
+        } else {
+          stepperBar.classList.remove('hidden');
+        }
+      }
+
+      // Header Back Button handling
+      const headerBackBtn = document.getElementById('header-back-btn');
+      if (headerBackBtn) {
+        if (step > 1) {
+          headerBackBtn.classList.remove('hidden');
+        } else {
+          headerBackBtn.classList.add('hidden');
+        }
+      }
+
+      // Update stepper header indicators
+      for (let i = 1; i <= 4; i++) {
+        const badge = document.getElementById(`step-badge-${i}`);
+        if (!badge) continue;
+
+        if (i < step) {
+          badge.className = 'flex items-center gap-1.5 text-emerald-400 font-medium cursor-pointer hover:underline';
+          badge.setAttribute('onclick', `goToStep(${i})`);
+          badge.querySelector('span:first-child').className = 'w-4 h-4 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-[10px]';
+          badge.querySelector('span:first-child').innerText = '✓';
+        } else if (i === step) {
+          badge.className = 'flex items-center gap-1.5 text-amber-400 font-medium';
+          badge.removeAttribute('onclick');
+          badge.querySelector('span:first-child').className = 'w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-[10px]';
+          badge.querySelector('span:first-child').innerText = i;
+        } else {
+          badge.className = 'flex items-center gap-1.5 text-slate-500 font-medium';
+          badge.removeAttribute('onclick');
+          badge.querySelector('span:first-child').className = 'w-4 h-4 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px]';
+          badge.querySelector('span:first-child').innerText = i;
+        }
+      }
+
+      // Bottom Bar handling
+      const bottomBar = document.getElementById('sticky-action-bar');
+      const nextBtnLabel = document.getElementById('btn-next-label');
+      const prevBtn = document.getElementById('btn-prev-action');
+
+      if (prevBtn) {
+        if (step > 1 && step < 5) {
+          prevBtn.classList.remove('hidden');
+        } else {
+          prevBtn.classList.add('hidden');
+        }
+      }
+
+      if (step === 1) {
+        bottomBar.classList.remove('hidden');
+        nextBtnLabel.innerText = 'เลือกวันรับของ';
+      } else if (step === 2) {
+        renderCalendar();
+        bottomBar.classList.remove('hidden');
+        nextBtnLabel.innerText = 'ระบุข้อมูลผู้สั่ง';
+      } else if (step === 3) {
+        bottomBar.classList.remove('hidden');
+        nextBtnLabel.innerText = 'ไปชำระเงินมัดจำ';
+      } else if (step === 4) {
+        setupPaymentSnapshot();
+        bottomBar.classList.remove('hidden');
+        nextBtnLabel.innerText = 'ยืนยันและส่งคำสั่งซื้อ';
+      } else if (step === 5) {
+        bottomBar.classList.add('hidden'); // Hide bottom bar on tracking page
+        setupTrackingPage();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleNextStep() {
+      if (currentStep === 1) {
+        goToStep(2);
+      } else if (currentStep === 2) {
+        goToStep(3);
+      } else if (currentStep === 3) {
+        goToStep(4);
+      } else if (currentStep === 4) {
+        goToStep(5);
+      }
+    }
+
+    function handlePrevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 6. PAYMENT SNAPSHOT (STEP 4)
+    // -------------------------------------------------------------
+    function setupPaymentSnapshot() {
+      const { totalAmount, totalDeposit } = calculateCartMetrics();
+      const depositDue = Math.round(totalDeposit);
+      const balanceDue = totalAmount - depositDue;
+
+      document.getElementById('pay-total-amount').innerText = `${totalAmount.toLocaleString()} ฿`;
+      document.getElementById('pay-deposit-due').innerText = `${depositDue.toLocaleString()} ฿`;
+      document.getElementById('pay-balance-due').innerText = `${balanceDue.toLocaleString()} ฿`;
+    }
+
+    function simulateSlipUpload() {
+      slipAttached = true;
+      document.getElementById('slip-empty-state').classList.add('hidden');
+      document.getElementById('slip-attached-state').classList.remove('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // 7. ORDER TRACKING & DECOUPLED ARCHITECTURE (STEP 5)
+    // -------------------------------------------------------------
+    function setupTrackingPage() {
+      const custName = document.getElementById('cust-name').value;
+      const custPhone = document.getElementById('cust-phone').value;
+
+      document.getElementById('track-cust-name').innerText = `${custName} (${custPhone})`;
+      document.getElementById('track-requested-date').innerText = `พฤหัส 10 ก.ย. 2026`;
+      document.getElementById('track-promised-date').innerText = `พฤหัส 10 ก.ย. 2026`;
+    }
+
+    function simulateOrderState(state) {
+      const mainBadge = document.getElementById('track-main-badge');
+      const bridgeCard = document.getElementById('ready-bridge-card');
+      const s1 = document.getElementById('timeline-step-1');
+      const s2 = document.getElementById('timeline-step-2');
+      const s3 = document.getElementById('timeline-step-3');
+      const s4 = document.getElementById('timeline-step-4');
+
+      const debugLifecycle = document.getElementById('debug-lifecycle');
+      const debugPayment = document.getElementById('debug-payment');
+      const debugDeposit = document.getElementById('debug-deposit');
+
+      if (state === 'verifying') {
+        mainBadge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30';
+        mainBadge.innerText = 'กำลังตรวจสอบการชำระเงิน';
+        bridgeCard.classList.add('hidden');
+
+        s1.className = 'flex items-center gap-3';
+        s2.className = 'flex items-center gap-3 opacity-40';
+        s3.className = 'flex items-center gap-3 opacity-40';
+        s4.className = 'flex items-center gap-3 opacity-40';
+
+        debugLifecycle.innerText = 'CONFIRMED';
+        debugPayment.innerText = 'PARTIALLY_PAID';
+        debugDeposit.innerText = 'PENDING';
+        triggerLinePush('🧾 ออเดอร์ OR-00125: ได้รับหลักฐานมัดจำแล้ว รอเจ้าหน้าที่ร้านยืนยันยอด');
+      } else if (state === 'in_progress') {
+        mainBadge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30';
+        mainBadge.innerText = 'ช่างกำลังผลิต / เตรียมของ';
+        bridgeCard.classList.add('hidden');
+
+        s1.className = 'flex items-center gap-3';
+        s2.className = 'flex items-center gap-3';
+        s3.className = 'flex items-center gap-3 text-sky-400 font-bold';
+        s4.className = 'flex items-center gap-3 opacity-40';
+
+        debugLifecycle.innerText = 'IN_PROGRESS';
+        debugPayment.innerText = 'PARTIALLY_PAID';
+        debugDeposit.innerText = 'VERIFIED';
+        triggerLinePush('⚙️ ออเดอร์ OR-00125: ร้านยืนยันคิวแล้ว ช่างกำลังตัด ดัด และทำสีตามสเปก');
+      } else if (state === 'ready') {
+        mainBadge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+        mainBadge.innerText = 'สินค้าพร้อมส่งมอบแล้ว (READY)';
+        bridgeCard.classList.remove('hidden');
+
+        s1.className = 'flex items-center gap-3';
+        s2.className = 'flex items-center gap-3';
+        s3.className = 'flex items-center gap-3';
+        s4.className = 'flex items-center gap-3 text-emerald-400 font-bold';
+
+        debugLifecycle.innerText = 'READY';
+        debugPayment.innerText = 'PARTIALLY_PAID';
+        debugDeposit.innerText = 'VERIFIED';
+        triggerLinePush('🎉 ออเดอร์ OR-00125: สินค้าผลิตเสร็จพร้อมส่งมอบแล้ว! มารับของหน้าร้าน หรือกดจองคิวติดตั้งได้ทันที');
+      }
+    }
+
+    function triggerLinePush(text) {
+      const el = document.getElementById('simulated-line-push');
+      const txt = document.getElementById('simulated-push-text');
+      if (!el || !txt) return;
+      txt.innerText = text;
+      el.classList.remove('-translate-y-28', 'opacity-0');
+      setTimeout(() => {
+        el.classList.add('-translate-y-28', 'opacity-0');
+      }, 4500);
+    }
+
+    // -------------------------------------------------------------
+    // 8. THE BOOKING BRIDGE MODAL
+    // -------------------------------------------------------------
+    function openBookingBridgeModal() {
+      document.getElementById('modal-booking-bridge').classList.remove('hidden');
+      document.getElementById('modal-booking-bridge').classList.add('flex');
+    }
+
+    function closeBookingBridgeModal() {
+      document.getElementById('modal-booking-bridge').classList.add('hidden');
+      document.getElementById('modal-booking-bridge').classList.remove('flex');
+    }
+
+    function confirmBookingBridge() {
+      alert('🎉 นัดหมายติดตั้งสำเร็จ!\n\nเชื่อมโยงรหัสจอง BK-2026-0910 (ช่าง A, 10 Sep 10:00–12:00) เข้ากับ Order OR-00125 เรียบร้อย\n\n📌 ระบบ BK01: สถานะ Order จะยังคงเป็น READY จนกว่าจะนำรถเข้ามาติดตั้งจริง และแอดมินตรวจรับมอบของ');
+      closeBookingBridgeModal();
+    }
+
+    // Initial Load
+    renderCatalog();
+  </script>
+
+  <!-- Floating Simulated LINE Push Notification (Delta Brief Item B.2 / B.3) -->
+  <div id="simulated-line-push" class="fixed top-3 left-1/2 -translate-x-1/2 max-w-sm w-[92%] bg-slate-900 border border-emerald-500 text-white rounded-2xl p-3 shadow-2xl z-50 transition-all duration-500 -translate-y-28 opacity-0 flex items-start gap-3 pointer-events-none">
+    <div class="w-8 h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-sm shrink-0">
+      <svg class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.87 1.5 5.42 3.84 7.02-.17.6-.62 2.18-.71 2.52-.11.43.16.42.33.31.24-.16 2.76-1.87 3.88-2.63.85.24 1.74.38 2.66.38 5.52 0 10-4.03 10-9s-4.48-9-10-9z"/></svg>
+    </div>
+    <div class="text-xs">
+      <p class="font-bold text-emerald-400 flex items-center gap-1.5">
+        <span>BK01 Central LINE OA</span>
+        <span class="text-[10px] text-slate-400 font-normal">• ตอนนี้</span>
+      </p>
+      <p class="text-[11px] text-slate-200 mt-0.5" id="simulated-push-text">📦 ออเดอร์ OR-00125 ผลิตเสร็จพร้อมส่งมอบแล้ว! มารับของหน้าร้าน หรือกดจองคิวติดตั้งได้ทันที</p>
+    </div>
+  </div>
+
+</body>
+</html>
