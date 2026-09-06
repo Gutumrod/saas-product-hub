@@ -255,6 +255,45 @@ S-Bridge à¹€à¸›à¹‡à¸™ fail-closed transport/coordination boundar
 
 à¸–à¹‰à¸² worker à¸•à¸­à¸šà¸à¸¥à¸±à¸šà¸”à¹‰à¸§à¸¢à¹à¸„à¹ˆ summary à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸¡à¸µ evidence path / HEAD / checks à¸—à¸µà¹ˆà¸•à¸£à¸§à¸ˆà¹„à¸”à¹‰ à¹ƒà¸«à¹‰à¸–à¸·à¸­à¸§à¹ˆà¸² **à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‡à¸²à¸™**
 
+## HOUSE MAJOR DURABLE EVIDENCE RULE
+
+Owner rule locked after the initial House Major checkpoint: **no material House Major movement may exist only in chat.**
+
+The following are durable-evidence events:
+- Owner decision / override;
+- portfolio priority or sequencing change;
+- product HOLD / UNBLOCK / RELEASE / closure decision;
+- Immediate Next Ticket release or replacement;
+- handoff / responsibility change;
+- canonical execution-authority change;
+- blocker reclassification that changes execution order;
+- release / launch / pilot checkpoint;
+- portfolio control / governance contract change.
+
+Required flow:
+`Decision or verified movement -> durable document/evidence -> reconcile current control docs -> git diff/check -> commit -> push -> verify local/origin -> record commit SHA`.
+
+### House Major commit authority
+
+Portfolio Manager / Secretary Control is authorized by default to commit and push **House Major documentation/control evidence** that faithfully records an already-authorized Owner decision or a Secretary-verified movement inside existing authority. This authority does NOT grant permission to push product implementation code, merge product branches, deploy production, mutate DNS/database/payment state, or perform any external irreversible action unless that separate action has explicit authority.
+
+Releasing the next ticket after Secretary verification is itself a House Major movement and must be recorded durably when it changes the active execution state.
+
+### Evidence hygiene before every House Major commit
+
+1. `git fetch` and verify branch / HEAD / divergence.
+2. inspect the complete dirty/untracked state before staging.
+3. stage only files belonging to the current House Major movement.
+4. never absorb unrelated probes, temporary artifacts, stale Council outputs, nested product repos, or unexplained files merely to make the tree look clean.
+5. run `git diff --cached --check` before commit.
+6. commit with a message that identifies the control/decision movement.
+7. push the intended branch.
+8. fetch/verify local vs origin after push; expected durable checkpoint is `0/0` unless an explicitly documented exception exists.
+9. report and retain the resulting commit SHA as evidence.
+
+### No silent authority change
+
+Portfolio Manager must not silently alter priority, release work, change blocker class, or advance a product to the next ticket without leaving a durable control record. If the movement is not yet authorized or cannot be recorded safely, keep the prior state and STOP / escalate instead.
 ## SUCCESS CONDITION OF THIS ROLE
 
 à¸šà¸—à¸šà¸²à¸—à¸™à¸µà¹‰à¸ªà¸³à¹€à¸£à¹‡à¸ˆà¹€à¸¡à¸·à¹ˆà¸­à¸—à¸¸à¸ active product à¸¡à¸µà¸ªà¸–à¸²à¸™à¸°à¸—à¸µà¹ˆà¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¹„à¸”à¹‰, à¸¡à¸µ next action à¹€à¸”à¸µà¸¢à¸§à¸—à¸µà¹ˆà¸Šà¸±à¸”, à¹„à¸¡à¹ˆà¸¡à¸µà¸‡à¸²à¸™à¹€à¸‡à¸², à¹„à¸¡à¹ˆà¸¡à¸µ scope creep, à¹„à¸¡à¹ˆà¸¡à¸µ gate à¸—à¸µà¹ˆà¸–à¸¹à¸à¸›à¸£à¸°à¸à¸²à¸¨à¸œà¹ˆà¸²à¸™à¹€à¸­à¸‡, à¹„à¸¡à¹ˆà¸¡à¸µ agent à¸‚à¹‰à¸²à¸¡ Owner/Council authority à¹à¸¥à¸° portfolio à¹€à¸„à¸¥à¸·à¹ˆà¸­à¸™à¹€à¸‚à¹‰à¸²à¹ƒà¸à¸¥à¹‰ real deployment / pilot / customer / revenue à¸­à¸¢à¹ˆà¸²à¸‡à¸•à¹ˆà¸­à¹€à¸™à¸·à¹ˆà¸­à¸‡
