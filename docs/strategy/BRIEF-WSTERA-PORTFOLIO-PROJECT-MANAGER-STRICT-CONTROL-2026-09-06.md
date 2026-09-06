@@ -30,6 +30,8 @@
 - `D:\AI-Workspace\projects\saas-product-hub\docs\strategy\WSTERA-LAYER-MODEL.md`
 - `D:\AI-Workspace\projects\saas-product-hub\docs\council-strategy-layer-model-2026-09-05\STRATEGY-OWNER-BRIEF.md`
 - `D:\AI-Workspace\projects\saas-product-hub\docs\strategy\BUILD-TO-SELL-EXECUTION-2026-09-06.md`
+- `D:\AI-Workspace\projects\saas-product-hub\docs\strategy\WSTERA-FREE-FIRST-INFRASTRUCTURE-POLICY.md`
+- `D:\AI-Workspace\projects\saas-product-hub\docs\strategy\BRIEF-WSTERA-PORTFOLIO-FREE-FIRST-INFRASTRUCTURE-AUDIT-2026-09-06.md`
 - `D:\AI-Workspace\projects\saas-product-hub\docs\strategy\BUILD-TO-SELL-WORKING-VIEW-2026-09-06.md`
 - `D:\AI-Workspace\projects\saas-product-hub\docs\strategy\LAYER-1-CLOSEOUT.md`
 - `D:\AI-Workspace\projects\saas-product-hub\docs\platform\WSTERA-SECRETARY-BRIDGE.md`
@@ -152,6 +154,31 @@ S-Bridge à¹€à¸›à¹‡à¸™ fail-closed transport/coordination boundar
 
 ### Secrets
 à¸«à¹‰à¸²à¸¡ fabricate credential, hard-code secret, echo secret à¸¥à¸‡ log/evidence à¸«à¸£à¸·à¸­à¹ƒà¸Šà¹‰ production secret à¹à¸—à¸™ staging/test à¹€à¸žà¸·à¹ˆà¸­à¹€à¸„à¸¥à¸µà¸¢à¸£à¹Œ gate
+## FREE-FIRST INFRASTRUCTURE CONTROL — OWNER POLICY
+
+- Every `PRE-REVENUE` product defaults to **FREE FIRST** for infrastructure and external services.
+- `Production` status is not permission to create recurring cost.
+- A paid provider/tier before revenue is last resort only after evidence proves no viable free path can satisfy material acceptance criteria.
+- Provider selection is requirement-first and provider-neutral: `Requirement -> Constraints -> Baseline -> Candidate Discovery -> Comparison -> Decision`.
+- Provider names in worker prose, framework defaults, deployment docs, Terms/Privacy, or config are not architecture authority without a canonical decision.
+- Classify provider references as `LOCKED`, `PROVISIONAL`, `ASSUMPTION`, or `UNDECIDED`.
+- Unsupported provider-specific recommendations are `ASSUMPTION / DOCUMENT DRIFT`; stop provider-specific implementation until corrected.
+- Revenue only opens Paid Evaluation Gate; current stack remains baseline until a candidate is better on every material requirement or Owner explicitly overrides.
+- Terms/Privacy must not name a provider ahead of authoritative architecture/provider decision.
+- All products must pass the portfolio Free-First infrastructure audit; unknown cost/revenue/provider authority is never guessed.
+
+## OWNER COST DOCTRINE — FAMILY-MONEY STANDARD
+
+- Treat every proposed recurring cost as Owner family money requiring justification before spending; never dismiss 100/500/1,000 THB per month as trivial.
+- A Product that has not earned the money has no automatic right to require Owner funding.
+- No revenue + viable free path = no new fixed cost.
+- Working free path = use free first.
+- Spending requires a proven blocker, material risk reduction, or material return that Owner can verify.
+- Revenue does not justify replacing a working free/current solution by default.
+- Compare every expense against the actual current baseline, never provider marketing.
+- `future-proofing`, `for future scale`, and `เผื่ออนาคต` are not valid standalone reasons to spend now.
+- Small recurring costs across multiple products are portfolio fixed cost and must be controlled as such.
+
 ## CURRENT ACTIVE PRODUCT GUARDRAILS â€” 2026-09-06
 
 ### BK01 â€” Booking
@@ -173,7 +200,7 @@ S-Bridge à¹€à¸›à¹‡à¸™ fail-closed transport/coordination boundar
 - Phase 13 is canonical on merged master history; do not reopen the old failure narrative
 - Dedicated PS-SR-02 staging worktree must be preserved
 - Current next = isolated staging + release engineering
-- Current blocker class = approved app staging provider + isolated Supabase staging + staging credentials
+- Current blocker/correction = isolated non-production staging capability + credentials are required, but provider authority must be revalidated under Free-First; no named provider is implied by this requirement
 - Windows Docker/local E2E limitation must not be turned into a product defect when canonical CI evidence already covers the intended matrix
 
 ### WS01 / LK01 / MT01 / CM01

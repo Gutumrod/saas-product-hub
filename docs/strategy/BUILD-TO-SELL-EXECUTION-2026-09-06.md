@@ -3,6 +3,18 @@
 ## Owner direction
 Pause Module Hub Scan and non-essential new governance/research. Prioritize work that makes a product sellable, usable, deployable, supportable, payable, or removes a real blocker. KMO execution is independent and is not part of this WSTERA execution wave.
 
+## Free-First infrastructure authority
+
+Owner policy effective 2026-09-06: every pre-revenue product defaults to **FREE FIRST**. Paid infrastructure is not a production default and may be proposed before revenue only as an evidence-backed last resort when no viable free path satisfies material acceptance criteria.
+
+Provider selection is requirement-first and provider-neutral. Worker/provider recommendations do not become architecture authority merely by appearing in deployment docs, config, or framework guidance. Revenue opens evaluation only; it does not approve migration. Canonical policy: `WSTERA-FREE-FIRST-INFRASTRUCTURE-POLICY.md`.
+
+The portfolio infrastructure audit is authorized governance correction under `BRIEF-WSTERA-PORTFOLIO-FREE-FIRST-INFRASTRUCTURE-AUDIT-2026-09-06.md`. During the audit, preserve existing runtime, but do not introduce new paid defaults or provider-specific implementation without authority.
+
+## Owner cost standard
+
+Every proposed infrastructure cost is treated as Owner family money requiring evidence before spend. Do not normalize small recurring charges as trivial. A pre-revenue Product has no automatic claim on Owner funding while a viable free path exists. Spending requires a proven blocker, material risk reduction, or material return. `Future-proofing` is not a cost trigger.
+
 ## Council basis
 The canonical Product Destination Council has Product Gate PASS 7/7 and Business/Market PASS 7/7 for BK01, DC01, PS01, LK01, WS01, MT01 and CM01. Those PASS results are decision inputs; this file converts them into current execution authority.
 
