@@ -1,7 +1,7 @@
 # CM01 Business / Market Doc Pack
 
 Gate: Business / Market Gate
-Status: **REMEDIATE awaiting Owner OD-001**
+Status: **PASS after OD-001 Option A**
 Confidence: **59/100**
 
 ## Business Model
@@ -15,14 +15,30 @@ CM01 should be treated as a source-code product candidate, not hosted SaaS.
 - Commercial promise: save implementation and localization work for Thai-first case-management screens.
 - Non-promise: production backend, multi-user sync, hosted deployment, auth, cross-browser support, or finished adapter.
 
+## OD-001 License Strategy
+
+Status: **DECIDED - Owner chose Option A**
+
+Future paid CM01 sale packages use **WSTERA Commercial License + EULA** rather than relying on the old MIT package as the commercial sale contract.
+
+Applied terms for Business / Market gate purposes:
+
+- Buyer may use, modify, and deploy the purchased source commercially under the purchased license.
+- Buyer may not redistribute or resell the source as a standalone or competing module, template, or source package.
+- Rights already granted under historical MIT versions remain granted and are not retroactively revoked.
+- WSTERA-owned future versions may be released under the new commercial terms.
+- Sale packaging direction is **WSTERA Commercial License + EULA**.
+
+Effect on gate: the prior MIT-vs-paid-single-use contradiction is resolved at the Owner-decision level. Actual license/EULA drafting and legal review remain downstream Legal/Launch work.
+
 ## Monetization
 
-Monetization remains hypothesis-level until OD-001 and downstream validation are resolved.
+Monetization remains hypothesis-level even though the Business / Market Gate now passes.
 
 Permitted gate-level direction:
 
-- One-time source-template / source-license direction is commercially plausible.
-- Agency/source reuse packaging is plausible only after license/support boundaries are decided.
+- One-time source-template / source-license direction is commercially plausible if packaged under WSTERA Commercial License + EULA.
+- Agency/source reuse packaging is plausible only after license/support boundaries are drafted and approved.
 - Hosted or recurring SaaS monetization is not V1 and should not be used as the primary V1 model.
 
 Not approved:
@@ -30,14 +46,14 @@ Not approved:
 - `$39` single-use price.
 - `$129` agency price.
 - `THB 350/month` recurring.
-- Any final plan name, entitlement, refund policy, support promise, update term, or resale permission.
+- Any final plan name, entitlement, refund policy, support promise, update term, legal term, or resale permission beyond the OD-001 decision boundary.
 
 ## Competitive Landscape
 
 Direct category pressure:
 
 - Broad React/admin templates are cheaper, mature, and plentiful.
-- Generic templates can be "good enough" if the buyer does not need Thai-specific case workflow.
+- Generic templates can be good enough if the buyer does not need Thai-specific case workflow.
 
 Indirect/status-quo pressure:
 
@@ -45,7 +61,7 @@ Indirect/status-quo pressure:
 - Custom Thai CRM/back-office builds.
 - Hosted ticket/support SaaS.
 
-CM01 competes by being narrower and faster to embed, not by being broader.
+CM01 competes by being narrower and faster to embed for Thai-first case workflow, not by being broader.
 
 ## Positioning
 
@@ -72,15 +88,6 @@ Pain -> Capability -> Outcome -> Business Value -> Reason to Pay:
 - Agency needs client branding -> theme presets and host-configurable theme -> faster client adaptation -> easier reuse across projects -> pays if support/license allows reuse.
 - Future backend needed -> repository boundary -> clearer integration path -> lower architecture ambiguity -> pays only if expectations are documented honestly.
 
-## Pricing Hypotheses
-
-Pricing is not approved. Preserve these as hypotheses only:
-
-- Low one-time template price may fit the broad template market, but must be reconciled with commercial license terms.
-- Higher agency package may be possible only if license permissions, reuse rights, docs, examples, and support boundaries are clear.
-- Recurring V1 pricing is currently misaligned with local-first source-template identity unless future scope changes.
-- Willingness-to-pay must be validated against cheaper generic templates and the buyer's actual implementation-time savings.
-
 ## Market Assumptions To Validate
 
 - Thai frontend developers/web agencies repeatedly need case-management UI.
@@ -91,34 +98,21 @@ Pricing is not approved. Preserve these as hypotheses only:
 - Support burden is manageable at the intended price.
 - Repeat purchase or maintenance revenue exists.
 
-## Open Decisions
+## Preserved Downstream Gaps
 
-### OD-001 License Strategy
+These are not Business / Market blockers after OD-001 Option A, but they must carry forward:
 
-Status: **Owner Decision Required**
-
-Canonical options from `01-product/CM01/OPEN-DECISIONS.md`:
-
-- **A (Recommended):** Replace/augment sale package with commercial EULA or dual-license terms before first sale.
-- **B:** Keep MIT and sell only convenience/support, accepting redistribution risk.
-- **C:** Delay sale until legal/licensing review produces a final policy.
-
-Business / Market Gate cannot PASS until this is resolved.
-
-### OD-002 Buyer Demand Threshold
-
-Carry forward. Demand validation remains unproven and should be handled before launch execution.
-
-### OD-004 Backend Adapter Direction
-
-Carry forward. Backend remains post-V1 and undecided.
-
-### OD-006 Buyer Onboarding Pack
-
-Carry forward. Buyer docs/support package is missing and must be defined before sale/launch execution.
+- OD-002 buyer demand: no primary buyer interviews, paid pilots, pre-orders, LOIs, conversion evidence, or channel proof.
+- Willingness-to-pay versus cheaper generic React/admin templates.
+- Final pricing and packaging.
+- OD-006 buyer docs/support: embed guide, adapter guide, theme guide, limitations, distribution manifest, and support scope.
+- OD-004 backend adapter direction: Supabase, REST, Module Hub `ticket-tracker`, or another path remains post-V1 and undecided.
+- Unit economics and support burden.
+- Cross-browser evidence.
+- Repeat-purchase and retention evidence.
 
 ## Gate Acceptance State
 
-CM01 does not satisfy Business / Market PASS because OD-001 remains unresolved. Once Owner decides OD-001, targeted remediation may update the Business / Market docs and verdict if the decision resolves the license contradiction.
+CM01 now satisfies the Business / Market Gate at the document level because the only locked blocker, OD-001 License Strategy, has been resolved by Owner Option A.
 
-Release 1B remains incomplete while CM01 is in REMEDIATE. No Architecture, Risk, Pre-Build, Agent Relay, implementation, launch, deployment, pricing mutation, license mutation, or backend work is released by this doc pack.
+Release 1B is complete at the document level after CM01 PASS. This doc pack does not release Architecture, Risk, Pre-Build, Module Hub Scan, Agent Relay, implementation, launch, deployment, code changes, actual license/EULA drafting, or final pricing approval.
