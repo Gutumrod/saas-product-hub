@@ -66,7 +66,7 @@
 - `RM01 RentMatrix`: Phase 0 PASS; Phase 1 ready when scheduled.
 - `OD01 OmniDesk`: Documentation + Phase 0 PASS; Phase 1 ready when scheduled.
 - Money Leak Buddy: documentation-only behavior-first MVP contract; architecture/build gate not yet locked.
-- `WS01 WSM`: Documentation Lock authorized; authoritative Phase 1 schema contract and daily handoff pushed at `main @ e1eff9b`. Implementation/migration still requires a separate approved build brief. WSM is not yet declared into `docs/products/registry.yaml` as a catalog identity.
+- `WS01 WSM`: Documentation Lock authorized; authoritative Phase 1 schema contract and daily handoff pushed at `main @ e1eff9b`. Identity reconciliation closed by Owner 2026-09-07: `docs/products/registry.yaml` now declares permanent `product_code: WS01` and `product_id: prd_8d94348cd4ed492ba6ee08776da66bc6`. Runtime placement remains a separate decision; identity registration does not authorize deployment.
 
 ## Source Links
 

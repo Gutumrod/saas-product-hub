@@ -18,6 +18,10 @@ Every proposed infrastructure cost is treated as Owner family money requiring ev
 ## Council basis
 The canonical Product Destination Council has Product Gate PASS 7/7 and Business/Market PASS 7/7 for BK01, DC01, PS01, LK01, WS01, MT01 and CM01. Those PASS results are decision inputs; this file converts them into current execution authority.
 
+## Product identity authority
+
+Permanent product identity comes from `docs/products/registry.yaml`. The current Build-to-Sell seven are canonical 7/7 after the Owner-approved 2026-09-07 reconciliation; see `docs/platform/PRODUCT_IDENTITY_RECONCILIATION-2026-09-07.md`. Execution names/paths do not create identity, and identity registration does not authorize deployment or expand scope.
+
 ## Current execution briefs
 | Product | Verified baseline | Immediate next ticket | Brief |
 |---|---|---|---|
