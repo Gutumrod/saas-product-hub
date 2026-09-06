@@ -56,3 +56,13 @@ Owner confirmed at **2026-09-06 14:08 Asia/Bangkok (+07:00)** that the Claude se
 - New dispatch to `agent-claude` is permitted again.
 - Preserve completed and partial work; resume existing tasks instead of restarting them.
 - Build-to-Sell remains the active priority. Do not open Council, Module Hub Scan, or unrelated work.
+
+## CODEX AVAILABILITY — RESTORED
+
+Owner update recorded: **2026-09-06 21:26 Asia/Bangkok (+07:00)**.
+
+- Codex is **AVAILABLE** again and is no longer blocked by the prior usage/session limit.
+- Any prior temporary assumption that Codex is unavailable is superseded by this Owner update.
+- Codex may be used for authorized Build-to-Sell verification, remediation, synthesis, or implementation tasks within the existing ticket/worker contract.
+- This availability change does **not** expand product scope, authorize a new ticket, bypass Secretary review, or override the Free-First Infrastructure Policy.
+- Existing partial work must still be resumed/salvaged rather than restarted solely because Codex is available again.
