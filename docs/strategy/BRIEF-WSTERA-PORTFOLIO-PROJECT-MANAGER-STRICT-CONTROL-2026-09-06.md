@@ -326,3 +326,17 @@ Portfolio Manager must not silently alter priority, release work, change blocker
 à¸šà¸—à¸šà¸²à¸—à¸™à¸µà¹‰à¸ªà¸³à¹€à¸£à¹‡à¸ˆà¹€à¸¡à¸·à¹ˆà¸­à¸—à¸¸à¸ active product à¸¡à¸µà¸ªà¸–à¸²à¸™à¸°à¸—à¸µà¹ˆà¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¹„à¸”à¹‰, à¸¡à¸µ next action à¹€à¸”à¸µà¸¢à¸§à¸—à¸µà¹ˆà¸Šà¸±à¸”, à¹„à¸¡à¹ˆà¸¡à¸µà¸‡à¸²à¸™à¹€à¸‡à¸², à¹„à¸¡à¹ˆà¸¡à¸µ scope creep, à¹„à¸¡à¹ˆà¸¡à¸µ gate à¸—à¸µà¹ˆà¸–à¸¹à¸à¸›à¸£à¸°à¸à¸²à¸¨à¸œà¹ˆà¸²à¸™à¹€à¸­à¸‡, à¹„à¸¡à¹ˆà¸¡à¸µ agent à¸‚à¹‰à¸²à¸¡ Owner/Council authority à¹à¸¥à¸° portfolio à¹€à¸„à¸¥à¸·à¹ˆà¸­à¸™à¹€à¸‚à¹‰à¸²à¹ƒà¸à¸¥à¹‰ real deployment / pilot / customer / revenue à¸­à¸¢à¹ˆà¸²à¸‡à¸•à¹ˆà¸­à¹€à¸™à¸·à¹ˆà¸­à¸‡
 
 **Default stance:** à¸­à¸³à¸™à¸²à¸ˆà¹„à¸¡à¹ˆà¸Šà¸±à¸” = STOP. Evidence à¹„à¸¡à¹ˆà¸žà¸­ = NOT PASS. à¸‡à¸²à¸™à¸ˆà¸š ticket = WAIT FOR SECRETARY RELEASE. Owner = FINAL AUTHORITY.
+
+
+## SHARED LINE OA TEST FIXTURE — OWNER POLICY 2026-09-07
+
+Canonical policy: `WSTERA-SHARED-LINE-OA-TEST-FIXTURE-POLICY.md`.
+
+- Queueeasy is the WSTERA shared LINE OA test fixture, not a product-owned or production OA.
+- It is reused sequentially by one product at a time.
+- Mandatory lifecycle: `CLAIM -> TEST -> EVIDENCE -> RELEASE -> RESET`.
+- No new product may CLAIM until RESET is verified and fixture state is `AVAILABLE`.
+- Concurrent cross-product use is forbidden unless Owner explicitly overrides.
+- Queueeasy credentials must remain outside product repos/Git and must never be fabricated or hard-coded.
+- Queueeasy must not become product architecture, permanent tenant identity, production endpoint, commercial dependency, or justification for paid infrastructure.
+- This policy does not authorize changes to `.line-mcp/config.json`, product code, webhook, provider config, or production systems by itself.

@@ -70,3 +70,14 @@ Owner update recorded: **2026-09-06 21:26 Asia/Bangkok (+07:00)**.
 - Codex may be used for authorized Build-to-Sell verification, remediation, synthesis, or implementation tasks within the existing ticket/worker contract.
 - This availability change does **not** expand product scope, authorize a new ticket, bypass Secretary review, or override the Free-First Infrastructure Policy.
 - Existing partial work must still be resumed/salvaged rather than restarted solely because Codex is available again.
+
+
+## Shared LINE OA test fixture — 2026-09-07 Owner decision
+
+Queueeasy is the shared sequential LINE OA test fixture for WSTERA Build-to-Sell testing.
+
+Use lifecycle: `CLAIM -> TEST -> EVIDENCE -> RELEASE -> RESET`.
+
+Only one product may use the fixture at a time. Queueeasy is not a product-owned/production OA and must not become a permanent product dependency. A product may use it only inside an approved test ticket and must release/reset it before the next product claims it.
+
+No `.line-mcp/config.json`, webhook, product-code, provider, or production mutation is implied by this decision. Those changes require the specific test authority that needs them.
