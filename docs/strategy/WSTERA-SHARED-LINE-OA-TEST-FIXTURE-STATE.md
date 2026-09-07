@@ -2,37 +2,35 @@
 
 **Canonical policy:** `WSTERA-SHARED-LINE-OA-TEST-FIXTURE-POLICY.md`
 **Fixture:** Queueeasy LINE Official Account
-**Current state:** `TESTING:BK01`
+**Current state:** `RELEASE_PENDING:BK01`
 **Product:** BK01 Booking
 **Test ticket:** `BK-SR-03`
 **Claim date:** 2026-09-07 Asia/Bangkok
 **Testing start:** 2026-09-07 Asia/Bangkok
+**Release pending:** 2026-09-07 Asia/Bangkok
 
-## Claim basis
+## Completed BK01 evidence
 
-- Owner explicitly authorized immediate BK01 use under the locked shared-fixture policy.
-- Owner states Queueeasy was unused before this claim.
-- No other canonical fixture state file or policy-era active claim existed at claim time.
-- This is the first claim under the canonical shared-fixture policy.
+- Queueeasy identity verified as display name `Queueeasy`, Basic ID `@264iezuj`.
+- BK01 non-production webhook verification PASS against `wstera-consumer-staging`.
+- Real Owner binding PASS; persisted LINE UID reuse and server-side push PASS.
+- Reminder duplicate-like defect reproduced, remediated, and externally re-accepted with exactly one fresh notification.
+- No Queueeasy credential values were committed to product or house repositories.
 
-## Baseline verification
+## Release status
 
-- Owner supplied provider-console evidence for Queueeasy before product-specific binding.
-- Bot basic ID: `@264iezuj`.
-- Provider console shows Messaging API channel status active.
-- Channel ID shown by provider console: `2011005991`.
-- Webhook URL is empty; no product webhook binding is present at testing start.
-- The supplied console view does not expose a separate `Use webhook` toggle, so no ON/OFF state is inferred.
-- No secret values are recorded in this file.
+BK01 approved LINE test scope has ended. BK01 no longer needs the fixture reserved for active testing.
 
-## Approved BK01 test slice
+RESET is not yet complete because provider `Use webhook` remains enabled and the previous BK01 staging webhook therefore remains active. LINE's public Messaging API can set/get/test the webhook URL but does not expose the console `Use webhook` ON/OFF control.
 
-BK01 may now bind Queueeasy only for the approved non-production BK-SR-03 LINE acceptance test. Any product-specific binding must remain temporary and reversible. Broadcast and production customer use remain forbidden.
+Required Owner/manual reset step:
 
-## Release requirement
+1. LINE Developers Console / Queueeasy / Messaging API -> set `Use webhook` = OFF.
+2. Verify provider API reports `active=false`.
+3. Record RESET evidence and change this state to `AVAILABLE`.
 
-After the approved BK-SR-03 LINE slice completes or becomes blocked, BK01 must remove or deactivate its temporary binding, capture non-secret evidence, transition to `RELEASE_PENDING:BK01`, complete RESET verification, then return the fixture to `AVAILABLE` before another product claims it.
+Until those steps pass, the next product must not CLAIM Queueeasy.
 
 ## Scope guard
 
-Queueeasy is non-production shared WSTERA test infrastructure only. It is not BK01-owned, not a production identity, and must be RELEASED and RESET after the approved BK-SR-03 LINE test slice.
+Queueeasy remains non-production shared WSTERA test infrastructure only. It is not BK01-owned, not a production identity, and the remaining BK01 webhook configuration must not be treated as permanent architecture.
