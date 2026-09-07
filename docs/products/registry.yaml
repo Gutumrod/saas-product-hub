@@ -17,13 +17,15 @@
 # — see docs/platform/PRODUCT_ID_HOSTNAME_NAMESPACE_PROPOSAL.md for the model and
 # decision log. product_id is a permanent internal identity (never reused, never
 # displayed to customers). product_code is a permanent short portfolio code
-# (never recycled even after retirement) reserved for future canonical hostnames
-# of the form <code>.wstera.com — reservation is documentation-only here; no DNS
-# record has been created for any product, including booking/BK01. `key` remains
-# the existing repo/catalog identifier used elsewhere in this file and in code —
+# (never recycled even after retirement) used for canonical hostnames of the form
+# <code>.wstera.com. A product code does not itself prove DNS/deployment; each product's
+# host state is recorded separately. `key` remains the existing repo/catalog identifier
+# used elsewhere in this file and in code —
 # it is NOT renamed or replaced by this change. Consistent with the Hub/root-domain
 # note below (owner-confirmed 2026-08-24): wstera.com is the portfolio root: products
-# get subdomains, they do not own it.
+# get subdomains, they do not own it. Host reservation/live state must be recorded per
+# product; DC01 is live at dc01.wstera.com as of 2026-09-07 while reserved hosts remain
+# documentation-only until separately deployed.
 # ==============================================================================
 
 version: "1.3"
@@ -633,14 +635,14 @@ products:
     product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
     product_code: "DC01"
     delivery_model: "subscription_saas"
-    # canonical_host dc01.wstera.com reserved (docs-only, no DNS record created).
+    # canonical_host dc01.wstera.com is LIVE as of 2026-09-07 for DocCraft V1 Public Pilot.
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"
     tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
-    description: "Local-first document studio evolving into a hosted subscription SaaS with optional cloud capability. Phase 4 is independently closed and the 2026-08-27 clean rerun passed 118 unit tests, build, and 32 browser tests; Gate 3 manual Chrome/Edge native-print acceptance and later cloud/auth/billing/operations phases remain open."
+    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production is live at dc01.wstera.com and Public Pilot / PV Gate is next. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
     deployment_model: "dedicated_runtime"
-    runtime_project: "TBD - hosted SaaS deployment validation required"
+    runtime_project: "Cloudflare Workers static assets / dc01.wstera.com"
     commercial_status: "prototype"
     wave: 1
     path: "products/doccraft"
