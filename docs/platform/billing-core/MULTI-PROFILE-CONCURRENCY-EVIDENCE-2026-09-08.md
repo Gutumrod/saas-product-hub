@@ -39,13 +39,13 @@ Created central-profile validation objects, all confirmed `livemode=false`:
 
 These Test objects are provider mappings only; they do not authorize public pricing or live billing.
 
-## Remaining provider-run blocker
+## Stripe Test provider lifecycle — PASS
 
-The execution environment blocked a direct secret-from-file -> external-network subscription smoke test.
-The connected Stripe MCP account is a different account (`Queueeasy`) and therefore was not used as a substitute.
-Stripe CLI is not installed on the Windows host.
+The correct Stripe sandbox account was connected after the initial preflight. A real Test Mode provider matrix then created three test customers, created PS01/LK01 subscriptions, refetched provider state, canceled one customer without affecting the other two, re-subscribed, canceled two while the third remained active, re-subscribed again, and finally canceled all three.
 
-Result: Product/Price mapping is real and complete in Stripe Test Mode, but real Customer -> Subscription -> Cancel concurrency evidence is still OPEN. Profiles remain `pending_validation`; do not activate them for runtime paid checkout yet.
+Direct provider list checks confirmed zero active subscriptions for all three customer fixtures after cleanup. Exact provider evidence is recorded in `STRIPE-TEST-PROVIDER-MATRIX-EVIDENCE-2026-09-08.md`.
+
+Profiles still remain `pending_validation`: provider lifecycle PASS does not replace account-binding, webhook, reconciliation, entitlement, audit, or rollback gates.
 ## Provider runner prepared
 
 A secret-free runner is now tracked at:
@@ -61,4 +61,4 @@ Safety properties:
 - deletes test customers during cleanup.
 
 `node --check` PASS. Full local registry/concurrency verification remains 16/16 PASS.
-Provider execution is still pending an approved Test-key execution boundary for the correct Stripe account.
+The provider lifecycle has now also been exercised through the connected Stripe sandbox; the standalone runner remains available for future exact-parallel provider execution when an approved Test-key process boundary is used.
