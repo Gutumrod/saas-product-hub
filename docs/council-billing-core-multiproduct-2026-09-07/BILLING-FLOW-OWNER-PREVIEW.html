@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WSTERA Billing Core — Owner Preview</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a2d;--panel2:#17223a;--line:#314160;--text:#eef3ff;--muted:#9fb0cc;--accent:#7dd3fc;--ok:#86efac;--warn:#fbbf24;--danger:#fb7185;--violet:#c4b5fd}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#080d19,#10182b 35%,#0b1020);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+.wrap{max-width:1420px;margin:auto;padding:24px}.banner{border:1px solid #7f1d1d;background:#2a1218;color:#fecdd3;padding:12px 16px;border-radius:12px;font-weight:800;text-align:center;letter-spacing:.03em}
+h1{font-size:34px;margin:26px 0 6px}.sub{color:var(--muted);margin-bottom:22px}.status{display:inline-block;padding:5px 10px;border-radius:999px;background:#352b0e;color:#fde68a;border:1px solid #6f5b15;font-size:12px;font-weight:800}
+.hero{display:grid;grid-template-columns:1fr auto 1fr auto 1.2fr auto 1fr;gap:10px;align-items:stretch;margin:22px 0}.node{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:17px;min-height:112px;box-shadow:0 10px 30px #0004}.node b{display:block;font-size:15px;margin-bottom:7px}.node small{color:var(--muted)}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:28px;font-weight:900}.identity{border-color:#155e75}.profile{border-color:#5b21b6}.stripe{border-color:#166534}.noglobal{margin:12px 0 24px;padding:11px 14px;border:1px dashed var(--danger);border-radius:12px;color:#fecdd3;background:#28131d;font-weight:700}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.tab{border:1px solid var(--line);background:#11192a;color:var(--muted);padding:9px 13px;border-radius:10px;cursor:pointer;font-weight:700}.tab.active{background:#17304a;color:#dff6ff;border-color:#2f76a2}
+.panel{display:none;background:rgba(18,26,45,.9);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}.panel.active{display:block}.panel h2{margin:0 0 14px;font-size:22px}
+.flow{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:4px 0 10px}.step{min-width:170px;flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px}.step .n{font-size:11px;color:var(--accent);font-weight:800}.step strong{display:block;margin:4px 0}.step p{font-size:13px;color:var(--muted);margin:0}.chev{display:flex;align-items:center;color:#6b8dbd;font-size:22px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:15px}.card h3{margin:0 0 7px;font-size:16px}.card p,.card li{color:var(--muted);font-size:14px}.tag{font-size:11px;border-radius:999px;padding:3px 7px;border:1px solid var(--line);color:var(--muted);display:inline-block;margin:2px}.good{color:#bbf7d0}.bad{color:#fecdd3}.warn{color:#fde68a}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.env{padding:16px;border-radius:14px;border:1px solid var(--line)}.test{background:#10223a;border-color:#225b89}.live{background:#28161b;border-color:#7f1d1d;opacity:.82}
+.table{width:100%;border-collapse:collapse}.table th,.table td{border-bottom:1px solid #283750;padding:10px 8px;text-align:left;font-size:13px;vertical-align:top}.table th{color:#dbeafe}.table td{color:var(--muted)}
+.footer{margin:28px 0 10px;color:#7185a5;font-size:12px}.pill{font-size:12px;padding:4px 8px;border-radius:999px;background:#0e2740;border:1px solid #174a70;color:#bae6fd}
+@media(max-width:1000px){.hero{grid-template-columns:1fr}.arrow{transform:rotate(90deg);min-height:28px}.grid,.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="banner">OWNER PREVIEW ONLY — NOT SOURCE OF TRUTH — NOT BUILD AUTHORIZATION</div>
+<h1>WSTERA Billing Core — Multi‑Product Profile Flow</h1>
+<div class="sub">ภาพอธิบายว่า Product หลายตัวจะใช้ Billing/Stripe ทางกลางร่วมกันยังไง โดยแต่ละ Product มี Billing Profile ของตัวเอง</div>
+<span class="status">Council synthesis: ยังไม่สรุป Final Codex verdict</span>
+
+<div class="hero">
+  <div class="node"><b>WSTERA Product</b><small>PS01 / LK01 / DC01 / MT01 / CM01 / WS01 / BK01 facade</small></div><div class="arrow">→</div>
+  <div class="node identity"><b>Central Billing API</b><small>ตรวจ auth + account/tenant + environment + idempotency</small></div><div class="arrow">→</div>
+  <div class="node profile"><b>Request‑Scoped Billing Profile</b><small>resolve จาก product_id + environment + profile_version</small></div><div class="arrow">→</div>
+  <div class="node stripe"><b>Provider Adapter → Stripe</b><small>Price / rail / lifecycle ถูกเลือกฝั่ง server จาก profile</small></div>
+</div>
+<div class="noglobal">ห้ามมี global <code>current_profile</code> หรือ <code>active_product</code> — ทุก request/event/job ต้อง resolve profile ของตัวเองแบบ request-scoped</div>
+<div class="tabs">
+<button class="tab active" data-tab="checkout">1. Checkout</button>
+<button class="tab" data-tab="webhook">2. Webhook + Reconcile</button>
+<button class="tab" data-tab="entitlement">3. Entitlement</button>
+<button class="tab" data-tab="onboard">4. เพิ่ม Product ใหม่</button>
+<button class="tab" data-tab="env">5. Test / Live</button>
+<button class="tab" data-tab="bk01">6. BK01 Special Case</button>
+<button class="tab" data-tab="fail">7. Failure Cases</button>
+</div>
+
+<section id="checkout" class="panel active"><h2>1) ลูกค้ากดซื้อ / สมัคร</h2><div class="flow">
+<div class="step"><span class="n">STEP 1</span><strong>Product ส่งคำขอ</strong><p>เช่น PS01 ขอ plan founding สำหรับ shop_x โดย caller ถูกผูกกับ product แล้ว</p></div><div class="chev">→</div>
+<div class="step"><span class="n">STEP 2</span><strong>Billing API ตรวจ identity</strong><p>product, account/tenant, environment, authorization, idempotency ต้องตรง</p></div><div class="chev">→</div>
+<div class="step"><span class="n">STEP 3</span><strong>Resolve Profile</strong><p>โหลด profile version ที่ active สำหรับ Product นี้เท่านั้น</p></div><div class="chev">→</div>
+<div class="step"><span class="n">STEP 4</span><strong>Resolve Stripe Price</strong><p>ฝั่ง server map plan → Stripe Price ห้าม caller ส่ง Price ID มาเลือกเอง</p></div><div class="chev">→</div>
+<div class="step"><span class="n">STEP 5</span><strong>Create Checkout</strong><p>Stripe Test Mode ตอนนี้; metadata ใช้ช่วย route/correlate เท่านั้น</p></div>
+</div>
+<div class="grid"><div class="card"><h3>สิ่งที่ caller พูดได้</h3><p><span class="tag">account_id</span> <span class="tag">plan_id</span> ตาม contract ที่อนุญาต และ auth context ที่ตรวจได้</p></div><div class="card"><h3>สิ่งที่ caller ห้ามควบคุม</h3><p class="bad">Stripe Price ID, Product identity authority, amount/currency authority, entitlement state</p></div></div></section>
+<section id="webhook" class="panel"><h2>2) Stripe แจ้งผล → ต้อง Reconcile ก่อนเชื่อเงิน</h2><div class="flow">
+<div class="step"><span class="n">EVENT</span><strong>Stripe Webhook</strong><p>รับ raw body แล้ว verify Stripe-Signature ก่อน parse</p></div><div class="chev">→</div>
+<div class="step"><span class="n">DURABLE</span><strong>Claim + Outbox</strong><p>event id ถูก claim แบบ durable; duplicate ต้องไม่ apply ซ้ำ</p></div><div class="chev">→</div>
+<div class="step"><span class="n">ROUTE</span><strong>Identify Product/Account</strong><p>metadata เป็น routing hint ไม่ใช่ authority</p></div><div class="chev">→</div>
+<div class="step"><span class="n">TRUTH</span><strong>Provider Re-fetch</strong><p>ดึง Stripe truth ใหม่ ตรวจ product/account/amount/currency/plan</p></div><div class="chev">→</div>
+<div class="step"><span class="n">STATE</span><strong>Idempotent Transition</strong><p>apply transition ที่ monotonic และ replay-safe</p></div>
+</div>
+<div class="card"><h3>ทำไม redirect success ไม่พอ?</h3><p>Browser กลับหน้า success แปลได้แค่ว่า flow เดินมาถึงจุดหนึ่ง ไม่ได้พิสูจน์ว่าเงินจริงสำเร็จและ entitlement ถูกต้อง จึงต้องใช้ provider truth + reconciliation เป็น correctness boundary.</p></div></section>
+
+<section id="entitlement" class="panel"><h2>3) Billing Core ไม่เป็นเจ้าของ business state ของ Product</h2>
+<div class="flow"><div class="step"><span class="n">BILLING</span><strong>Verified financial state</strong><p>paid / active / cancelled / refunded หลัง reconcile</p></div><div class="chev">→</div><div class="step"><span class="n">ADAPTER</span><strong>Product Entitlement Adapter</strong><p>signed ingress / pull / snapshot ตาม Product contract</p></div><div class="chev">→</div><div class="step"><span class="n">PRODUCT</span><strong>Product-owned state</strong><p>Product เป็นเจ้าของ permission/lifecycle ของตัวเอง</p></div></div>
+<div class="grid"><div class="card"><h3>PS01 Pawstia</h3><p>Recurring subscription → signed lifecycle transition เข้า state ของ Pawstia</p></div><div class="card"><h3>LK01 WSTERA Link</h3><p>Free + recurring → local entitlement snapshot นอก redirect hot path</p></div><div class="card"><h3>DC01 DocCraft</h3><p>Public Pilot ก่อน → future one-time unlock โดยไม่เปลี่ยน V1 local-first</p></div><div class="card"><h3>MT01 / CM01</h3><p>One-time source sale → purchase/license/update entitlement ไม่ปลอมเป็น subscription</p></div></div></section>
+<section id="onboard" class="panel"><h2>4) เพิ่ม Product ใหม่ = Register Profile ไม่ใช่สร้าง Stripe integration ใหม่</h2><div class="flow">
+<div class="step"><span class="n">1</span><strong>Register Profile</strong><p>product_id, model, currency, plans, rails, lifecycle, profile_version</p></div><div class="chev">→</div>
+<div class="step"><span class="n">2</span><strong>Authorization Binding</strong><p>ผูก caller/product/environment และ account ownership contract</p></div><div class="chev">→</div>
+<div class="step"><span class="n">3</span><strong>Map Stripe Objects</strong><p>1 Stripe Product ต่อ WSTERA Product + immutable Prices ต่อ plan/version</p></div><div class="chev">→</div>
+<div class="step"><span class="n">4</span><strong>Entitlement + Reconcile</strong><p>กำหนด adapter และพิสูจน์ provider re-fetch/matching</p></div><div class="chev">→</div>
+<div class="step"><span class="n">5</span><strong>Isolation Test</strong><p>Product A ต้องเปลี่ยน Product B ไม่ได้</p></div><div class="chev">→</div>
+<div class="step"><span class="n">6</span><strong>Activate</strong><p>เปิด profile ได้เมื่อ admission gates ครบเท่านั้น</p></div></div>
+<div class="card"><h3>Profile lifecycle</h3><p><span class="pill">draft</span> → <span class="pill">pending_validation</span> → <span class="pill">active</span> → <span class="pill">deprecated</span> → <span class="pill">retired</span></p><p class="warn">Active profile ต้อง immutable; เปลี่ยนราคา/contract = profile version ใหม่ + admission/retest ไม่แก้ของเดิมกลางอากาศ</p></div></section>
+
+<section id="env" class="panel"><h2>5) Stripe account เดียว แต่ Test / Live ต้องแยก mapping เด็ดขาด</h2><div class="split">
+<div class="env test"><h3>TEST — ใช้ตอนนี้</h3><p>WSTERA Stripe Sandbox / Billing Test Fixture</p><p><span class="tag">environment=test</span> <span class="tag">product_id</span> <span class="tag">account_id</span> <span class="tag">profile_version</span> <span class="tag">test_run_id</span></p><p class="good">ใช้ test customers / products / prices / webhook / reconciliation / entitlement isolation</p></div>
+<div class="env live"><h3>LIVE — ยังห้าม</h3><p>มี mapping คนละชุดกับ Test</p><p class="bad">ห้าม live key • ห้าม live charge • ห้าม production deploy จน Owner authorize และ live-readiness gate ผ่าน</p></div></div></section>
+<section id="bk01" class="panel"><h2>6) BK01 — ไม่รื้อของเดิม แต่ค่อยทำ facade ให้เข้าทางกลาง</h2><div class="grid">
+<div class="card"><h3>WSTERA SaaS Subscription</h3><p>BK01 merchant จ่าย WSTERA เพื่อใช้ Booking SaaS</p><p class="good">เป้าหมาย transition: Central Billing facade → existing mature BK01 checkout/webhook/portal implementation</p></div>
+<div class="card"><h3>Merchant / Customer PromptPay Deposit</h3><p>ลูกค้าของร้านจ่ายมัดจำให้ร้านผ่าน PromptPay</p><p class="bad">เป็น financial domain คนละก้อน ห้าม merge เข้า WSTERA subscription billing</p></div>
+</div><div class="card"><h3>หลักการ migration</h3><p>Preserve BK01 เป็น transitional exception → วาง facade/adapter ด้านหน้า → central path พิสูจน์กับ Product อื่นก่อน → ค่อยพิจารณา migration ภายหลังถ้ามี evidence. ห้าม rewrite เพื่อความสวยของ architecture.</p></div></section>
+
+<section id="fail" class="panel"><h2>7) ตัวอย่างเวลาระบบพัง — ต้อง fail แบบรู้เรื่อง</h2><table class="table"><thead><tr><th>กรณี</th><th>ระบบทำอะไร</th><th>ผลต่อ entitlement</th></tr></thead><tbody>
+<tr><td>Webhook ซ้ำ</td><td>event-id claim เจอ duplicate → ไม่ apply ซ้ำ</td><td>ไม่เปลี่ยนซ้ำ</td></tr>
+<tr><td>Webhook หาย</td><td>scheduled reconciliation re-fetch Stripe truth</td><td>ซ่อม drift หลังยืนยัน provider truth</td></tr>
+<tr><td>Wrong Product / Account</td><td>reject / skip + audit; ห้ามเดา routing</td><td>ไม่ grant</td></tr>
+<tr><td>Stale Profile / Price</td><td>profile version/mapping mismatch → fail closed หรือ reconcile</td><td>ไม่ใช้ config เก่ามั่ว</td></tr>
+<tr><td>จ่ายสำเร็จ แต่ Product update พัง</td><td>durable delivery job retry + reconciler + dead-letter/alert</td><td>deferred จน apply ได้แบบ idempotent</td></tr>
+<tr><td>มี entitlement แต่เงินจริงไม่ถูกต้อง</td><td>reconciliation ตรวจพบ credited-not-paid</td><td>revoke/downgrade ตาม policy + audit</td></tr>
+</tbody></table></section>
+<section class="panel active" style="display:block"><h2>What gets built later</h2>
+<div class="flow"><div class="step"><strong>Profile Contract</strong><p>schema + version lifecycle + request-scoped resolver</p></div><div class="chev">→</div><div class="step"><strong>Security / Identity</strong><p>product + account binding, env separation, idempotency</p></div><div class="chev">→</div><div class="step"><strong>Stripe Test Preflight</strong><p>test objects, webhook, API version, PromptPay eligibility</p></div><div class="chev">→</div><div class="step"><strong>Core + Webhook</strong><p>checkout + durable intake/outbox</p></div><div class="chev">→</div><div class="step"><strong>Card Vertical Slice</strong><p>subscription path Product #1</p></div><div class="chev">→</div><div class="step"><strong>Reconcile + Isolation</strong><p>missing/duplicate/out-of-order + Product #2 proof</p></div></div>
+<div class="grid"><div class="card"><h3>ยังห้าม</h3><ul><li class="bad">Live Stripe keys</li><li class="bad">เงินจริง / live charge</li><li class="bad">Production deployment</li><li>Forced BK01 rewrite</li><li>Caller-controlled Stripe Price</li></ul></div><div class="card"><h3>ภาพรวมสั้นที่สุด</h3><p><strong>Product บอกว่า “ใคร + จะซื้อ plan อะไร”</strong> → Billing Core เป็นคนตัดสินจาก profile ว่าใช้ Stripe object ไหน → Stripe แจ้งผล → Core re-fetch/reconcile → Product รับ entitlement transition ที่ผ่านการยืนยันแล้ว.</p></div></div>
+</section>
+<div class="footer">Generated as an explanatory owner preview from the frozen Council brief and completed independent expert reports available on 2026-09-07. This file is deliberately non-canonical.</div>
+</div>
+<script>
+const tabs=[...document.querySelectorAll('.tab')]; const panels=[...document.querySelectorAll('.panel[id]')];
+tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('active'));panels.forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active')}));
+</script>
+</body></html>
