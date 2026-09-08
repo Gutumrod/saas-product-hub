@@ -84,3 +84,21 @@ However, **WSTERA Shared Runtime Platform Isolation is not globally PASS** while
 BK01 remains quarantined. Production remains untouched.
 
 This report must be referenced by the relevant product/platform remediation work before final shared-runtime admission.
+## Post-H-08 Amendment — 2026-09-08
+
+House subsequently proved that `public.rls_auto_enable()` was a custom, non-extension-owned SECURITY DEFINER function exposed through `public`, with effective EXECUTE inherited by `ps01_line_runtime` through PUBLIC.
+
+House applied bounded migration `h3c_public_rls_auto_enable_acl_hardening` after committing exact forward/rollback artifacts.
+
+Post-apply:
+- external EXECUTE removed from PUBLIC, `anon`, `authenticated`, and `service_role`;
+- `ps01_line_runtime` no longer has effective EXECUTE;
+- `postgres` retains EXECUTE;
+- event trigger `ensure_rls` remains enabled and bound to the same function.
+
+Security Advisor delta:
+- anonymous SECURITY DEFINER executable count: `11 -> 10`;
+- authenticated SECURITY DEFINER executable count: `46 -> 45`;
+- `public.rls_auto_enable()` no longer appears in either lint.
+
+This amendment does not erase the historical findings above. The remaining BK01/local_service and other shared-runtime findings remain open until separately remediated and verified.
