@@ -46,3 +46,19 @@ The connected Stripe MCP account is a different account (`Queueeasy`) and theref
 Stripe CLI is not installed on the Windows host.
 
 Result: Product/Price mapping is real and complete in Stripe Test Mode, but real Customer -> Subscription -> Cancel concurrency evidence is still OPEN. Profiles remain `pending_validation`; do not activate them for runtime paid checkout yet.
+## Provider runner prepared
+
+A secret-free runner is now tracked at:
+`products/stripe-billing/platform/profile-registry/scripts/run-stripe-test-concurrency.mjs`
+
+Safety properties:
+- refuses any key that is not `sk_test_`;
+- reads secret only from process environment;
+- never writes the secret to repo/log output;
+- uses the canonical PS01/LK01 Test Price mappings from compiled profiles;
+- performs provider refetch after subscribe/cancel;
+- runs sequential, concurrent-all, C2-only cancel, and C1+C2 cancel scenarios;
+- deletes test customers during cleanup.
+
+`node --check` PASS. Full local registry/concurrency verification remains 16/16 PASS.
+Provider execution is still pending an approved Test-key execution boundary for the correct Stripe account.
