@@ -4,6 +4,8 @@
 
 **Purpose:** Allow several sellable SaaS products to share one Supabase Project B without mixing customer data, permissions, deployments, or operational risk.
 
+> **2026-09-08 authority update:** The original draft remains historical context. Current migration/config authority is governed by `docs/platform/shared-runtime/ADR-SHARED-RUNTIME-MIGRATION-CONFIG-AUTHORITY-2026-09-08.md`. Product repos no longer own the shared project's global Supabase migration history or config push path; each admitted product uses a bounded product-local migration role/ledger under the platform-global lane.
+
 **Portfolio in scope:**
 
 - 01 Bulk ETL & Sync
