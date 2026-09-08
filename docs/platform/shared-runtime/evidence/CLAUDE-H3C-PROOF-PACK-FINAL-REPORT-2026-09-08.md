@@ -1,9 +1,9 @@
 # CLAUDE — H3C Independent Validation + Proof Pack — FINAL REPORT
 
-**Date:** 2026-09-08 (Asia/Bangkok)
+**Date:** 2026-09-08 (Asia/Bangkok) · **Rev 2** — post `HOUSE-REVIEW-CLAUDE-H3C-PROOF-PACK-2026-09-08.md` + `BRIEF-CLAUDE-H3C-PROOF-PACK-REMEDIATION-2026-09-08.md`.
 **Brief:** `docs/platform/shared-runtime/BRIEF-CLAUDE-H3C-INDEPENDENT-VALIDATION-PROOF-PACK-2026-09-08.md`
 **Executor:** Claude Desktop · **Final reviewer:** WSTERA House / Secretary GPT
-**Mode:** INDEPENDENT REVIEW + PREPARE ONLY. **No WSTERA LAB mutation. No Production access. No Auth Hook enabled. No service identity created. No allowlist/grant row inserted. No secret or signing material obtained.**
+**Mode:** INDEPENDENT REVIEW + PREPARE ONLY. **No WSTERA LAB mutation. No Production access. No Auth Hook enabled. No service identity created. No allowlist/grant row inserted. No secret or signing material obtained. No merge.**
 
 ## Git
 
@@ -11,10 +11,11 @@
 |---|---|
 | Base | `origin/master` = `ec56365f5eb978367b5fc522879925b8347c6a8d` (`docs(platform): hand off H3C independent validation to Claude`) |
 | Branch | `review/claude-h3c-proof-20260908` (worktree `D:\AI-Workspace\worktrees\claude-h3c-proof`) |
-| Final SHA | recorded in `git log -1` for this branch after the single review commit (see push output) |
-| Divergence | branch = base + 1 commit; **not merged**; pushed to `origin/review/claude-h3c-proof-20260908` |
-| Clean tree | `git status --short` empty after commit; `git diff --check` clean |
-| Merge to master | **NOT DONE** — forbidden by brief; awaits House review + live proof |
+| Rev 1 SHA | `5e4433b1826a28e07e5c1cab20b4ed264dff4d0d` (initial proof pack) |
+| Rev 2 SHA | see the remediation commit / push output at the end of this file |
+| Divergence | branch = base + 2 commits; **not merged**; pushed to `origin/review/claude-h3c-proof-20260908` |
+| Clean tree | `git status --short` empty after each commit; `git diff --check` clean |
+| Merge to master | **NOT DONE** — forbidden; awaits House re-review + live proof |
 
 ## Deliverables (all created)
 
@@ -66,13 +67,13 @@ Exact quoted strings and per-point reasoning are in deliverable #1.
 
 One item gates the **global** Shared-Runtime PASS but not H3C itself: managed `pg_net` `PUBLIC` ACL (TM-8) + the broad SECURITY DEFINER / `shop_public_profile` surface (WP-F).
 
-### D — Proof harness
+### D — Proof harness (rev 2)
 
-`tools/shared-runtime/h3c/h3c-proof-harness.mjs` — self-contained Node (no npm, no Docker), env-var / operator-input only, never prints tokens/secrets, ES256 JWKS signature verification (public key only), token pre-checks from the decoded JWT, full positive + negative matrix, machine-readable JSON + human summary, fails closed. Offline self-test: `node h3c-proof-harness.mjs --selftest` → **SELFTEST PASS** (jwt decode, ES256 verify good/tampered, `sub` redaction, boundary/fails-closed classifiers). Missing-prerequisite and no-token runs exit `1` (verified). `node --check` clean.
+`tools/shared-runtime/h3c/h3c-proof-harness.mjs` — self-contained Node (no npm, no Docker), env-var / operator-input only, never prints tokens/secrets, ES256 JWKS signature verification (public key only, shared by runtime **and** control token — H-06), token/project-ref checks from the JWT/issuer/JWKS only (H-05), explicit `REQUIRED_PROBES` contract + pure `computeGate()` (H-01), in-function-SQLSTATE-only boundary classifier that rejects `5xx` (H-04), **safe by default — never calls `submit`, never writes a table** (H-02/H-03), `POS-GRANTS` offline proof of the submit EXECUTE grant, `residualNarrowAuthorityUntil` in output (H-07). Offline `--selftest` → **`SELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03)`** — 12 gate assertions incl. all 8 the remediation brief mandated. Missing-prerequisite and no-token runs exit `1`. `node --check` clean.
 
-### E — Negative matrix
+### E — Negative matrix (rev 2)
 
-`CLAUDE-H3C-NEGATIVE-MATRIX-2026-09-08.md` — 8 token pre-checks, 7 positive probes (incl. 3 RPC-body authz + 1 ordinary-user control), 25+ negative probes across: non-allowlisted PS01 RPC, unintended SECURITY DEFINER (`local_service`, `public.rls_auto_enable`), direct table read/write, `local_service` / `ps01_internal` / `mt01` / `mt01_private` / `wstera_platform_internal`, `net` / `cron` / `auth` / `storage` / `extensions`, expired / bad-signature / tampered-payload / missing-apikey / anon tokens, search-path. All non-destructive; unexpected success = gate failure.
+`CLAUDE-H3C-NEGATIVE-MATRIX-2026-09-08.md` — the required-probe contract (7 token pre-checks; `POS-1/2` boundary; `POS-GRANTS` offline; `POS-AUTHZ-1/2/3` read-only RPC-body authz; `POS-CONTROL-1` verified control token; 22 negative probes across non-allowlisted RPC, unintended SECURITY DEFINER, direct read + non-mutating write-authority, `local_service`/`ps01_internal`/`mt01`/`mt01_private`/`wstera_platform_internal`, `net`/`cron`/`auth`/`storage`/`extensions`, expired/bad-sig/tampered-payload/missing-apikey/anon tokens) plus advisory `NEG-ROLE-2` (NOT TESTABLE) and `POS-3` (opt-in mutating). All default-mode probes are `GET` or a `POST` to a read/compute RPC. Unexpected success, a missing required probe, a duplicate id, or an unknown verdict = gate failure.
 
 ### F — Security-advisor intersection
 
@@ -98,7 +99,7 @@ No advisor finding invalidates the **role-scoped** H3C token proof, provided the
 | current Supabase docs + implementation source cross-checked | ✅ (pinned commit / URLs in #1) |
 | every architecture claim has evidence or is marked unproven | ✅ (A1/A4 partly UNPROVEN, named) |
 | hosted activation + rollback precise enough to execute without guessing | ✅ (#2, Dashboard-first, ordered rollback) |
-| proof harness covers positive+negative matrix and fails closed | ✅ (#5, selftest PASS, exit-1 on prereq/fail) |
+| proof harness covers positive+negative matrix and fails closed | ✅ (#5 rev 2, explicit required-probe gate, selftest PASS, exit-1 on prereq/fail; no false PASS with blocked authz probes — House H-01) |
 | no secret/token/private key in git diff or evidence | ✅ (harness redacts; no secrets committed; `git diff --check` clean) |
 | no live LAB mutation | ✅ |
 | no Production access | ✅ |
@@ -107,18 +108,39 @@ No advisor finding invalidates the **role-scoped** H3C token proof, provided the
 | findings distinguish VERIFIED / CONFLICT / INFERENCE / BLOCKER / RECOMMENDATION | ✅ (register above) |
 | findings outside H3C recorded separately, not self-remediated | ✅ (WP-F; no code/SQL change to those) |
 
+## Rev 2 — House review disposition (H-01 … H-07)
+
+House review `HOUSE-REVIEW-CLAUDE-H3C-PROOF-PACK-2026-09-08.md` verified V-1..V-4 (custom role claim, `exp` vs `expires_in`, refresh re-invokes hook, non-`public` hook schema OK at GoTrue source level) and required 7 harness/doc fixes. All addressed on the same branch:
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| **H-01** | CRITICAL | `finish()` could return PASS while `POS-AUTHZ-2/3` and `POS-CONTROL-1` were `RUNTIME-BLOCKED` | **Fixed.** Explicit `REQUIRED_PROBES` contract + pure `computeGate()`. `PASS` ⇔ every required probe present exactly once with `PASS`, no `FAIL`/duplicate/unknown verdict, no abort note. `RUNTIME-BLOCKED` on any required probe → `INCOMPLETE`. Only `NEG-ROLE-2` (`NOT TESTABLE`) and `POS-3` (opt-in mutating) are advisory. 12 offline gate assertions in `--selftest`, incl. the 8 mandated by the remediation brief. |
+| **H-02** | CRITICAL | harness always called `submit_booking_request_v2_internal` (mutating) | **Fixed.** Default mode never calls submit. The submit EXECUTE grant is proven **offline** by `POS-GRANTS` reading committed H3B privilege evidence (asserts the 3-function allowlist incl. submit + "Direct write-capable privileges on PS01 relations: `0`"). A mutating submit probe (`POS-3`) exists only behind `H3C_ALLOW_SUBMIT_PROBE=1` + `H3C_SUBMIT_DISPOSABLE_ACK=1` + disposable fixtures, and is advisory — it can never contribute to `PASS`. Selftest asserts exactly one guarded submit call site. |
+| **H-03** | HIGH | `NEG-TBL-2` did an unconditional table `POST` | **Fixed.** Replaced with a `PATCH /rest/v1/<table>?id=eq.<nil-uuid>` — non-mutating even if the role held `UPDATE` (PK matches no row). `2xx`/`204` ⇒ role has write authority ⇒ `FAIL`. Negative RPC probes changed to `GET /rest/v1/rpc/<fn>` so a role that *could* execute a VOLATILE function gets `405` (no execution). `NEG-NET-1` changed from `POST rpc/http_post` to `GET` on a `net` table (no side effect). Selftest asserts a single PATCH probe against a specific id filter, and no `PUT`/`DELETE` anywhere. |
+| **H-04** | HIGH | `boundaryReached()` accepted generic `5xx` as "function executed" | **Fixed.** `boundaryReached` now returns `false` for `≥500`, transport error, `404`, `405`, `406`. A non-2xx counts as boundary reach **only** when the SQLSTATE is an unambiguous in-function error (`22`/`23`/`40`/`09`/`2F`/`P0…`), not a routing/parse code. Selftest covers `500`, `502`, transport error, `PGRST100`, `PGRST202`, `22P02`, `P0001`. |
+| **H-05** | MEDIUM | `TOK-7` project-ref check was tautological (used `CFG.url`) | **Fixed.** `validateProjectRef()` derives the ref only from the JWT issuer (`https://<ref>.supabase.co/auth/v1`), a `ref` claim, or the JWKS URL — `CFG.url` is not an input. Selftest: a foreign-issuer token **fails** even when the operator's target URL contains the expected ref. |
+| **H-06** | MEDIUM | control JWT (`POS-CONTROL-1`) was decoded but not signature-verified | **Fixed.** `verifyTokenIdentity()` is shared by the runtime token and the control token: ES256 signature vs JWKS, issuer shape, project ref, expiry — all before role/lifetime is read. `POS-CONTROL-1` passes only when `identityOk && role==authenticated && lifetime uncapped`. |
+| **H-07** | MEDIUM | teardown didn't account for an already-issued narrow token still being valid until its `exp` | **Fixed (docs).** Harness output adds `residualNarrowAuthorityUntil` (ISO of the token `exp`). Activation/rollback STEP 4.0 records it; STEP 4.7 forbids declaring "authority fully gone" before that time or before demonstrating the token is rejected. Threat model TM-2 updated. Rationale: PostgREST validates the JWT without checking Auth-user existence. |
+
+**B-2 reclassified** per House V-4: GoTrue *runtime* acceptance of a non-`public` hook schema is **VERIFIED**; only the **hosted Dashboard / Management-API field validation** remains `UNPROVEN`. Docs updated; the hook is **not** to be moved into `public`.
+
+`--selftest` after rev 2: **`SELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03)`**. `node --check` clean. Missing-prerequisite run exits `1`.
+
+Deliverables #4 (negative matrix) and #5/#6 (harness + README) are at **rev 2**; #1/#2/#3 updated where the old behaviour or cleanup claim was stated.
+
 ## FINAL HANDOFF VERDICT
 
 # `H3C REMEDIATION REQUIRED BEFORE LIVE PROOF`
 
 **Rationale.** The Auth-issued short-lived NOLOGIN-role-claim architecture is **sound and implementable** on current Supabase / GoTrue `0907af9b` / PostgREST / PostgreSQL 17. Its security-critical mechanics are VERIFIED against source, not just documentation. It is **not `READY FOR HOUSE LIVE PROOF`** because:
 
-1. **BLOCKER B-1** — the teardown/rollback order in the H3C brief must be corrected so the LAB service identity is invalidated before the hook/grant are removed (deliverable #2 STEP 4 provides the corrected procedure; House must adopt it as the operative runbook).
-2. **BLOCKER B-2 (conditional)** — House must confirm during STEP 2 that hosted Auth accepts a hook function in the non-`public` `wstera_platform_internal` schema; if not, resolve before proceeding (do **not** move the function to an exposed schema).
-3. Two low-effort pre-run items should land first: concrete `valid_until` on grant rows, and PS01 pinning `search_path` on its 3 request helpers.
+1. **BLOCKER B-1** — House must adopt the corrected teardown/rollback order (deliverable #2 STEP 4, rev 2: record residual `exp` → invalidate the LAB service identity → clear the grant row → disable the hook → SQL rollback → residual close-out) as the operative runbook.
+2. **B-2 (narrowed, control-plane only)** — GoTrue runtime acceptance of the `wstera_platform_internal` hook schema is now VERIFIED (House V-4). During STEP 2, House must still confirm the hosted **Dashboard / Management-API field validation** accepts it; if not, resolve via Supabase support or a different non-exposed schema name — **not** by moving the hook into `public`.
+3. Low-effort pre-run items: concrete (non-NULL) `valid_until` on every grant row; PS01 pins `search_path` on `ps01.ps01_request_user_id/_email/_name`; PS01 confirms the 3 target RPC bodies enforce verified-LINE-user + shop scoping.
+4. The proof harness (rev 2) is now correct — no false PASS, no default-mode mutation — but the live H3C-6/7 run under its required-probe gate has **not** happened; it remains the House live proof's job.
 
-It is **not `ARCHITECTURE REJECTED`** — no VERIFIED finding contradicts the design's viability or safety model; the one CONTRADICTED sub-point (A4 refresh) is a runbook-ordering fix, not a design flaw.
+It is **not `ARCHITECTURE REJECTED`** — House verified V-1..V-4; no VERIFIED finding contradicts the design's viability or safety model. The one CONTRADICTED sub-point (A4 refresh) is a runbook-ordering fix.
 
-After B-1/B-2 and the pre-run items, House may run H3C-6/7 (live token issuance + `h3c-proof-harness.mjs` + the negative matrix). Only Secretary GPT / WSTERA House may then issue `SHARED-RUNTIME PLATFORM ISOLATION PASS`, and only after the separately-owned global-gate items (WP-F) are also closed.
+After B-1, the B-2 control-plane check, and the pre-run items, House may run H3C-6/7 (live token issuance + `h3c-proof-harness.mjs --` under the required-probe gate + the negative matrix). Only Secretary GPT / WSTERA House may then issue `SHARED-RUNTIME PLATFORM ISOLATION PASS`, and only after the separately-owned global-gate items (WP-F: `pg_net` PUBLIC ACL, `shop_public_profile` SECURITY DEFINER view, broad anon/authenticated SECURITY DEFINER surface) are also closed.
 
-**Claude does not merge this branch and does not execute any live H3C step.** Handing to WSTERA House / Secretary GPT for review.
+**Claude does not merge this branch and does not execute any live H3C step.** Handing to WSTERA House / Secretary GPT for re-review.

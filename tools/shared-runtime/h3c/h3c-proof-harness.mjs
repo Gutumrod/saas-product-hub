@@ -1,35 +1,37 @@
 #!/usr/bin/env node
 // H3C Auth-issued runtime token proof harness — WSTERA LAB only.
 //
-// PREPARE-ONLY ARTIFACT. It performs NO mutation of any kind: it only calls
-// read-shaped RPC/REST endpoints and inspects HTTP status + error codes. It is
-// safe to run repeatedly. It does not sign in unless the operator explicitly
-// provides service-identity credentials via env, and it never prints tokens,
-// keys, secrets, passwords or full JWTs.
+// PREPARE-ONLY / SAFE-BY-DEFAULT. In default mode the harness performs NO
+// mutation: every probe is a GET, or a POST to one of two read/compute RPCs
+// (context, quote) that are non-persistence operations by the PS01 contract.
+// It never calls submit_booking_request_v2_internal and never issues a table
+// INSERT/PUT/DELETE. A mutating submit probe exists only behind an explicit
+// opt-in (H3C_ALLOW_SUBMIT_PROBE=1 + disposable-fixture acknowledgement) and is
+// advisory-only — it can never contribute to a PASS verdict.
 //
-// Design: docs/platform/shared-runtime/evidence/CLAUDE-H3C-NEGATIVE-MATRIX-2026-09-08.md
-// Review:  docs/platform/shared-runtime/evidence/CLAUDE-H3C-INDEPENDENT-REVIEW-2026-09-08.md
+// It never prints tokens, keys, secrets, passwords or full JWTs.
 //
-// Node >= 20 (built-in fetch + node:crypto JWK import). No external packages.
-// No Docker.
+// Design:  ../../../docs/platform/shared-runtime/evidence/CLAUDE-H3C-NEGATIVE-MATRIX-2026-09-08.md
+// Review:  ../../../docs/platform/shared-runtime/evidence/CLAUDE-H3C-INDEPENDENT-REVIEW-2026-09-08.md
+// House:   ../../../docs/platform/shared-runtime/evidence/HOUSE-REVIEW-CLAUDE-H3C-PROOF-PACK-2026-09-08.md
 //
-// Exit code: 0 only if every prerequisite is met, all token pre-checks pass,
-// all positive probes reach the function boundary, and every negative probe
-// fails closed. Any FAIL, or a security-relevant RUNTIME-BLOCKED, exits 1.
+// Node >= 20 (built-in fetch + node:crypto JWK import). No npm. No Docker.
+//
+// Exit code 0 ONLY when the explicit required-probe contract is fully satisfied:
+// every required probe present exactly once with verdict PASS, no FAIL anywhere,
+// no unknown/duplicate verdicts. Any other outcome exits 1.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import process from 'node:process';
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
-const PS01_RPCS = [
-  'get_customer_booking_context_v2_internal',
-  'quote_customer_booking_v2_internal',
-  'submit_booking_request_v2_internal',
-];
+const RPC_CONTEXT = 'get_customer_booking_context_v2_internal';
+const RPC_QUOTE = 'quote_customer_booking_v2_internal';
+const RPC_SUBMIT = 'submit_booking_request_v2_internal';
 
 // ---------------------------------------------------------------------------
-// env / operator input
+// config / operator input
 // ---------------------------------------------------------------------------
 
 const env = process.env;
@@ -44,6 +46,8 @@ const CFG = {
   expectedProjectRef: env.H3C_EXPECTED_PROJECT_REF || 'ykxlqnshaaxmzzocpjlj',
   expectedRole: env.H3C_EXPECTED_ROLE || 'ps01_line_runtime',
   maxTokenLifetimeSec: Number(env.H3C_MAX_TOKEN_LIFETIME_SEC || 300),
+  h3bEvidence: env.H3C_H3B_EVIDENCE || '',
+  allowSubmitProbe: env.H3C_ALLOW_SUBMIT_PROBE === '1' && env.H3C_SUBMIT_DISPOSABLE_ACK === '1',
   fixtures: {
     shopId: env.H3C_FIX_SHOP_ID || '',
     lineUserId: env.H3C_FIX_LINE_USER_ID || '',
@@ -51,36 +55,49 @@ const CFG = {
     ratePlanId: env.H3C_FIX_RATE_PLAN_ID || '',
     petIds: (env.H3C_FIX_PET_IDS || '').split(',').map((s) => s.trim()).filter(Boolean),
     startAt: env.H3C_FIX_START_AT || '',
-    // TM-11 negative-authz fixtures (read-only, House-supplied)
     otherShopId: env.H3C_FIX_OTHER_SHOP_ID || '',
     otherPetIds: (env.H3C_FIX_OTHER_PET_IDS || '').split(',').map((s) => s.trim()).filter(Boolean),
   },
   outFile: env.H3C_OUT || '',
-  // probe names the operator supplies from live metadata (kept out of source):
   ps01OtherRpc: env.H3C_PS01_OTHER_RPC || 'get_customer_booking_context_internal',
   ps01Table: env.H3C_PS01_TABLE || 'bookings',
+  ps01TableCol: env.H3C_PS01_TABLE_COL || '',
   ps01InternalObj: env.H3C_PS01_INTERNAL_OBJ || 'booking_occupancy',
   localServiceFn: env.H3C_LOCAL_SERVICE_FN || 'is_shop_member',
   mt01Table: env.H3C_MT01_TABLE || 'tenants',
 };
 
+// ---------------------------------------------------------------------------
+// required-probe contract  (House review H-01)
+// ---------------------------------------------------------------------------
+
+const TOK_IDS = ['TOK-1', 'TOK-2', 'TOK-3', 'TOK-4', 'TOK-5', 'TOK-6', 'TOK-7'];
+const NEG_IDS = [
+  'NEG-SD-1', 'NEG-SD-2', 'NEG-ROLE-1', 'NEG-PUB-1',
+  'NEG-TBL-1', 'NEG-TBL-2', 'NEG-LS-1',
+  'NEG-INT-1', 'NEG-MT-1', 'NEG-MT-2', 'NEG-WPI-1',
+  'NEG-NET-1', 'NEG-NET-1b', 'NEG-CRON-1', 'NEG-AUTH-1', 'NEG-EXT-1', 'NEG-STOR-1',
+  'NEG-EXP-1', 'NEG-SIG-1', 'NEG-SIG-2', 'NEG-KEY-1', 'NEG-ANON-1',
+];
+const REQUIRED_PROBES = [
+  ...TOK_IDS,
+  'POS-1', 'POS-2', 'POS-GRANTS',
+  'POS-AUTHZ-1', 'POS-AUTHZ-2', 'POS-AUTHZ-3',
+  'POS-CONTROL-1',
+  ...NEG_IDS,
+];
+// Advisory probes may hold a non-PASS verdict without blocking the gate.
+const ADVISORY_PROBES = new Set(['NEG-ROLE-2', 'POS-3']);
+const ALLOWED_VERDICTS = new Set(['PASS', 'FAIL', 'RUNTIME-BLOCKED', 'NOT TESTABLE', 'INFO']);
+
+// ---------------------------------------------------------------------------
+// result plumbing
+// ---------------------------------------------------------------------------
+
 const results = [];
-const record = (id, category, verdict, detail) => {
+const record = (id, category, verdict, detail = {}) => {
   results.push({ id, category, verdict, ...detail });
 };
-
-function die(reason) {
-  const out = {
-    harness: 'h3c-proof-harness',
-    generatedAt: new Date().toISOString(),
-    verdict: 'ABORTED',
-    reason,
-    results,
-  };
-  emit(out);
-  process.stderr.write(`\nABORTED: ${reason}\n`);
-  process.exit(1);
-}
 
 function emit(obj) {
   const json = JSON.stringify(obj, null, 2);
@@ -92,8 +109,14 @@ function emit(obj) {
   }
 }
 
+function die(reason) {
+  emit({ harness: 'h3c-proof-harness', generatedAt: new Date().toISOString(), verdict: 'ABORTED', reason, results });
+  process.stderr.write(`\nABORTED: ${reason}\n`);
+  process.exit(1);
+}
+
 // ---------------------------------------------------------------------------
-// jwt helpers (decode + ES256 verify against JWKS) — no secret handling
+// jwt helpers (decode + ES256 verify against JWKS) — public key only
 // ---------------------------------------------------------------------------
 
 const b64urlToBuf = (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
@@ -110,7 +133,6 @@ function decodeJwt(token) {
   };
 }
 
-// Safe, non-sensitive projection of claims for logging/evidence.
 function safeClaims(payload) {
   return {
     iss: payload.iss,
@@ -120,17 +142,13 @@ function safeClaims(payload) {
     iat: payload.iat,
     lifetimeSec: payload.exp && payload.iat ? payload.exp - payload.iat : null,
     sub_prefix: typeof payload.sub === 'string' ? payload.sub.slice(0, 6) + '…' : null,
-    ref: payload.ref || null,
+    ref_claim: payload.ref || null,
     session_id_present: Boolean(payload.session_id),
   };
 }
 
 async function fetchJwks() {
-  const candidates = [
-    `${CFG.url}/auth/v1/.well-known/jwks.json`,
-    `${CFG.url}/auth/v1/keys`,
-  ];
-  for (const u of candidates) {
+  for (const u of [`${CFG.url}/auth/v1/.well-known/jwks.json`, `${CFG.url}/auth/v1/keys`]) {
     try {
       const r = await fetch(u, { headers: { apikey: CFG.anonKey } });
       if (r.ok) {
@@ -146,98 +164,197 @@ async function fetchJwks() {
 
 function verifyEs256(signingInput, signature, jwk) {
   const key = crypto.createPublicKey({ key: jwk, format: 'jwk' });
-  // ES256 signatures in a JWT are raw r||s (IEEE P1363), not DER.
-  return crypto.verify(
-    'sha256',
-    Buffer.from(signingInput),
-    { key, dsaEncoding: 'ieee-p1363' },
-    signature,
-  );
+  return crypto.verify('sha256', Buffer.from(signingInput), { key, dsaEncoding: 'ieee-p1363' }, signature);
+}
+
+// House review H-05: project identity must come from the token/issuer/JWKS,
+// NEVER from the configured target URL. `CFG.url` is not an input here.
+function validateProjectRef(claims, jwksUrl, expectedRef) {
+  const issuerRef = (claims.iss || '').match(/^https?:\/\/([a-z0-9]{20})\.supabase\.(?:co|in|net)/i)?.[1] || null;
+  const jwksRef = (jwksUrl || '').match(/^https?:\/\/([a-z0-9]{20})\.supabase\./i)?.[1] || null;
+  const claimRef = claims.ref_claim || null;
+  const sources = { issuerRef, jwksRef, claimRef };
+  const ok =
+    (issuerRef && issuerRef === expectedRef) ||
+    (claimRef && claimRef === expectedRef) ||
+    (jwksRef && jwksRef === expectedRef);
+  return { ok: Boolean(ok), sources };
+}
+
+// House review H-06: identical identity checks for any token used as evidence.
+async function verifyTokenIdentity(token, jwks, { expectingRole }) {
+  const out = { checks: [], claims: null, identityOk: false };
+  let d;
+  try {
+    d = decodeJwt(token);
+  } catch (e) {
+    out.checks.push({ k: 'decode', ok: false, detail: e.message });
+    return out;
+  }
+  const claims = safeClaims(d.payload);
+  out.claims = claims;
+
+  const algOk = d.header.alg === 'ES256';
+  out.checks.push({ k: 'alg', ok: algOk, detail: `alg=${d.header.alg}` });
+
+  let sigOk = false;
+  if (jwks) {
+    const jwk = jwks.keys.find((k) => k.kid === d.header.kid) || jwks.keys[0];
+    try {
+      sigOk = verifyEs256(d.signingInput, d.signature, jwk);
+    } catch (e) {
+      out.checks.push({ k: 'verify-threw', ok: false, detail: e.message });
+    }
+  }
+  out.checks.push({ k: 'signature', ok: sigOk, detail: jwks ? `against ${jwks.url}` : 'JWKS unreachable' });
+
+  const issOk = /^https?:\/\/[a-z0-9]{20}\.supabase\.(co|in|net)\/auth\/v1$/i.test(claims.iss || '');
+  out.checks.push({ k: 'issuer-shape', ok: issOk, detail: `iss=${claims.iss}` });
+
+  const ref = validateProjectRef(claims, jwks?.url, CFG.expectedProjectRef);
+  out.checks.push({ k: 'project-ref', ok: ref.ok, detail: JSON.stringify(ref.sources) });
+
+  const roleOk = !expectingRole || claims.role === expectingRole;
+  out.checks.push({ k: 'role', ok: roleOk, detail: `role=${claims.role}${expectingRole ? ` (expect ${expectingRole})` : ''}` });
+
+  const notExpired = claims.exp && claims.exp * 1000 > Date.now();
+  out.checks.push({ k: 'not-expired', ok: Boolean(notExpired), detail: notExpired ? 'valid' : 'expired' });
+
+  out.identityOk = algOk && sigOk && issOk && ref.ok && Boolean(notExpired);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
-// HTTP probe helper
+// HTTP probe helper + classifiers (House review H-03, H-04)
 // ---------------------------------------------------------------------------
 
-async function probe({ method = 'POST', path, profile, token, body, omitApiKey = false, omitAuth = false }) {
-  const headers = {};
+async function probe({ method = 'GET', path, profile, token, body, headers: extra, omitApiKey = false, omitAuth = false }) {
+  const headers = { ...(extra || {}) };
   if (!omitApiKey) headers.apikey = CFG.anonKey;
   if (!omitAuth && token) headers.Authorization = `Bearer ${token}`;
   if (profile) {
     headers['Accept-Profile'] = profile;
-    headers['Content-Profile'] = profile;
+    if (method !== 'GET' && method !== 'HEAD') headers['Content-Profile'] = profile;
   }
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-  let status = 0;
-  let code = null;
-  let snippet = null;
   try {
     const r = await fetch(`${CFG.url}${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    status = r.status;
     const text = await r.text();
-    snippet = text.slice(0, 300);
+    let code = null;
     try {
       const j = JSON.parse(text);
-      code = j.code || j.error_code || j.message?.slice(0, 60) || null;
+      code = j.code || j.error_code || (typeof j.message === 'string' ? j.message.slice(0, 80) : null);
     } catch {
-      /* non-json body */
+      /* non-json */
     }
+    return { status: r.status, code, snippet: text.slice(0, 280) };
   } catch (err) {
-    status = -1;
-    snippet = String(err).slice(0, 200);
+    return { status: -1, code: null, snippet: String(err).slice(0, 200) };
   }
-  return { status, code, snippet };
 }
 
-// PostgREST "function not found for this role / schema" markers.
-const NOT_FOUND_CODES = new Set(['PGRST202', 'PGRST301', 'PGRST106', '42883', '42P01']);
-const boundaryReached = (res) =>
-  res.status !== 401 &&
-  res.status !== 403 &&
-  res.status !== -1 &&
-  !(res.status === 404 && (!res.code || NOT_FOUND_CODES.has(res.code)));
-const failsClosed = (res) =>
-  res.status === 401 ||
-  res.status === 403 ||
-  res.status === 404 ||
-  res.status === 406 ||
-  (res.status === 400 && res.code && NOT_FOUND_CODES.has(res.code));
+// PostgREST routing / role failures (function or schema not visible to the role).
+const ROUTING_NOT_FOUND = new Set(['PGRST202', 'PGRST301', 'PGRST106', 'PGRST100', '42883', '42P01', '3F000']);
+
+// A non-2xx result proves the target Postgres function EXECUTED only when the
+// error is unambiguously raised from inside it (SQLSTATE class 22/23, P0xxx,
+// 40xxx serialization, or a check/exclusion violation). Generic 5xx, routing
+// errors, and auth errors never count. (House review H-04)
+function inFunctionPgError(code) {
+  if (typeof code !== 'string') return false;
+  if (ROUTING_NOT_FOUND.has(code)) return false;
+  // SQLSTATE: 5 chars, class then subclass ([0-9A-Z]). In-function execution
+  // signals: data exception (22xxx), integrity constraint (23xxx),
+  // serialization/txn (40xxx), triggered action (09xxx), PL/pgSQL raise (P0xxx),
+  // check/exclusion (2Fxxx). Not routing (PGRST*/42883/42P01/3F000), not 5xx.
+  return /^(22|23|40|09|2F|38|39)[0-9A-Z]{3}$/.test(code) || /^P0[0-9A-Z]{3}$/.test(code);
+}
+
+function boundaryReached(res) {
+  if (res.status >= 200 && res.status < 300) return true;
+  if (res.status === 401 || res.status === 403) return false;
+  if (res.status === -1 || res.status >= 500) return false; // H-04: never trust 5xx / transport error
+  if (res.status === 404 || res.status === 405 || res.status === 406) return false;
+  if (res.status === 400 || res.status === 409 || res.status === 422) return inFunctionPgError(res.code);
+  return false;
+}
+
+// A negative probe "fails closed" only on an explicit access denial or a
+// role/schema routing miss. 2xx, 405, or a 5xx (ambiguous) are NOT closed.
+function failsClosed(res) {
+  if (res.status === 401 || res.status === 403) return true;
+  if (res.status === 404) return true;
+  if (res.status === 400 && ROUTING_NOT_FOUND.has(res.code)) return true;
+  return false;
+}
 
 // ---------------------------------------------------------------------------
-// RPC bodies
+// RPC bodies (context / quote only — submit is never built here in safe mode)
 // ---------------------------------------------------------------------------
 
-const rpcBody = (name, f = CFG.fixtures) => {
-  const common = {
-    p_verified_line_user_id: f.lineUserId || '',
-    p_shop_id: f.shopId || NIL_UUID,
-  };
-  if (name === PS01_RPCS[0]) return common;
-  const withPlan = {
-    ...common,
-    p_room_id: f.roomId || NIL_UUID,
-    p_rate_plan_id: f.ratePlanId || NIL_UUID,
-    p_pet_ids: f.petIds.length ? f.petIds : [NIL_UUID],
-    p_start_at: f.startAt || new Date(Date.now() + 86400000).toISOString(),
-  };
-  if (name === PS01_RPCS[1]) return withPlan;
-  return { ...withPlan, p_special_requests: null };
-};
+const contextBody = (f = CFG.fixtures) => ({
+  p_verified_line_user_id: f.lineUserId || '',
+  p_shop_id: f.shopId || NIL_UUID,
+});
+const quoteBody = (f = CFG.fixtures) => ({
+  ...contextBody(f),
+  p_room_id: f.roomId || NIL_UUID,
+  p_rate_plan_id: f.ratePlanId || NIL_UUID,
+  p_pet_ids: f.petIds.length ? f.petIds : [NIL_UUID],
+  p_start_at: f.startAt || new Date(Date.now() + 86400000).toISOString(),
+});
 
 // ---------------------------------------------------------------------------
-// main
+// gate computation — pure, exercised by --selftest (House review H-01)
+// ---------------------------------------------------------------------------
+
+function computeGate(resList, note) {
+  const seen = new Map();
+  const duplicates = [];
+  for (const r of resList) {
+    if (seen.has(r.id)) duplicates.push(r.id);
+    else seen.set(r.id, r);
+  }
+  const unknownVerdicts = resList
+    .filter((r) => !ALLOWED_VERDICTS.has(r.verdict))
+    .map((r) => `${r.id}:${r.verdict}`);
+  const missing = REQUIRED_PROBES.filter((id) => !seen.has(id));
+  const requiredNotPass = REQUIRED_PROBES.filter(
+    (id) => seen.has(id) && seen.get(id).verdict !== 'PASS',
+  );
+  const anyFail = resList.some((r) => r.verdict === 'FAIL');
+  const advisoryNonPass = resList
+    .filter((r) => ADVISORY_PROBES.has(r.id) && r.verdict !== 'PASS')
+    .map((r) => `${r.id}:${r.verdict}`);
+
+  const blocked =
+    Boolean(note) ||
+    duplicates.length > 0 ||
+    unknownVerdicts.length > 0 ||
+    missing.length > 0 ||
+    requiredNotPass.length > 0 ||
+    anyFail;
+
+  let verdict;
+  if (!blocked) verdict = 'PASS';
+  else if (anyFail || duplicates.length || unknownVerdicts.length) verdict = 'FAIL';
+  else verdict = 'INCOMPLETE';
+
+  return { verdict, note: note || null, duplicates, unknownVerdicts, missing, requiredNotPass, advisoryNonPass };
+}
+
+// ---------------------------------------------------------------------------
+// token acquisition
 // ---------------------------------------------------------------------------
 
 async function obtainRuntimeToken() {
   if (CFG.runtimeJwt) return CFG.runtimeJwt;
   if (CFG.serviceEmail && CFG.servicePassword) {
-    // Password grant against LAB Auth. Credentials come from operator env only,
-    // are never logged, and are not persisted by this harness.
     const r = await fetch(`${CFG.url}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: CFG.anonKey, 'Content-Type': 'application/json' },
@@ -251,114 +368,120 @@ async function obtainRuntimeToken() {
   return '';
 }
 
+// ---------------------------------------------------------------------------
+// POS-GRANTS — offline proof of the exact 3-function EXECUTE grant + zero
+// table writes, read from committed H3B evidence (House review H-02: the
+// submit grant is proven from privilege evidence, not by calling submit).
+// ---------------------------------------------------------------------------
+
+function posGrantsFromEvidence() {
+  if (!CFG.h3bEvidence) {
+    return record('POS-GRANTS', 'positive', 'RUNTIME-BLOCKED', {
+      note: 'set H3C_H3B_EVIDENCE to the path of H3B-POST-APPLY-RUNTIME-BOUNDARY-2026-09-08.md so the 3-function grant (incl. submit) + zero-table-write boundary is proven offline',
+    });
+  }
+  let text;
+  try {
+    text = fs.readFileSync(CFG.h3bEvidence, 'utf8');
+  } catch (e) {
+    return record('POS-GRANTS', 'positive', 'RUNTIME-BLOCKED', { note: `cannot read H3C_H3B_EVIDENCE: ${e.message}` });
+  }
+  const has3 = [RPC_CONTEXT, RPC_QUOTE, RPC_SUBMIT].every((n) => text.includes(n));
+  const exactlyThree = /execute exactly three PS01 functions and no fourth/i.test(text) || /executable PS01 function count[^0-9]*3/i.test(text);
+  const zeroWrites = /Direct write-capable privileges on PS01 relations:\s*`?0`?/i.test(text);
+  const ok = has3 && exactlyThree && zeroWrites;
+  record('POS-GRANTS', 'positive', ok ? 'PASS' : 'FAIL', {
+    detail: `names3=${has3} exactlyThree=${exactlyThree} zeroWrites=${zeroWrites}`,
+    source: CFG.h3bEvidence,
+    note: 'offline proof that ps01_line_runtime has EXECUTE on exactly the 3 RPCs (incl. submit) and no direct PS01 table write; submit is NOT invoked by this harness',
+  });
+}
+
+// ---------------------------------------------------------------------------
+// main
+// ---------------------------------------------------------------------------
+
 async function main() {
-  // ---- prerequisites (fail closed) ----
   const missing = [];
   if (!CFG.url) missing.push('H3C_SUPABASE_URL');
   if (!CFG.anonKey) missing.push('H3C_ANON_KEY');
   if (missing.length) die(`missing required env: ${missing.join(', ')}`);
 
   const runtimeJwt = await obtainRuntimeToken();
-  if (!runtimeJwt) {
-    die('no runtime token: set H3C_RUNTIME_JWT, or H3C_SERVICE_EMAIL + H3C_SERVICE_PASSWORD');
-  }
-
-  // ---- token pre-checks ----
-  let decoded;
-  try {
-    decoded = decodeJwt(runtimeJwt);
-  } catch (e) {
-    die(`runtime token is not a decodable JWT: ${e.message}`);
-  }
-  const claims = safeClaims(decoded.payload);
-
-  record('TOK-1', 'token', decoded.header.alg === 'ES256' ? 'PASS' : 'FAIL', {
-    detail: `alg=${decoded.header.alg}`,
-  });
+  if (!runtimeJwt) die('no runtime token: set H3C_RUNTIME_JWT, or H3C_SERVICE_EMAIL + H3C_SERVICE_PASSWORD');
 
   const jwks = await fetchJwks();
-  let sigOk = false;
-  if (jwks) {
-    const jwk = jwks.keys.find((k) => k.kid === decoded.header.kid) || jwks.keys[0];
-    try {
-      sigOk = verifyEs256(decoded.signingInput, decoded.signature, jwk);
-    } catch (e) {
-      sigOk = false;
-      record('TOK-2-note', 'token', 'INFO', { detail: `verify threw: ${e.message}` });
-    }
-  }
-  record('TOK-2', 'token', sigOk ? 'PASS' : 'FAIL', {
-    detail: jwks ? `verified against ${jwks.url}` : 'JWKS endpoint not reachable',
-  });
 
-  const issOk = typeof claims.iss === 'string' && claims.iss.includes(CFG.url.replace(/^https?:\/\//, ''));
-  record('TOK-3', 'token', issOk ? 'PASS' : 'FAIL', { detail: `iss=${claims.iss}` });
+  // ---- token pre-checks (runtime token) ----
+  const idn = await verifyTokenIdentity(runtimeJwt, jwks, { expectingRole: CFG.expectedRole });
+  const claims = idn.claims || {};
+  const ck = (k) => idn.checks.find((c) => c.k === k) || { ok: false, detail: 'missing' };
 
-  record('TOK-4', 'token', claims.role === CFG.expectedRole ? 'PASS' : 'FAIL', {
-    detail: `role=${claims.role} (expected ${CFG.expectedRole})`,
-  });
-
-  const lifeOk = claims.lifetimeSec != null && claims.lifetimeSec <= CFG.maxTokenLifetimeSec && claims.lifetimeSec > 0;
+  record('TOK-1', 'token', ck('alg').ok ? 'PASS' : 'FAIL', { detail: ck('alg').detail });
+  record('TOK-2', 'token', ck('signature').ok ? 'PASS' : 'FAIL', { detail: ck('signature').detail });
+  record('TOK-3', 'token', ck('issuer-shape').ok ? 'PASS' : 'FAIL', { detail: ck('issuer-shape').detail });
+  record('TOK-4', 'token', ck('role').ok ? 'PASS' : 'FAIL', { detail: ck('role').detail });
+  const lifeOk = claims.lifetimeSec != null && claims.lifetimeSec > 0 && claims.lifetimeSec <= CFG.maxTokenLifetimeSec;
   record('TOK-5', 'token', lifeOk ? 'PASS' : 'FAIL', {
-    detail: `exp-iat=${claims.lifetimeSec}s (max ${CFG.maxTokenLifetimeSec}s) — measured from JWT, not from OAuth expires_in`,
+    detail: `exp-iat=${claims.lifetimeSec}s (max ${CFG.maxTokenLifetimeSec}s) — from JWT, not OAuth expires_in`,
+  });
+  record('TOK-6', 'token', ck('not-expired').ok ? 'PASS' : 'FAIL', { detail: ck('not-expired').detail });
+  record('TOK-7', 'token', ck('project-ref').ok ? 'PASS' : 'FAIL', {
+    detail: `project ref from token evidence only (issuer/claim/JWKS): ${ck('project-ref').detail}`,
   });
 
-  const notExpired = claims.exp && claims.exp * 1000 > Date.now();
-  record('TOK-6', 'token', notExpired ? 'PASS' : 'FAIL', {
-    detail: notExpired ? 'token still valid' : 'token already expired — obtain a fresh one',
-  });
+  const tokOk = TOK_IDS.every((id) => results.find((r) => r.id === id)?.verdict === 'PASS');
+  if (!tokOk) return finish(claims, 'token pre-checks failed — no live probes were run', runtimeJwt);
 
-  const refHay = `${claims.iss || ''} ${claims.ref || ''} ${JSON.stringify(claims.aud || '')} ${CFG.url}`;
-  const refOk = refHay.includes(CFG.expectedProjectRef);
-  record('TOK-7', 'token', refOk ? 'PASS' : 'FAIL', {
-    detail: `expected project ref ${CFG.expectedProjectRef} present in issuer/url/aud`,
-  });
+  // ---- POS-GRANTS (offline) ----
+  posGrantsFromEvidence();
 
-  const tokPrechecksPassed = results
-    .filter((r) => ['TOK-1', 'TOK-2', 'TOK-3', 'TOK-4', 'TOK-5', 'TOK-6', 'TOK-7'].includes(r.id))
-    .every((r) => r.verdict === 'PASS');
-
-  if (!tokPrechecksPassed) {
-    finish(claims, 'token pre-checks failed — no probes were run');
-    return;
-  }
-
-  // ---- POSITIVE: 3 RPCs reach the boundary ----
-  const haveFixtures = Boolean(CFG.fixtures.shopId && CFG.fixtures.lineUserId);
-  for (let i = 0; i < PS01_RPCS.length; i += 1) {
-    const name = PS01_RPCS[i];
-    // POS-3 (submit) stays boundary-only unless the operator opted in.
-    const res = await probe({
-      path: `/rest/v1/rpc/${name}`,
-      profile: 'ps01',
-      token: runtimeJwt,
-      body: rpcBody(name),
+  // ---- POS-1 / POS-2 : read/compute RPCs reach the function boundary ----
+  const haveFix = Boolean(CFG.fixtures.shopId);
+  {
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt, body: contextBody() });
+    record('POS-1', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
+      target: RPC_CONTEXT, mode: haveFix ? 'fixture' : 'boundary-only', http: res.status, code: res.code,
+      note: 'read RPC; boundary = 2xx OR an in-function PG error (class 22/23/P0…). 5xx / routing / auth error = not reached',
+      snippet: res.snippet,
     });
-    record(`POS-${i + 1}`, 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
-      target: name,
-      mode: haveFixtures ? 'fixture' : 'boundary-only',
-      http: res.status,
-      code: res.code,
-      note: 'boundary reached = role+grant+SET ROLE+schema resolution worked; a domain 4xx from inside the function still counts',
+  }
+  {
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_QUOTE}`, profile: 'ps01', token: runtimeJwt, body: quoteBody() });
+    record('POS-2', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
+      target: RPC_QUOTE, mode: haveFix ? 'fixture' : 'boundary-only', http: res.status, code: res.code,
+      note: 'quote is a pricing/compute RPC — non-persistence by the Order V1 / PS01 contract; House to confirm from RPC source',
       snippet: res.snippet,
     });
   }
 
-  // ---- POS-AUTHZ (TM-11): RPC bodies enforce their own authz ----
-  if (CFG.fixtures.otherShopId && CFG.fixtures.lineUserId) {
+  // ---- POS-3 : submit — ADVISORY, never required, opt-in only ----
+  if (CFG.allowSubmitProbe && CFG.fixtures.shopId && CFG.fixtures.roomId && CFG.fixtures.ratePlanId) {
     const res = await probe({
-      path: `/rest/v1/rpc/${PS01_RPCS[0]}`,
-      profile: 'ps01',
-      token: runtimeJwt,
-      body: { p_verified_line_user_id: CFG.fixtures.lineUserId, p_shop_id: CFG.fixtures.otherShopId },
+      method: 'POST', path: `/rest/v1/rpc/${RPC_SUBMIT}`, profile: 'ps01', token: runtimeJwt,
+      body: { ...quoteBody(), p_special_requests: 'H3C-PROOF-DISPOSABLE' },
     });
-    // "pass" = the RPC did NOT return a populated cross-shop context. We can only
-    // assert weakly from the harness: 2xx with an empty/rejecting body, or a 4xx.
-    const looksRejected = res.status >= 400 || /null|not.*found|denied|unauthor|forbidden|empty/i.test(res.snippet || '');
-    record('POS-AUTHZ-1', 'positive-authz', looksRejected ? 'PASS' : 'FAIL', {
-      http: res.status,
-      code: res.code,
-      note: 'cross-shop p_shop_id must not yield another shop context; House must also confirm from the RPC body / logs',
+    record('POS-3', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
+      target: RPC_SUBMIT, mode: 'MUTATING-OPT-IN', http: res.status, code: res.code,
+      note: 'MUTATING probe run by explicit opt-in. Operator MUST verify + clean up any created request. Advisory only — cannot make the gate PASS.',
+      snippet: res.snippet,
+    });
+  } else {
+    record('POS-3', 'positive', 'RUNTIME-BLOCKED', {
+      note: 'submit RPC is mutating; safe mode never calls it. Grant boundary is proven by POS-GRANTS. To run a controlled mutating check: H3C_ALLOW_SUBMIT_PROBE=1 H3C_SUBMIT_DISPOSABLE_ACK=1 + disposable fixtures + manual cleanup.',
+    });
+  }
+
+  // ---- POS-AUTHZ 1..3 : RPC-body authorization (all read/compute) ----
+  if (CFG.fixtures.otherShopId) {
+    const res = await probe({
+      method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt,
+      body: { p_verified_line_user_id: CFG.fixtures.lineUserId || '', p_shop_id: CFG.fixtures.otherShopId },
+    });
+    const rejected = res.status >= 400 || /"?(null|not[_ ]?found|denied|unauthor|forbidden|no[_ ]?access)"?/i.test(res.snippet || '') || res.snippet === 'null';
+    record('POS-AUTHZ-1', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code,
+      note: 'cross-shop p_shop_id must not return another shop context (weak signal from harness; House confirms from RPC body/logs)',
       snippet: res.snippet,
     });
   } else {
@@ -366,67 +489,98 @@ async function main() {
       note: 'set H3C_FIX_OTHER_SHOP_ID (a real shop the fixture LINE user is NOT linked to) — read-only',
     });
   }
-  record('POS-AUTHZ-2', 'positive-authz', 'RUNTIME-BLOCKED', {
-    note: 'blank/unverified p_verified_line_user_id path — House to run with a controlled fixture + inspect RPC body',
-  });
-  if (CFG.fixtures.otherPetIds.length) {
-    record('POS-AUTHZ-3', 'positive-authz', 'RUNTIME-BLOCKED', {
-      note: 'cross-customer p_pet_ids supplied; House to execute + confirm no cross-customer quote is returned',
+  if (CFG.fixtures.shopId) {
+    const res = await probe({
+      method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt,
+      body: { p_verified_line_user_id: '', p_shop_id: CFG.fixtures.shopId },
+    });
+    const rejected = res.status >= 400 || res.snippet === 'null' || /"?(null|denied|unverified|invalid)"?/i.test(res.snippet || '');
+    record('POS-AUTHZ-2', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code, note: 'blank p_verified_line_user_id must not yield a customer context', snippet: res.snippet,
+    });
+  } else {
+    record('POS-AUTHZ-2', 'positive-authz', 'RUNTIME-BLOCKED', { note: 'set H3C_FIX_SHOP_ID (any real shop) to run the blank-line-user read probe' });
+  }
+  if (CFG.fixtures.otherPetIds.length && CFG.fixtures.shopId && CFG.fixtures.roomId && CFG.fixtures.ratePlanId) {
+    const res = await probe({
+      method: 'POST', path: `/rest/v1/rpc/${RPC_QUOTE}`, profile: 'ps01', token: runtimeJwt,
+      body: { ...quoteBody(), p_pet_ids: CFG.fixtures.otherPetIds },
+    });
+    const rejected = res.status >= 400 || /"?(null|denied|not[_ ]?found|forbidden|not[_ ]?your|invalid)"?/i.test(res.snippet || '');
+    record('POS-AUTHZ-3', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code, note: 'quote for another customer\'s pet ids must be rejected (quote is compute-only, non-mutating)', snippet: res.snippet,
     });
   } else {
     record('POS-AUTHZ-3', 'positive-authz', 'RUNTIME-BLOCKED', {
-      note: 'set H3C_FIX_OTHER_PET_IDS (another customer\'s pet ids, read-only)',
+      note: 'set H3C_FIX_OTHER_PET_IDS + H3C_FIX_SHOP_ID/ROOM_ID/RATE_PLAN_ID (read-only) to run the cross-customer quote probe',
     });
   }
 
-  // ---- POS-CONTROL-1: hook is a no-op for a non-allowlisted user ----
+  // ---- POS-CONTROL-1 : hook is a no-op for a non-allowlisted user ----
   if (CFG.controlJwt) {
-    try {
-      const c = decodeJwt(CFG.controlJwt);
-      const cl = safeClaims(c.payload);
-      const ok = cl.role === 'authenticated' && (cl.lifetimeSec == null || cl.lifetimeSec > CFG.maxTokenLifetimeSec);
-      record('POS-CONTROL-1', 'control', ok ? 'PASS' : 'FAIL', {
-        detail: `control user role=${cl.role} lifetime=${cl.lifetimeSec}s (expected authenticated, uncapped)`,
-      });
-    } catch (e) {
-      record('POS-CONTROL-1', 'control', 'FAIL', { detail: `control token undecodable: ${e.message}` });
-    }
+    const cIdn = await verifyTokenIdentity(CFG.controlJwt, jwks, { expectingRole: null }); // H-06: full identity verify
+    const cl = cIdn.claims || {};
+    const roleUnchanged = cl.role === 'authenticated';
+    const uncapped = cl.lifetimeSec == null || cl.lifetimeSec > CFG.maxTokenLifetimeSec;
+    const ok = cIdn.identityOk && roleUnchanged && uncapped;
+    record('POS-CONTROL-1', 'control', ok ? 'PASS' : 'FAIL', {
+      detail: `identityOk=${cIdn.identityOk} role=${cl.role} lifetime=${cl.lifetimeSec}s (expect signed+authenticated+uncapped)`,
+      checks: cIdn.checks,
+    });
   } else {
     record('POS-CONTROL-1', 'control', 'RUNTIME-BLOCKED', {
-      note: 'provide H3C_CONTROL_JWT: a token for a NON-allowlisted LAB Auth user, issued while the hook is enabled',
+      note: 'provide H3C_CONTROL_JWT: a signed token for a NON-allowlisted LAB Auth user, issued while the hook is enabled',
     });
   }
 
-  // ---- NEGATIVE matrix ----
-  const neg = [];
-  neg.push(['NEG-SD-1', { path: '/rest/v1/rpc/sync_booking_occupancy_window', profile: 'ps01', body: {} }]);
-  neg.push(['NEG-SD-2', { path: `/rest/v1/rpc/${CFG.ps01OtherRpc}`, profile: 'ps01', body: {} }]);
-  neg.push(['NEG-ROLE-1', { path: `/rest/v1/rpc/${CFG.localServiceFn}`, profile: 'local_service', body: {} }]);
-  neg.push(['NEG-PUB-1', { path: '/rest/v1/rpc/rls_auto_enable', profile: 'public', body: {} }]);
-  neg.push(['NEG-TBL-1', { method: 'GET', path: `/rest/v1/${CFG.ps01Table}?limit=1`, profile: 'ps01' }]);
-  neg.push(['NEG-TBL-2', { path: `/rest/v1/${CFG.ps01Table}`, profile: 'ps01', body: { probe: true } }]);
-  neg.push(['NEG-LS-1', { method: 'GET', path: '/rest/v1/shop_public_profile?limit=1', profile: 'local_service' }]);
-  neg.push(['NEG-INT-1', { method: 'GET', path: `/rest/v1/${CFG.ps01InternalObj}?limit=1`, profile: 'ps01_internal' }]);
-  neg.push(['NEG-MT-1', { method: 'GET', path: `/rest/v1/${CFG.mt01Table}?limit=1`, profile: 'mt01' }]);
-  neg.push(['NEG-MT-2', { method: 'GET', path: '/rest/v1/anything?limit=1', profile: 'mt01_private' }]);
-  neg.push(['NEG-WPI-1', { method: 'GET', path: '/rest/v1/runtime_token_grants?limit=1', profile: 'wstera_platform_internal' }]);
-  neg.push(['NEG-NET-1', { path: '/rest/v1/rpc/http_post', profile: 'net', body: {} }]);
-  neg.push(['NEG-NET-1b', { method: 'GET', path: '/rest/v1/_http_response?limit=1', profile: 'net' }]);
-  neg.push(['NEG-CRON-1', { method: 'GET', path: '/rest/v1/job?limit=1', profile: 'cron' }]);
-  neg.push(['NEG-AUTH-1', { method: 'GET', path: '/rest/v1/users?limit=1', profile: 'auth' }]);
-  neg.push(['NEG-EXT-1', { method: 'GET', path: '/rest/v1/anything?limit=1', profile: 'extensions' }]);
-
-  for (const [id, opts] of neg) {
-    const res = await probe({ ...opts, token: runtimeJwt });
+  // ---- NEGATIVE matrix (all GET / non-mutating) ----
+  const negGet = [
+    ['NEG-SD-1', { path: '/rest/v1/rpc/sync_booking_occupancy_window', profile: 'ps01' }],
+    ['NEG-SD-2', { path: `/rest/v1/rpc/${CFG.ps01OtherRpc}`, profile: 'ps01' }],
+    ['NEG-ROLE-1', { path: `/rest/v1/rpc/${CFG.localServiceFn}`, profile: 'local_service' }],
+    ['NEG-PUB-1', { path: '/rest/v1/rpc/rls_auto_enable', profile: 'public' }],
+    ['NEG-TBL-1', { path: `/rest/v1/${CFG.ps01Table}?limit=1`, profile: 'ps01' }],
+    ['NEG-LS-1', { path: '/rest/v1/shop_public_profile?limit=1', profile: 'local_service' }],
+    ['NEG-INT-1', { path: `/rest/v1/${CFG.ps01InternalObj}?limit=1`, profile: 'ps01_internal' }],
+    ['NEG-MT-1', { path: `/rest/v1/${CFG.mt01Table}?limit=1`, profile: 'mt01' }],
+    ['NEG-MT-2', { path: '/rest/v1/anything?limit=1', profile: 'mt01_private' }],
+    ['NEG-WPI-1', { path: '/rest/v1/runtime_token_grants?limit=1', profile: 'wstera_platform_internal' }],
+    ['NEG-NET-1', { path: '/rest/v1/_http_response?limit=1', profile: 'net' }],
+    ['NEG-NET-1b', { path: '/rest/v1/http_request_queue?limit=1', profile: 'net' }],
+    ['NEG-CRON-1', { path: '/rest/v1/job?limit=1', profile: 'cron' }],
+    ['NEG-AUTH-1', { path: '/rest/v1/users?limit=1', profile: 'auth' }],
+    ['NEG-EXT-1', { path: '/rest/v1/anything?limit=1', profile: 'extensions' }],
+  ];
+  for (const [id, opts] of negGet) {
+    const res = await probe({ method: 'GET', ...opts, token: runtimeJwt });
     record(id, 'negative', failsClosed(res) ? 'PASS' : 'FAIL', {
-      http: res.status,
-      code: res.code,
-      expected: 'fail closed (401/403/404/PGRST202)',
+      http: res.status, code: res.code, expected: 'fail closed (401/403/404)', snippet: res.snippet,
+    });
+  }
+
+  // NEG-TBL-2: non-mutating write-authority probe — PATCH a guaranteed-nonexistent PK.
+  if (CFG.ps01TableCol) {
+    const res = await probe({
+      method: 'PATCH',
+      path: `/rest/v1/${CFG.ps01Table}?id=eq.${NIL_UUID}`,
+      profile: 'ps01', token: runtimeJwt,
+      headers: { Prefer: 'return=minimal' },
+      body: { [CFG.ps01TableCol]: null },
+    });
+    // no UPDATE grant -> 401/403; unreachable -> 404. 2xx/204 -> role HAS UPDATE authority (FAIL).
+    const closed = res.status === 401 || res.status === 403 || res.status === 404;
+    record('NEG-TBL-2', 'negative', closed ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code,
+      note: 'PATCH against a nonexistent PK — non-mutating even if the role had UPDATE. 2xx = role has write authority = FAIL.',
       snippet: res.snippet,
     });
+  } else {
+    record('NEG-TBL-2', 'negative', 'RUNTIME-BLOCKED', {
+      note: 'set H3C_PS01_TABLE_COL to any real column of H3C_PS01_TABLE so the non-mutating PATCH-nonexistent-PK write-authority probe can run',
+    });
   }
 
-  // storage API (different base path)
+  // storage API
   {
     const res = await probe({ method: 'GET', path: '/storage/v1/bucket', token: runtimeJwt });
     record('NEG-STOR-1', 'negative', res.status === 401 || res.status === 403 ? 'PASS' : 'FAIL', {
@@ -436,144 +590,177 @@ async function main() {
 
   // token-level failures
   if (CFG.expiredJwt) {
-    const res = await probe({ path: `/rest/v1/rpc/${PS01_RPCS[0]}`, profile: 'ps01', token: CFG.expiredJwt, body: rpcBody(PS01_RPCS[0]) });
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: CFG.expiredJwt, body: contextBody() });
     record('NEG-EXP-1', 'negative', res.status === 401 ? 'PASS' : 'FAIL', { http: res.status, code: res.code, snippet: res.snippet });
   } else {
-    record('NEG-EXP-1', 'negative', 'RUNTIME-BLOCKED', { note: 'provide H3C_EXPIRED_JWT (a previously-issued, now-expired runtime token)' });
+    record('NEG-EXP-1', 'negative', 'RUNTIME-BLOCKED', { note: 'provide H3C_EXPIRED_JWT (a previously-issued, now-expired runtime token) — required for PASS' });
   }
-
   {
-    // NEG-SIG-1: flip one byte of the signature
-    const parts = runtimeJwt.split('.');
-    const sig = b64urlToBuf(parts[2]);
+    const p = runtimeJwt.split('.');
+    const sig = b64urlToBuf(p[2]);
     sig[0] ^= 0xff;
-    const tampered = `${parts[0]}.${parts[1]}.${sig.toString('base64url')}`;
-    const res = await probe({ path: `/rest/v1/rpc/${PS01_RPCS[0]}`, profile: 'ps01', token: tampered, body: rpcBody(PS01_RPCS[0]) });
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: `${p[0]}.${p[1]}.${sig.toString('base64url')}`, body: contextBody() });
     record('NEG-SIG-1', 'negative', res.status === 401 ? 'PASS' : 'FAIL', { http: res.status, code: res.code, snippet: res.snippet });
   }
   {
-    // NEG-SIG-2: tamper payload (role -> postgres), keep original signature
-    const parts = runtimeJwt.split('.');
-    const p = b64urlToJson(parts[1]);
-    p.role = 'postgres';
-    const tampered = `${parts[0]}.${Buffer.from(JSON.stringify(p)).toString('base64url')}.${parts[2]}`;
-    const res = await probe({ path: `/rest/v1/rpc/${PS01_RPCS[0]}`, profile: 'ps01', token: tampered, body: rpcBody(PS01_RPCS[0]) });
-    record('NEG-SIG-2', 'negative', res.status === 401 ? 'PASS' : 'FAIL', {
-      http: res.status, code: res.code, note: 'payload role=postgres with stale signature must be rejected', snippet: res.snippet,
-    });
+    const p = runtimeJwt.split('.');
+    const pl = b64urlToJson(p[1]);
+    pl.role = 'postgres';
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: `${p[0]}.${Buffer.from(JSON.stringify(pl)).toString('base64url')}.${p[2]}`, body: contextBody() });
+    record('NEG-SIG-2', 'negative', res.status === 401 ? 'PASS' : 'FAIL', { http: res.status, code: res.code, note: 'payload role=postgres + stale signature must be rejected', snippet: res.snippet });
   }
   record('NEG-ROLE-2', 'negative', 'NOT TESTABLE', {
-    note: 'a validly-signed token with role=service_role/authenticator/postgres cannot be produced without a signing path the design withholds; the 4 hook/table/membership controls (see threat model TM-7) cover this',
+    note: 'a validly-signed token with role=service_role/authenticator/postgres cannot be produced without a signing path the design withholds; covered by threat-model TM-7 (CHECK constraint + hook re-check + pg_roles check + authenticator membership). Advisory.',
   });
   {
-    // NEG-KEY-1: omit apikey
-    const res = await probe({ path: `/rest/v1/rpc/${PS01_RPCS[0]}`, profile: 'ps01', token: runtimeJwt, body: rpcBody(PS01_RPCS[0]), omitApiKey: true });
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt, body: contextBody(), omitApiKey: true });
     record('NEG-KEY-1', 'negative', res.status === 401 ? 'PASS' : 'FAIL', { http: res.status, code: res.code, expected: '401 from gateway', snippet: res.snippet });
   }
   {
-    // NEG-ANON-1: no Authorization, only anon apikey
-    const res = await probe({ path: `/rest/v1/rpc/${PS01_RPCS[0]}`, profile: 'ps01', token: null, body: rpcBody(PS01_RPCS[0]), omitAuth: true });
+    const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: null, body: contextBody(), omitAuth: true });
     record('NEG-ANON-1', 'negative', failsClosed(res) ? 'PASS' : 'FAIL', { http: res.status, code: res.code, expected: 'anon has no EXECUTE -> fail', snippet: res.snippet });
   }
 
-  finish(claims, null);
+  finish(claims, null, runtimeJwt);
 }
 
-function finish(claims, note) {
+function finish(claims, note, runtimeJwt) {
+  const gate = computeGate(results, note);
   const counts = results.reduce((a, r) => ((a[r.verdict] = (a[r.verdict] || 0) + 1), a), {});
-  const securityBlocked = results.filter(
-    (r) => r.verdict === 'RUNTIME-BLOCKED' && (r.category === 'negative' || r.id === 'POS-AUTHZ-1'),
-  );
-  const anyFail = results.some((r) => r.verdict === 'FAIL');
-  let verdict;
-  if (note) verdict = 'INCOMPLETE';
-  else if (anyFail) verdict = 'FAIL';
-  else if (securityBlocked.length) verdict = 'INCOMPLETE — security-relevant probes RUNTIME-BLOCKED';
-  else verdict = 'PASS';
+  const residualExp = claims && claims.exp ? new Date(claims.exp * 1000).toISOString() : null;
 
   const out = {
     harness: 'h3c-proof-harness',
     generatedAt: new Date().toISOString(),
     target: CFG.url,
     expectedProjectRef: CFG.expectedProjectRef,
+    mode: CFG.allowSubmitProbe ? 'MUTATING-SUBMIT-OPT-IN' : 'safe-read-only',
     tokenClaims: claims,
-    verdict,
-    note,
+    // House review H-07: an already-issued runtime JWT stays valid until this
+    // exact time even after the service identity + refresh authority are gone,
+    // because PostgREST validates the JWT without checking Auth-user existence.
+    residualNarrowAuthorityUntil: residualExp,
+    verdict: gate.verdict,
+    gate,
     counts,
-    securityRelevantBlocked: securityBlocked.map((r) => r.id),
     results,
   };
   emit(out);
 
   process.stderr.write('\n=== H3C proof harness summary ===\n');
-  process.stderr.write(`target: ${CFG.url}   verdict: ${verdict}\n`);
-  process.stderr.write(`token: role=${claims.role} lifetime=${claims.lifetimeSec}s iss=${claims.iss}\n`);
+  process.stderr.write(`target=${CFG.url} mode=${out.mode} verdict=${gate.verdict}\n`);
+  process.stderr.write(`token: role=${claims?.role} lifetime=${claims?.lifetimeSec}s residual-authority-until=${residualExp}\n`);
   for (const r of results) {
-    process.stderr.write(`  ${r.verdict.padEnd(16)} ${r.id.padEnd(14)} ${r.category}${r.http ? '  http=' + r.http : ''}${r.code ? ' code=' + r.code : ''}\n`);
+    process.stderr.write(`  ${String(r.verdict).padEnd(16)} ${r.id.padEnd(14)} ${r.category}${r.http ? '  http=' + r.http : ''}${r.code ? ' code=' + r.code : ''}\n`);
   }
+  if (gate.missing.length) process.stderr.write(`MISSING required: ${gate.missing.join(', ')}\n`);
+  if (gate.requiredNotPass.length) process.stderr.write(`required NOT PASS: ${gate.requiredNotPass.join(', ')}\n`);
+  if (gate.duplicates.length) process.stderr.write(`DUPLICATE ids: ${gate.duplicates.join(', ')}\n`);
+  if (gate.unknownVerdicts.length) process.stderr.write(`UNKNOWN verdicts: ${gate.unknownVerdicts.join(', ')}\n`);
   process.stderr.write(`counts: ${JSON.stringify(counts)}\n`);
-
-  process.exit(verdict === 'PASS' ? 0 : 1);
+  void runtimeJwt;
+  process.exit(gate.verdict === 'PASS' ? 0 : 1);
 }
 
 // ---------------------------------------------------------------------------
-// self-test: `node h3c-proof-harness.mjs --selftest`
-// Exercises JWT decode + ES256 verify + classifiers offline. No network, no env.
+// self-test — offline, proves the remediated GATE behaviour (House brief)
 // ---------------------------------------------------------------------------
 
 function selftest() {
-  const assert = (cond, msg) => {
-    if (!cond) {
-      process.stderr.write(`SELFTEST FAIL: ${msg}\n`);
-      process.exit(1);
-    }
+  let failed = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { process.stderr.write(`SELFTEST FAIL: ${msg}\n`); failed += 1; }
   };
 
+  // --- crypto / decode / redaction ---
   const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
   const jwk = publicKey.export({ format: 'jwk' });
   const now = Math.floor(Date.now() / 1000);
-  const header = { alg: 'ES256', kid: 'test-kid', typ: 'JWT' };
-  const payload = {
-    iss: 'https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1',
-    role: 'ps01_line_runtime',
-    aud: 'authenticated',
-    sub: 'abcdef01-2345-6789-abcd-ef0123456789',
-    iat: now,
-    exp: now + 250,
-    ref: 'ykxlqnshaaxmzzocpjlj',
-    session_id: 's1',
+  const mk = (over = {}) => {
+    const header = { alg: 'ES256', kid: 'k', typ: 'JWT' };
+    const payload = {
+      iss: 'https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1',
+      role: 'ps01_line_runtime', aud: 'authenticated',
+      sub: 'abcdef01-2345-6789-abcd-ef0123456789', iat: now, exp: now + 250, ...over,
+    };
+    const si = `${Buffer.from(JSON.stringify(header)).toString('base64url')}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
+    const sig = crypto.sign('sha256', Buffer.from(si), { key: privateKey, dsaEncoding: 'ieee-p1363' });
+    return { token: `${si}.${sig.toString('base64url')}`, si, sig };
   };
-  const si = `${Buffer.from(JSON.stringify(header)).toString('base64url')}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
-  const sig = crypto.sign('sha256', Buffer.from(si), { key: privateKey, dsaEncoding: 'ieee-p1363' });
-  const token = `${si}.${sig.toString('base64url')}`;
-
+  const { token, si, sig } = mk();
   const d = decodeJwt(token);
-  assert(d.header.alg === 'ES256', 'decode header alg');
-  assert(d.payload.role === 'ps01_line_runtime', 'decode payload role');
-
+  ok(d.header.alg === 'ES256' && d.payload.role === 'ps01_line_runtime', 'decode');
   const c = safeClaims(d.payload);
-  assert(c.lifetimeSec === 250, `lifetimeSec (${c.lifetimeSec})`);
-  assert(c.sub_prefix === 'abcdef…', `sub redaction (${c.sub_prefix})`);
-  const cs = JSON.stringify(c);
-  assert(!cs.includes('2345-6789'), 'full sub uuid must not appear in safeClaims');
-  assert(!/password|secret|signing|private/i.test(cs), 'no secret-ish key in safeClaims');
+  ok(c.lifetimeSec === 250 && c.sub_prefix === 'abcdef…', 'safeClaims');
+  ok(!JSON.stringify(c).includes('2345-6789'), 'no full sub in safeClaims');
+  ok(!/password|secret|signing|private/i.test(JSON.stringify(c)), 'no secret-ish key in safeClaims');
+  ok(verifyEs256(si, sig, jwk) === true, 'ES256 verify good');
+  const bad = Buffer.from(sig); bad[0] ^= 0xff;
+  ok(verifyEs256(si, bad, jwk) === false, 'ES256 verify tampered');
 
-  assert(verifyEs256(d.signingInput, d.signature, jwk) === true, 'ES256 verify good sig');
-  const badSig = Buffer.from(d.signature);
-  badSig[0] ^= 0xff;
-  assert(verifyEs256(d.signingInput, badSig, jwk) === false, 'ES256 verify rejects tampered sig');
+  // --- H-05: project-ref must NOT pass just because the target URL contains it ---
+  const foreign = safeClaims(decodeJwt(mk({ iss: 'https://zzzzzzzzzzzzzzzzzzzz.supabase.co/auth/v1', ref: undefined }).token).payload);
+  ok(validateProjectRef(foreign, 'https://zzzzzzzzzzzzzzzzzzzz.supabase.co/auth/v1/keys', 'ykxlqnshaaxmzzocpjlj').ok === false,
+    'H-05: foreign-issuer token fails project-ref even if operator target URL has the expected ref');
+  ok(validateProjectRef(safeClaims(d.payload), null, 'ykxlqnshaaxmzzocpjlj').ok === true, 'H-05: matching issuer passes');
 
-  // classifiers
-  assert(boundaryReached({ status: 200, code: null }) === true, 'boundary: 200');
-  assert(boundaryReached({ status: 400, code: '23514' }) === true, 'boundary: in-function 400');
-  assert(boundaryReached({ status: 401 }) === false, 'boundary: 401 not reached');
-  assert(boundaryReached({ status: 404, code: 'PGRST202' }) === false, 'boundary: PGRST202 not reached');
-  assert(failsClosed({ status: 404, code: 'PGRST202' }) === true, 'failsClosed: 404 PGRST202');
-  assert(failsClosed({ status: 403 }) === true, 'failsClosed: 403');
-  assert(failsClosed({ status: 200 }) === false, 'failsClosed: 200 is NOT closed');
+  // --- H-04: generic 5xx / transport error is never a boundary reach ---
+  ok(boundaryReached({ status: 500, code: null }) === false, 'H-04: 500 not boundary');
+  ok(boundaryReached({ status: 502, code: null }) === false, 'H-04: 502 not boundary');
+  ok(boundaryReached({ status: -1, code: null }) === false, 'H-04: transport error not boundary');
+  ok(boundaryReached({ status: 404, code: 'PGRST202' }) === false, 'H-04: routing 404 not boundary');
+  ok(boundaryReached({ status: 200, code: null }) === true, 'boundary: 200');
+  ok(boundaryReached({ status: 400, code: '22P02' }) === true, 'boundary: in-function invalid_text_representation');
+  ok(boundaryReached({ status: 400, code: 'P0001' }) === true, 'boundary: in-function raise_exception');
+  ok(boundaryReached({ status: 400, code: 'PGRST100' }) === false, 'boundary: parse error not in-function');
+  ok(failsClosed({ status: 403 }) === true && failsClosed({ status: 200 }) === false && failsClosed({ status: 500 }) === false,
+    'failsClosed: 403 yes / 200 no / 500 no');
 
-  process.stderr.write('SELFTEST PASS (jwt decode, ES256 verify, redaction, classifiers)\n');
-  process.exit(0);
+  // --- H-01: gate contract ---
+  const base = () => [
+    ...TOK_IDS.map((id) => ({ id, verdict: 'PASS' })),
+    { id: 'POS-1', verdict: 'PASS' }, { id: 'POS-2', verdict: 'PASS' }, { id: 'POS-GRANTS', verdict: 'PASS' },
+    { id: 'POS-AUTHZ-1', verdict: 'PASS' }, { id: 'POS-AUTHZ-2', verdict: 'PASS' }, { id: 'POS-AUTHZ-3', verdict: 'PASS' },
+    { id: 'POS-CONTROL-1', verdict: 'PASS' },
+    ...NEG_IDS.map((id) => ({ id, verdict: 'PASS' })),
+    { id: 'NEG-ROLE-2', verdict: 'NOT TESTABLE' }, { id: 'POS-3', verdict: 'RUNTIME-BLOCKED' },
+  ];
+  ok(computeGate(base(), null).verdict === 'PASS', 'gate: full required set PASS -> PASS');
+
+  const drop = (arr, id) => arr.filter((r) => r.id !== id);
+  const set = (arr, id, v) => arr.map((r) => (r.id === id ? { ...r, verdict: v } : r));
+
+  ok(computeGate(set(base(), 'POS-AUTHZ-2', 'RUNTIME-BLOCKED'), null).verdict !== 'PASS', 'H-01: POS-AUTHZ-2 RUNTIME-BLOCKED blocks PASS');
+  ok(computeGate(set(base(), 'POS-AUTHZ-3', 'RUNTIME-BLOCKED'), null).verdict !== 'PASS', 'H-01: POS-AUTHZ-3 RUNTIME-BLOCKED blocks PASS');
+  ok(computeGate(set(base(), 'POS-CONTROL-1', 'RUNTIME-BLOCKED'), null).verdict !== 'PASS', 'H-01: POS-CONTROL-1 RUNTIME-BLOCKED blocks PASS');
+  ok(computeGate(set(base(), 'POS-GRANTS', 'RUNTIME-BLOCKED'), null).verdict !== 'PASS', 'H-02: POS-GRANTS RUNTIME-BLOCKED blocks PASS');
+  ok(computeGate(drop(base(), 'NEG-NET-1'), null).verdict !== 'PASS', 'H-01: missing required negative probe blocks PASS');
+  ok(computeGate(drop(base(), 'TOK-4'), null).verdict !== 'PASS', 'H-01: missing token check blocks PASS');
+  ok(computeGate(set(base(), 'NEG-CRON-1', 'WeirdVerdict'), null).verdict === 'FAIL', 'H-01: unknown verdict -> FAIL');
+  ok(computeGate([...base(), { id: 'NEG-CRON-1', verdict: 'PASS' }], null).verdict === 'FAIL', 'H-01: duplicate id -> FAIL');
+  ok(computeGate(set(base(), 'NEG-AUTH-1', 'FAIL'), null).verdict === 'FAIL', 'H-01: any FAIL -> FAIL');
+  ok(computeGate(base(), 'some note').verdict !== 'PASS', 'H-01: harness note blocks PASS');
+  ok(computeGate(set(base(), 'POS-3', 'FAIL'), null).verdict !== 'PASS', 'advisory POS-3 FAIL still blocks (any FAIL rule)');
+  ok(computeGate(set(base(), 'NEG-ROLE-2', 'RUNTIME-BLOCKED'), null).verdict === 'PASS', 'advisory NEG-ROLE-2 non-PASS does NOT block');
+
+  // --- H-02 / H-03: default mode must not plan a submit or a table-mutating
+  // HTTP call. Needles are assembled from fragments so this test cannot
+  // self-match its own source text.
+  const S = (a, b) => a + b;
+  const src = fs.readFileSync(new URL(import.meta.url), 'utf8');
+  const submitNeedle = S('rpc/${RPC_', 'SUBMIT}');
+  ok((src.split(submitNeedle).length - 1) === 1, 'H-02: exactly one submit call site in source');
+  ok(src.slice(0, src.indexOf(submitNeedle)).includes('CFG.allowSubmitProbe'),
+    'H-02: the submit call site is preceded by the allowSubmitProbe opt-in guard');
+  ok(!src.includes(S("method: '", "PUT'")) && !src.includes(S("method: '", "DELETE'")),
+    'H-02: no PUT/DELETE method anywhere in the harness');
+  const patchNeedle = S("method: '", "PATCH'");
+  ok((src.split(patchNeedle).length - 1) === 1, 'H-03: exactly one PATCH probe');
+  ok(src.slice(src.indexOf(patchNeedle), src.indexOf(patchNeedle) + 220).includes('id=eq.'),
+    'H-03: the PATCH probe targets a specific (nonexistent) id filter');
+
+  process.stderr.write(failed ? `\nSELFTEST: ${failed} FAILURE(S)\n` : '\nSELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03)\n');
+  process.exit(failed ? 1 : 0);
 }
 
 if (process.argv.includes('--selftest')) selftest();
