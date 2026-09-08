@@ -635,12 +635,12 @@ products:
     product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
     product_code: "DC01"
     delivery_model: "subscription_saas"
-    # canonical_host dc01.wstera.com is LIVE as of 2026-09-07 for DocCraft V1 Public Pilot.
+    # canonical_host dc01.wstera.com is LIVE; Public Pilot / PV Gate opened 2026-09-08.
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"
     tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
-    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production is live at dc01.wstera.com and Public Pilot / PV Gate is next. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
+    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production is live at dc01.wstera.com. Public Pilot / PV Gate opened 2026-09-08 at DocCraft checkpoint 70054e7 with real-user evidence collection starting from zero. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
     deployment_model: "dedicated_runtime"
     runtime_project: "Cloudflare Workers static assets / dc01.wstera.com"
     commercial_status: "prototype"
