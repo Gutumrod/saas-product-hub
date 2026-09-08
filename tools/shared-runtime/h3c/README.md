@@ -19,7 +19,7 @@ A single self-contained Node script that proves the H3C data-plane boundary:
 - It **never** calls `submit_booking_request_v2_internal` and **never** issues a table `INSERT/PUT/DELETE`.
 - The submit EXECUTE grant is proven **offline** (`POS-GRANTS`) by reading committed H3B privilege evidence — not by invoking submit.
 - `NEG-TBL-2` (write-authority) is a `PATCH` against a **guaranteed-nonexistent primary key** — non-mutating even if the role held `UPDATE`.
-- Negative RPC probes use `GET /rest/v1/rpc/<fn>` so a role that could execute a VOLATILE function gets `405` (no execution) rather than running it.
+- Negative RPC probes use only non-mutating targets/methods. VOLATILE read-only RPCs use safe `POST` bodies so a `405` method response cannot masquerade as an isolation result. Dangerous `public.rls_auto_enable()` is never invoked; its denial comes from the fresh DB privilege snapshot.
 - A mutating submit probe exists **only** behind `H3C_ALLOW_SUBMIT_PROBE=1` + `H3C_SUBMIT_DISPOSABLE_ACK=1` + disposable fixtures, and is **advisory** — it can never contribute to a `PASS`.
 
 ## Requirements
@@ -62,6 +62,9 @@ A single self-contained Node script that proves the H3C data-plane boundary:
 
 `H3C_ALLOW_SUBMIT_PROBE=1` + `H3C_SUBMIT_DISPOSABLE_ACK=1` + disposable `H3C_FIX_SHOP_ID`/`ROOM_ID`/`RATE_PLAN_ID`. The operator MUST verify and clean up anything created.
 
+
+Before running the harness, execute `h3c-privilege-snapshot.sql` through House SELECT-only authority and save the returned JSON object as the file referenced by `H3C_PRIVILEGE_SNAPSHOT`. The harness rejects snapshots older than 15 minutes or with a mismatched project/role.
+
 ## Run
 
 ```bash
@@ -72,7 +75,7 @@ node tools/shared-runtime/h3c/h3c-proof-harness.mjs --selftest
 # the live proof (operator, LAB only):
 export H3C_SUPABASE_URL="https://ykxlqnshaaxmzzocpjlj.supabase.co"
 export H3C_ANON_KEY="…"
-export H3C_H3B_EVIDENCE="docs/platform/shared-runtime/evidence/H3B-POST-APPLY-RUNTIME-BOUNDARY-2026-09-08.md"
+export H3C_PRIVILEGE_SNAPSHOT="runtime/h3c-privilege-snapshot.json"
 export H3C_RUNTIME_JWT="…"          # or H3C_SERVICE_EMAIL + H3C_SERVICE_PASSWORD
 export H3C_CONTROL_JWT="…" H3C_EXPIRED_JWT="…"
 export H3C_FIX_SHOP_ID="…" H3C_FIX_OTHER_SHOP_ID="…" H3C_PS01_TABLE_COL="…"

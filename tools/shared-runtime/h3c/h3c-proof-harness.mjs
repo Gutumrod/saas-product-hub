@@ -47,6 +47,7 @@ const CFG = {
   expectedRole: env.H3C_EXPECTED_ROLE || 'ps01_line_runtime',
   maxTokenLifetimeSec: Number(env.H3C_MAX_TOKEN_LIFETIME_SEC || 300),
   h3bEvidence: env.H3C_H3B_EVIDENCE || '',
+  privilegeSnapshot: env.H3C_PRIVILEGE_SNAPSHOT || '',
   allowSubmitProbe: env.H3C_ALLOW_SUBMIT_PROBE === '1' && env.H3C_SUBMIT_DISPOSABLE_ACK === '1',
   fixtures: {
     shopId: env.H3C_FIX_SHOP_ID || '',
@@ -374,27 +375,50 @@ async function obtainRuntimeToken() {
 // submit grant is proven from privilege evidence, not by calling submit).
 // ---------------------------------------------------------------------------
 
-function posGrantsFromEvidence() {
-  if (!CFG.h3bEvidence) {
-    return record('POS-GRANTS', 'positive', 'RUNTIME-BLOCKED', {
-      note: 'set H3C_H3B_EVIDENCE to the path of H3B-POST-APPLY-RUNTIME-BOUNDARY-2026-09-08.md so the 3-function grant (incl. submit) + zero-table-write boundary is proven offline',
-    });
+function loadPrivilegeSnapshot() {
+  if (!CFG.privilegeSnapshot) {
+    return { ok: false, note: 'set H3C_PRIVILEGE_SNAPSHOT to a fresh JSON file produced by h3c-privilege-snapshot.sql', data: null };
   }
-  let text;
+  let data;
   try {
-    text = fs.readFileSync(CFG.h3bEvidence, 'utf8');
+    data = JSON.parse(fs.readFileSync(CFG.privilegeSnapshot, 'utf8'));
   } catch (e) {
-    return record('POS-GRANTS', 'positive', 'RUNTIME-BLOCKED', { note: `cannot read H3C_H3B_EVIDENCE: ${e.message}` });
+    return { ok: false, note: `cannot read/parse H3C_PRIVILEGE_SNAPSHOT: ${e.message}`, data: null };
   }
-  const has3 = [RPC_CONTEXT, RPC_QUOTE, RPC_SUBMIT].every((n) => text.includes(n));
-  const exactlyThree = /execute exactly three PS01 functions and no fourth/i.test(text) || /executable PS01 function count[^0-9]*3/i.test(text);
-  const zeroWrites = /Direct write-capable privileges on PS01 relations:\s*`?0`?/i.test(text);
-  const ok = has3 && exactlyThree && zeroWrites;
-  record('POS-GRANTS', 'positive', ok ? 'PASS' : 'FAIL', {
-    detail: `names3=${has3} exactlyThree=${exactlyThree} zeroWrites=${zeroWrites}`,
-    source: CFG.h3bEvidence,
-    note: 'offline proof that ps01_line_runtime has EXECUTE on exactly the 3 RPCs (incl. submit) and no direct PS01 table write; submit is NOT invoked by this harness',
+  const names = Array.isArray(data.exec_functions)
+    ? data.exec_functions.map((x) => (typeof x === 'string' ? x : x?.name)).filter(Boolean).sort()
+    : [];
+  const expectedNames = [RPC_CONTEXT, RPC_QUOTE, RPC_SUBMIT].sort();
+  const capturedMs = Date.parse(data.captured_at || '');
+  const ageMs = Number.isFinite(capturedMs) ? Math.abs(Date.now() - capturedMs) : Number.POSITIVE_INFINITY;
+  const fresh = ageMs <= 15 * 60 * 1000;
+  const checks = {
+    projectRef: data.project_ref === CFG.expectedProjectRef,
+    role: data.role === CFG.expectedRole,
+    noLogin: data.role_no_login === true,
+    exactExecCount: Number(data.exec_count) === 3,
+    exactExecNames: JSON.stringify(names) === JSON.stringify(expectedNames),
+    zeroWrites: Number(data.write_count) === 0,
+    noPublicRlsExec: data.public_rls_auto_enable_exec === false,
+    noLocalServiceUsage: data.local_service_usage === false,
+    noPs01HelperExec: data.ps01_request_user_id_exec === false,
+    fresh,
+  };
+  return { ok: Object.values(checks).every(Boolean), note: `snapshot checks=${JSON.stringify(checks)} ageMs=${ageMs}`, data };
+}
+
+function posGrantsFromEvidence() {
+  const snap = loadPrivilegeSnapshot();
+  if (!snap.ok) {
+    record('POS-GRANTS', 'positive', 'RUNTIME-BLOCKED', { note: snap.note, source: CFG.privilegeSnapshot || null });
+    return snap;
+  }
+  record('POS-GRANTS', 'positive', 'PASS', {
+    detail: 'fresh live privilege snapshot: exact 3 PS01 EXECUTEs, zero PS01 relation writes, custom public SECURITY DEFINER blocked',
+    source: CFG.privilegeSnapshot,
+    note: snap.note,
   });
+  return snap;
 }
 
 // ---------------------------------------------------------------------------
@@ -434,7 +458,7 @@ async function main() {
   if (!tokOk) return finish(claims, 'token pre-checks failed — no live probes were run', runtimeJwt);
 
   // ---- POS-GRANTS (offline) ----
-  posGrantsFromEvidence();
+  const privilegeSnapshot = posGrantsFromEvidence();
 
   // ---- POS-1 / POS-2 : read/compute RPCs reach the function boundary ----
   const haveFix = Boolean(CFG.fixtures.shopId);
@@ -533,12 +557,44 @@ async function main() {
     });
   }
 
-  // ---- NEGATIVE matrix (all GET / non-mutating) ----
+  // ---- NEGATIVE matrix ? safe-by-default ----
+  // H-08 House hardening: RPC probes use non-mutating targets/methods so a
+  // permission failure is distinguishable from a volatility-driven HTTP 405.
+  {
+    const res = await probe({ method: 'GET', path: '/rest/v1/rpc/ps01_request_user_id', profile: 'ps01', token: runtimeJwt });
+    record('NEG-SD-1', 'negative', failsClosed(res) ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code, expected: 'ps01 helper is not allowlisted for runtime role', snippet: res.snippet,
+    });
+  }
+  {
+    const res = await probe({
+      method: 'POST', path: `/rest/v1/rpc/${CFG.ps01OtherRpc}`, profile: 'ps01', token: runtimeJwt,
+      body: { p_verified_line_user_id: '', p_shop_id: NIL_UUID },
+    });
+    record('NEG-SD-2', 'negative', failsClosed(res) ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code, expected: 'non-allowlisted read-only SECURITY DEFINER RPC must be unreachable', snippet: res.snippet,
+    });
+  }
+  {
+    const res = await probe({
+      method: 'POST', path: `/rest/v1/rpc/${CFG.localServiceFn}`, profile: 'local_service', token: runtimeJwt,
+      body: { target_shop_id: NIL_UUID },
+    });
+    record('NEG-ROLE-1', 'negative', failsClosed(res) ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code, expected: 'local_service schema is unreachable to runtime role', snippet: res.snippet,
+    });
+  }
+  if (privilegeSnapshot.ok && privilegeSnapshot.data?.public_rls_auto_enable_exec === false) {
+    record('NEG-PUB-1', 'negative', 'PASS', {
+      note: 'fresh DB privilege snapshot proves public.rls_auto_enable() is not executable by ps01_line_runtime; no dangerous RPC invocation performed',
+    });
+  } else {
+    record('NEG-PUB-1', 'negative', 'RUNTIME-BLOCKED', {
+      note: 'fresh privilege snapshot must prove public_rls_auto_enable_exec=false; do not invoke this event-trigger function through Data API',
+    });
+  }
+
   const negGet = [
-    ['NEG-SD-1', { path: '/rest/v1/rpc/sync_booking_occupancy_window', profile: 'ps01' }],
-    ['NEG-SD-2', { path: `/rest/v1/rpc/${CFG.ps01OtherRpc}`, profile: 'ps01' }],
-    ['NEG-ROLE-1', { path: `/rest/v1/rpc/${CFG.localServiceFn}`, profile: 'local_service' }],
-    ['NEG-PUB-1', { path: '/rest/v1/rpc/rls_auto_enable', profile: 'public' }],
     ['NEG-TBL-1', { path: `/rest/v1/${CFG.ps01Table}?limit=1`, profile: 'ps01' }],
     ['NEG-LS-1', { path: '/rest/v1/shop_public_profile?limit=1', profile: 'local_service' }],
     ['NEG-INT-1', { path: `/rest/v1/${CFG.ps01InternalObj}?limit=1`, profile: 'ps01_internal' }],
@@ -557,7 +613,6 @@ async function main() {
       http: res.status, code: res.code, expected: 'fail closed (401/403/404)', snippet: res.snippet,
     });
   }
-
   // NEG-TBL-2: non-mutating write-authority probe — PATCH a guaranteed-nonexistent PK.
   if (CFG.ps01TableCol) {
     const res = await probe({
@@ -759,7 +814,30 @@ function selftest() {
   ok(src.slice(src.indexOf(patchNeedle), src.indexOf(patchNeedle) + 220).includes('id=eq.'),
     'H-03: the PATCH probe targets a specific (nonexistent) id filter');
 
-  process.stderr.write(failed ? `\nSELFTEST: ${failed} FAILURE(S)\n` : '\nSELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03)\n');
+  // --- H-08: fresh privilege snapshot contract ---
+  const oldSnapshot = CFG.privilegeSnapshot;
+  const tmpSnapshot = new URL('./.h3c-selftest-snapshot.json', import.meta.url);
+  const goodSnapshot = {
+    captured_at: new Date().toISOString(), project_ref: CFG.expectedProjectRef, role: CFG.expectedRole,
+    role_no_login: true, exec_count: 3,
+    exec_functions: [{ name: RPC_CONTEXT }, { name: RPC_QUOTE }, { name: RPC_SUBMIT }],
+    write_count: 0, public_rls_auto_enable_exec: false,
+    local_service_usage: false, ps01_request_user_id_exec: false,
+  };
+  try {
+    fs.writeFileSync(tmpSnapshot, JSON.stringify(goodSnapshot));
+    CFG.privilegeSnapshot = tmpSnapshot;
+    ok(loadPrivilegeSnapshot().ok === true, 'H-08: fresh safe privilege snapshot passes');
+    fs.writeFileSync(tmpSnapshot, JSON.stringify({ ...goodSnapshot, public_rls_auto_enable_exec: true }));
+    ok(loadPrivilegeSnapshot().ok === false, 'H-08: public rls_auto_enable EXECUTE blocks snapshot');
+    fs.writeFileSync(tmpSnapshot, JSON.stringify({ ...goodSnapshot, captured_at: '2000-01-01T00:00:00Z' }));
+    ok(loadPrivilegeSnapshot().ok === false, 'H-08: stale privilege snapshot blocks');
+  } finally {
+    CFG.privilegeSnapshot = oldSnapshot;
+    try { fs.unlinkSync(tmpSnapshot); } catch { /* ignore */ }
+  }
+
+  process.stderr.write(failed ? `\nSELFTEST: ${failed} FAILURE(S)\n` : '\nSELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03, privilege H-08)\n');
   process.exit(failed ? 1 : 0);
 }
 

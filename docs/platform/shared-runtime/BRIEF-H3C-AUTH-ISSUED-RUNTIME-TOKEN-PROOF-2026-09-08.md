@@ -80,7 +80,9 @@ Insert the service UUID into `wstera_platform_internal.runtime_token_grants` wit
 
 ### H3C-5 — Enable the Custom Access Token Hook
 Use hosted Auth configuration field-level authority only. Broad `supabase config push` remains forbidden because House has no complete canonical project config and CLI has no dry-run.
-### H3C-6 — Obtain Auth-issued token and prove claims
+### H3C-6 ? Fresh privilege snapshot + Auth-issued token proof
+Immediately before token issuance, execute `tools/shared-runtime/h3c/h3c-privilege-snapshot.sql` through House SELECT-only authority and preserve the returned JSON. The snapshot must be fresh (<=15 minutes), match WSTERA LAB + `ps01_line_runtime`, prove exactly three PS01 EXECUTEs, zero direct PS01 relation writes, no `local_service` schema usage, and `public.rls_auto_enable()` not executable.
+
 From a House-controlled operator path, authenticate the LAB service identity and verify:
 - signature validates against WSTERA LAB JWKS;
 - issuer is WSTERA LAB Auth;
@@ -90,7 +92,8 @@ From a House-controlled operator path, authenticate the LAB service identity and
 
 ### H3C-7 — Data API positive/negative matrix
 Positive:
-- all three allowlisted PS01 Customer LINE RPCs reach the function boundary with valid inputs/fixtures.
+- context + quote Customer LINE RPCs reach the function boundary with valid read-only fixtures;
+- submit EXECUTE authority is proven by the fresh privilege snapshot; the mutating submit RPC is not required for PASS and may only be invoked with explicit disposable-fixture opt-in.
 
 Negative:
 - non-allowlisted PS01 RPC fails;
@@ -100,18 +103,20 @@ Negative:
 - `net`, `cron`, `auth`, `storage`, `extensions` cannot be addressed through the Data API route;
 - invalid signature, expired token and foreign role fail closed.
 
-### H3C-8 — Disable temporary proof authority
+### H3C-8 ? Disable temporary proof authority
 After evidence capture:
-- disable/delete the temporary allowlist row;
-- revoke/delete the LAB service identity when no longer needed;
+- invalidate/delete the LAB service identity first and revoke its sessions/refresh tokens;
+- then disable/delete the temporary allowlist row;
 - keep or disable the hook according to the next approved product-path integration phase;
+- record the issued JWT `exp` as `residualNarrowAuthorityUntil`; deleting the identity does not invalidate an already-issued access JWT, so do not claim authority is fully gone before that time or before direct rejection is proven;
 - do not retire `ps01_runtime_login` until H3D passes.
 
 ## Rollback Order
 
-1. Disable hosted Auth Hook config if enabled.
-2. Remove runtime-token grant rows.
-3. Revoke hook/table grants from `supabase_auth_admin`.
-4. Drop hook/table/platform schema using the committed rollback artifact.
-5. H3B role remains unless H3B itself is rolled back separately.
-6. Re-run shared-runtime signatures and Security Advisor.
+1. Invalidate/delete the LAB service identity and revoke all sessions/refresh tokens first.
+2. Remove/disable runtime-token grant rows.
+3. Disable hosted Auth Hook config if enabled.
+4. Wait until the last issued runtime JWT reaches `exp` (or prove it is rejected) before claiming temporary authority is fully gone.
+5. Revoke hook/table grants from `supabase_auth_admin` and drop the H3C support layer only if the entire layer is being removed.
+6. H3B role remains unless H3B itself is rolled back separately.
+7. Re-run shared-runtime signatures and Security Advisor.

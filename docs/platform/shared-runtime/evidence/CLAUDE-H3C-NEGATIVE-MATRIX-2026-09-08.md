@@ -6,8 +6,8 @@
 
 ## Ground rules
 
-- **Safe by default — no mutation.** Every default-mode probe is a `GET`, or a `POST` to one of the two read/compute RPCs (`get_customer_booking_context_v2_internal`, `quote_customer_booking_v2_internal`). The harness **never** calls `submit_booking_request_v2_internal` and **never** issues a table `INSERT/PUT/DELETE` in default mode. Negative RPC probes use `GET /rest/v1/rpc/<fn>` so a role that *can* execute a VOLATILE function gets `405` (no execution) rather than running it. (House H-02, H-03)
-- **The submit EXECUTE grant is proven offline** from committed H3B privilege evidence (`POS-GRANTS`), not by invoking submit. (House H-02)
+- **Safe by default ? no mutation.** Default mode uses GET, reviewed read/compute POSTs, and one PATCH against a guaranteed-nonexistent primary key. It never invokes submit. House H-08 forbids volatility-driven `405` as isolation evidence and never invokes `public.rls_auto_enable()` through Data API.
+- **The submit EXECUTE grant is proven from a fresh live privilege snapshot** (`H3C_PRIVILEGE_SNAPSHOT`) generated from `tools/shared-runtime/h3c/h3c-privilege-snapshot.sql`; the same snapshot must prove zero PS01 relation writes and `public.rls_auto_enable_exec=false`. Snapshots older than 15 minutes are rejected.
 - A non-2xx result counts as "reached the function boundary" **only** when the error is unambiguously raised inside the target Postgres function (SQLSTATE class `22`/`23`/`40`/`09`/`2F`/`P0…`). Generic `5xx`, transport errors, `PGRST202`/`PGRST301`/`PGRST100`, `404`, `405` never count. (House H-04)
 - Token/project identity is validated **only** from the JWT issuer, a `ref` claim, and the LAB JWKS — never from the configured target URL. (House H-05)
 - Any token used as evidence (runtime token AND control token) gets the full signature + issuer + project-ref + expiry check before its role/lifetime is read. (House H-06)
@@ -53,7 +53,7 @@ If any TOK-* fails, the harness records the failure and runs **no** live probes.
 |---|---|---|
 | POS-1 | `POST /rest/v1/rpc/get_customer_booking_context_v2_internal` · `apikey`, `Authorization: Bearer`, `Accept/Content-Profile: ps01` · body `{p_verified_line_user_id, p_shop_id}` (fixtures or `""`/nil-uuid) | `boundaryReached` — 2xx, or a 4xx whose SQLSTATE is an in-function error. Proves role + grant + `SET LOCAL ROLE` + `ps01` schema resolution. |
 | POS-2 | same for `quote_customer_booking_v2_internal` (6 args) | same. `quote` is a pricing/compute RPC — non-persistence by the Order V1 / PS01 contract (House to confirm from RPC source). |
-| POS-GRANTS | **offline.** Reads the H3B evidence file (`H3C_H3B_EVIDENCE`) and asserts it documents: all three RPC names, "execute exactly three PS01 functions and no fourth", and "Direct write-capable privileges on PS01 relations: `0`". | all three assertions true. This is the proof that `ps01_line_runtime` holds EXECUTE on exactly the 3 RPCs **including submit**, and zero table writes — without invoking submit. `RUNTIME-BLOCKED` (→ blocks PASS) if the file is not supplied. |
+| POS-GRANTS | Reads `H3C_PRIVILEGE_SNAPSHOT`, generated immediately before the run from `h3c-privilege-snapshot.sql`. | Snapshot age <=15 min; correct project/role; NOLOGIN; exactly 3 expected PS01 EXECUTEs; zero PS01 relation writes; no `local_service` schema USAGE; no `ps01_request_user_id()` EXECUTE; `public_rls_auto_enable_exec=false`. Missing/stale/mismatched snapshot = `RUNTIME-BLOCKED`. |
 | POS-3 | *(advisory, opt-in)* `POST /rest/v1/rpc/submit_booking_request_v2_internal` — **only** when `H3C_ALLOW_SUBMIT_PROBE=1` + `H3C_SUBMIT_DISPOSABLE_ACK=1` + disposable fixtures. | boundary reached. **Mutating** — operator verifies and cleans up. Cannot make the gate PASS. |
 | POS-AUTHZ-1 | POS-1 with `p_shop_id` = `H3C_FIX_OTHER_SHOP_ID` (a real shop the fixture LINE user is NOT linked to) | RPC does not return another shop's context (4xx, or a `null`/deny body). Weak signal from the harness — House also confirms from the RPC body / logs. `RUNTIME-BLOCKED` without the fixture. |
 | POS-AUTHZ-2 | POS-1 with `p_verified_line_user_id = ""` and `p_shop_id = H3C_FIX_SHOP_ID` | no customer context returned (read-only probe). `RUNTIME-BLOCKED` without `H3C_FIX_SHOP_ID`. |
@@ -62,14 +62,14 @@ If any TOK-* fails, the harness records the failure and runs **no** live probes.
 
 ## Negative matrix (every one must fail closed: `401` / `403` / `404`)
 
-### Non-allowlisted RPC / unintended SECURITY DEFINER — `GET /rest/v1/rpc/<fn>`
+### Non-allowlisted RPC / unintended SECURITY DEFINER ? safe probes
 
-| ID | Function / profile | Expected |
+| ID | Probe | Expected |
 |---|---|---|
-| NEG-SD-1 | `sync_booking_occupancy_window` / `ps01` | `404 PGRST202` (no EXECUTE for this role). GET form → a VOLATILE fn also yields `405`, never execution. |
-| NEG-SD-2 | `H3C_PS01_OTHER_RPC` (a real 4th `ps01` fn from live metadata) / `ps01` | `404` / `403` |
-| NEG-ROLE-1 | `H3C_LOCAL_SERVICE_FN` (an anon-granted `local_service` SECURITY DEFINER fn) / `local_service` | `401` / `403` / `404` — role has no `local_service` USAGE |
-| NEG-PUB-1 | `rls_auto_enable` / `public` | `404` — event-trigger callback, not an RPC for this role |
+| NEG-SD-1 | `GET /rest/v1/rpc/ps01_request_user_id` / `ps01` | `401` / `403` / `404`; this STABLE helper is non-mutating and is not allowlisted |
+| NEG-SD-2 | `POST` the read-only legacy `get_customer_booking_context_internal` with blank LINE identity + NIL shop / `ps01` | `401` / `403` / `404`; if it executes and raises from inside the function, the probe FAILS |
+| NEG-ROLE-1 | `POST local_service.is_shop_member` with NIL UUID / `local_service` | `401` / `403` / `404`; role has no `local_service` schema USAGE |
+| NEG-PUB-1 | **No HTTP call.** Read `public_rls_auto_enable_exec` from the fresh privilege snapshot | must be `false`; invoking this event-trigger SECURITY DEFINER function through Data API is forbidden |
 
 ### Direct read / write outside the contract
 
