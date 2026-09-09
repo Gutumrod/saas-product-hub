@@ -1,9 +1,9 @@
 # BRIEF — Claude H3D Final One-Shot Remediation
 
-**Date:** 2026-09-09 (Asia/Bangkok)  
-**Mode:** WSTERA HOUSE / INDEPENDENT CODEX FINAL REVIEW  
-**Environment:** WSTERA LAB (`ykxlqnshaaxmzzocpjlj`) only  
-**Verdict:** `PASS FOR IMPLEMENTATION`  
+**Date:** 2026-09-09 (Asia/Bangkok)
+**Mode:** WSTERA HOUSE / INDEPENDENT CODEX FINAL REVIEW
+**Environment:** WSTERA LAB (`ykxlqnshaaxmzzocpjlj`) only
+**Verdict:** `PASS FOR IMPLEMENTATION`
 **Live state:** `LIVE DML NOT AUTHORIZED / H3D NOT PASS / HOUSE-A CLOSED / BK01 QUARANTINED`
 
 This is the canonical H3D remediation instruction for the next Claude implementation pass. It supersedes the piecemeal H3D fixture/runner remediation instructions. “PASS FOR IMPLEMENTATION” means the remediation design below is complete enough to implement; it does **not** authorize fixture DML, Auth identity mutation, runtime-grant DML, hook mutation, H3D live execution, merge, or release.
