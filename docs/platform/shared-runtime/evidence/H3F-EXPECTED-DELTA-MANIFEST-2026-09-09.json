@@ -1,0 +1,14 @@
+[
+  {
+    "path": "queries.global",
+    "reason": "H3E adds exactly one platform migration row (h3e_ps01_runtime_login_retirement): global_migration_count 41->42, latest_global_migration_version advances. No other global field may change."
+  },
+  {
+    "path": "queries.roles",
+    "reason": "H3E: ps01_runtime_login rolcanlogin true->false and password_present true->false ONLY. Any other role row change, and any other attribute change on ps01_runtime_login, is unexplained."
+  },
+  {
+    "path": "queries.effective_authority",
+    "reason": "H3E: ps01_runtime_login.canlogin true->false ONLY. Schema/DB authority for every product role, including ps01_runtime_login, must be unchanged."
+  }
+]
