@@ -49,6 +49,10 @@ const CFG = {
   h3bEvidence: env.H3C_H3B_EVIDENCE || '',
   privilegeSnapshot: env.H3C_PRIVILEGE_SNAPSHOT || '',
   allowSubmitProbe: env.H3C_ALLOW_SUBMIT_PROBE === '1' && env.H3C_SUBMIT_DISPOSABLE_ACK === '1',
+  // H3D final remediation (§8 / F07): strict fixture validation + exact-branch
+  // AUTHZ classification + real 2xx positive shape. Off by default so the
+  // committed H3C contract and its selftests are unchanged.
+  strictH3d: env.H3C_STRICT_H3D === '1',
   fixtures: {
     shopId: env.H3C_FIX_SHOP_ID || '',
     lineUserId: env.H3C_FIX_LINE_USER_ID || '',
@@ -302,6 +306,75 @@ function storageFailsClosed(res) {
 }
 
 // ---------------------------------------------------------------------------
+// H3D strict mode (§8 / F07): exact fixture validation + exact-branch AUTHZ
+// classification. Only active when CFG.strictH3d.
+// ---------------------------------------------------------------------------
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-9a-f][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Validate every H3D fixture variable BEFORE any network call. Any missing,
+// malformed, duplicate, wrong-cardinality, or cross-inconsistent value aborts.
+function validateH3dFixtures(f) {
+  const errs = [];
+  const u = (v, name) => { if (!UUID_RE.test(String(v || ''))) errs.push(`${name} is not a UUID`); };
+  u(f.shopId, 'H3C_FIX_SHOP_ID');
+  u(f.otherShopId, 'H3C_FIX_OTHER_SHOP_ID');
+  u(f.roomId, 'H3C_FIX_ROOM_ID');
+  u(f.ratePlanId, 'H3C_FIX_RATE_PLAN_ID');
+  if (!f.lineUserId || /\s/.test(f.lineUserId) || f.lineUserId.length > 100) errs.push('H3C_FIX_LINE_USER_ID missing/invalid');
+  if (f.petIds.length !== 1 || !UUID_RE.test(f.petIds[0] || '')) errs.push('H3C_FIX_PET_IDS must be exactly one UUID (Pet A)');
+  if (f.otherPetIds.length !== 1 || !UUID_RE.test(f.otherPetIds[0] || '')) errs.push('H3C_FIX_OTHER_PET_IDS must be exactly one UUID (Pet B)');
+  if (!f.startAt || !/([zZ]|[+-]\d{2}:\d{2})$/.test(f.startAt) || !Number.isFinite(Date.parse(f.startAt))) errs.push('H3C_FIX_START_AT must be a fixed ISO timestamp with timezone');
+  else if (Date.parse(f.startAt) <= Date.now()) errs.push('H3C_FIX_START_AT must be in the future');
+  const all = [f.shopId, f.otherShopId, f.roomId, f.ratePlanId, f.petIds[0], f.otherPetIds[0]].map((x) => String(x).toLowerCase());
+  if (new Set(all).size !== all.length) errs.push('H3D fixture UUIDs are not all distinct');
+  if (f.petIds[0] && f.otherPetIds[0] && f.petIds[0].toLowerCase() === f.otherPetIds[0].toLowerCase()) errs.push('Pet A and Pet B must differ');
+  return errs;
+}
+
+// Positive read/compute probe: strict mode requires 2xx + the exact safe shape.
+// It records only a boolean shape map, never the response body (owner PII).
+function positiveShapeOk(res, kind, f) {
+  if (res.status < 200 || res.status >= 300) return { ok: false, why: `http_${res.status}` };
+  let j;
+  try { j = JSON.parse(res.snippet); } catch { return { ok: false, why: 'unparseable body' }; }
+  if (kind === 'context') {
+    const shopOk = j && j.shop && String(j.shop.id).toLowerCase() === f.shopId.toLowerCase();
+    const ownerOk = Boolean(j && j.owner && j.owner.id);
+    const petsOk = Array.isArray(j?.pets) && j.pets.some((p) => String(p.id).toLowerCase() === f.petIds[0].toLowerCase());
+    return { ok: shopOk && ownerOk && petsOk, shape: { shopOk, ownerOk, petsOk } };
+  }
+  // quote
+  const q = j || {};
+  const ok = String(q.ratePlanId).toLowerCase() === f.ratePlanId.toLowerCase()
+    && String(q.roomId).toLowerCase() === f.roomId.toLowerCase()
+    && q.startAt && typeof q.price !== 'undefined';
+  return { ok, shape: { ratePlanOk: String(q.ratePlanId).toLowerCase() === f.ratePlanId.toLowerCase(), roomOk: String(q.roomId).toLowerCase() === f.roomId.toLowerCase(), hasPrice: typeof q.price !== 'undefined' } };
+}
+
+// AUTHZ negative probe: PASS only on the exact in-function PL/pgSQL RAISE
+// (SQLSTATE P0xxx) whose message matches the traced rejection branch. Anything
+// else — 2xx, 401/403 gateway, 404 routing, 5xx, timeout, PGRST* routing,
+// capacity/room/rate-plan errors, empty/ambiguous body — is FAIL.
+function strictAuthzReject(res, branchRe) {
+  if (res.status === -1) return { pass: false, cls: 'transport_error' };
+  if (res.status >= 200 && res.status < 300) return { pass: false, cls: 'not_rejected_2xx' };
+  if (res.status >= 500) return { pass: false, cls: `server_error_${res.status}` };
+  if (res.status === 401 || res.status === 403) return { pass: false, cls: 'gateway_auth_error' };
+  if (res.status === 404 || res.status === 405 || res.status === 406) return { pass: false, cls: 'routing_error' };
+  if (typeof res.code === 'string' && /^PGRST/.test(res.code)) return { pass: false, cls: `postgrest_${res.code}` };
+  const inFn = typeof res.code === 'string' && /^P0[0-9A-Z]{3}$/.test(res.code);
+  if (![400, 409, 422].includes(res.status) || !inFn) return { pass: false, cls: `unexpected_${res.status}_${res.code || 'none'}` };
+  const msg = res.snippet || '';
+  // reject unrelated in-function errors (capacity / room / maintenance / plan)
+  if (/capacity|room not found|maintenance|rate plan not found|inactive/i.test(msg)) {
+    return { pass: false, cls: 'wrong_in_function_branch' };
+  }
+  if (!branchRe.test(msg)) return { pass: false, cls: 'in_function_but_wrong_message' };
+  return { pass: true, cls: 'expected_authz_reject' };
+}
+
+// ---------------------------------------------------------------------------
 // RPC bodies (context / quote only — submit is never built here in safe mode)
 // ---------------------------------------------------------------------------
 
@@ -311,10 +384,10 @@ const contextBody = (f = CFG.fixtures) => ({
 });
 const quoteBody = (f = CFG.fixtures) => ({
   ...contextBody(f),
-  p_room_id: f.roomId || NIL_UUID,
-  p_rate_plan_id: f.ratePlanId || NIL_UUID,
-  p_pet_ids: f.petIds.length ? f.petIds : [NIL_UUID],
-  p_start_at: f.startAt || new Date(Date.now() + 86400000).toISOString(),
+  p_room_id: CFG.strictH3d ? f.roomId : (f.roomId || NIL_UUID),
+  p_rate_plan_id: CFG.strictH3d ? f.ratePlanId : (f.ratePlanId || NIL_UUID),
+  p_pet_ids: CFG.strictH3d ? f.petIds : (f.petIds.length ? f.petIds : [NIL_UUID]),
+  p_start_at: CFG.strictH3d ? f.startAt : (f.startAt || new Date(Date.now() + 86400000).toISOString()),
 });
 
 // ---------------------------------------------------------------------------
@@ -441,6 +514,15 @@ async function main() {
   const runtimeJwt = await obtainRuntimeToken();
   if (!runtimeJwt) die('no runtime token: set H3C_RUNTIME_JWT, or H3C_SERVICE_EMAIL + H3C_SERVICE_PASSWORD');
 
+  // H3D strict mode: validate every fixture variable BEFORE any live probe.
+  if (CFG.strictH3d) {
+    const fx = validateH3dFixtures(CFG.fixtures);
+    if (fx.length) die(`H3D strict fixture validation failed: ${fx.join('; ')}`);
+    if (!CFG.controlJwt) die('H3D strict mode requires H3C_CONTROL_JWT');
+    if (!CFG.expiredJwt) die('H3D strict mode requires H3C_EXPIRED_JWT');
+    if (!CFG.ps01TableCol) die('H3D strict mode requires H3C_PS01_TABLE_COL');
+  }
+
   const jwks = await fetchJwks();
 
   // ---- token pre-checks (runtime token) ----
@@ -467,23 +549,41 @@ async function main() {
   // ---- POS-GRANTS (offline) ----
   const privilegeSnapshot = posGrantsFromEvidence();
 
-  // ---- POS-1 / POS-2 : read/compute RPCs reach the function boundary ----
+  // ---- POS-1 / POS-2 : read/compute RPCs ----
+  // strict H3D: must be 2xx with the exact fixture shape; no PII persisted.
+  // legacy: boundary reached (2xx OR in-function PG error).
   const haveFix = Boolean(CFG.fixtures.shopId);
   {
     const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt, body: contextBody() });
-    record('POS-1', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
-      target: RPC_CONTEXT, mode: haveFix ? 'fixture' : 'boundary-only', http: res.status, code: res.code,
-      note: 'read RPC; boundary = 2xx OR an in-function PG error (class 22/23/P0…). 5xx / routing / auth error = not reached',
-      snippet: res.snippet,
-    });
+    if (CFG.strictH3d) {
+      const s = positiveShapeOk(res, 'context', CFG.fixtures);
+      record('POS-1', 'positive', s.ok ? 'PASS' : 'FAIL', {
+        target: RPC_CONTEXT, http: res.status, code: res.code, strict: true, shape: s.shape || s.why,
+        note: 'strict: 2xx + shop.id===fixture shop + owner present + Pet A in pets[]; body not stored (owner PII).',
+      });
+    } else {
+      record('POS-1', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
+        target: RPC_CONTEXT, mode: haveFix ? 'fixture' : 'boundary-only', http: res.status, code: res.code,
+        note: 'read RPC; boundary = 2xx OR an in-function PG error (class 22/23/P0…). 5xx / routing / auth error = not reached',
+        snippet: res.snippet,
+      });
+    }
   }
   {
     const res = await probe({ method: 'POST', path: `/rest/v1/rpc/${RPC_QUOTE}`, profile: 'ps01', token: runtimeJwt, body: quoteBody() });
-    record('POS-2', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
-      target: RPC_QUOTE, mode: haveFix ? 'fixture' : 'boundary-only', http: res.status, code: res.code,
-      note: 'quote is a pricing/compute RPC — non-persistence by the Order V1 / PS01 contract; House to confirm from RPC source',
-      snippet: res.snippet,
-    });
+    if (CFG.strictH3d) {
+      const s = positiveShapeOk(res, 'quote', CFG.fixtures);
+      record('POS-2', 'positive', s.ok ? 'PASS' : 'FAIL', {
+        target: RPC_QUOTE, http: res.status, code: res.code, strict: true, shape: s.shape || s.why,
+        note: 'strict: 2xx quote for Pet A with ratePlanId/roomId === fixture pair and a price. This is the baseline the POS-AUTHZ-3 probe must reuse identically.',
+      });
+    } else {
+      record('POS-2', 'positive', boundaryReached(res) ? 'PASS' : 'FAIL', {
+        target: RPC_QUOTE, mode: haveFix ? 'fixture' : 'boundary-only', http: res.status, code: res.code,
+        note: 'quote is a pricing/compute RPC — non-persistence by the Order V1 / PS01 contract; House to confirm from RPC source',
+        snippet: res.snippet,
+      });
+    }
   }
 
   // ---- POS-3 : submit — ADVISORY, never required, opt-in only ----
@@ -503,44 +603,75 @@ async function main() {
     });
   }
 
-  // ---- POS-AUTHZ 1..3 : RPC-body authorization (all read/compute) ----
+  // ---- POS-AUTHZ 1..3 : RPC-body authorization ----
+  // strict H3D: PASS only on the exact traced in-function rejection branch.
+  const AUTHZ_XSHOP_RE = /not linked to shop|pet owner not found/i;   // context: owner lookup for the wrong shop
+  const AUTHZ_XCUST_RE = /invalid pet selection for booking owner/i;  // quote: assert_booking_window pet-ownership branch
+  const AUTHZ_BLANK_RE = /invalid line identity|not linked to shop/i;
+
   if (CFG.fixtures.otherShopId) {
     const res = await probe({
       method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt,
       body: { p_verified_line_user_id: CFG.fixtures.lineUserId || '', p_shop_id: CFG.fixtures.otherShopId },
     });
-    const rejected = res.status >= 400 || /"?(null|not[_ ]?found|denied|unauthor|forbidden|no[_ ]?access)"?/i.test(res.snippet || '') || res.snippet === 'null';
-    record('POS-AUTHZ-1', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
-      http: res.status, code: res.code,
-      note: 'cross-shop p_shop_id must not return another shop context (weak signal from harness; House confirms from RPC body/logs)',
-      snippet: res.snippet,
-    });
+    if (CFG.strictH3d) {
+      const c = strictAuthzReject(res, AUTHZ_XSHOP_RE);
+      record('POS-AUTHZ-1', 'positive-authz', c.pass ? 'PASS' : 'FAIL', {
+        http: res.status, code: res.code, strict: true, classifier: c.cls,
+        note: 'strict: baseline LINE user against a real foreign shop must raise the exact "not linked to shop" in-function error (SQLSTATE P0xxx). 5xx/gateway/routing/other-branch = FAIL.',
+      });
+    } else {
+      const rejected = res.status >= 400 || /"?(null|not[_ ]?found|denied|unauthor|forbidden|no[_ ]?access)"?/i.test(res.snippet || '') || res.snippet === 'null';
+      record('POS-AUTHZ-1', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
+        http: res.status, code: res.code, note: 'cross-shop p_shop_id must not return another shop context', snippet: res.snippet,
+      });
+    }
   } else {
-    record('POS-AUTHZ-1', 'positive-authz', 'RUNTIME-BLOCKED', {
-      note: 'set H3C_FIX_OTHER_SHOP_ID (a real shop the fixture LINE user is NOT linked to) — read-only',
-    });
+    record('POS-AUTHZ-1', 'positive-authz', 'RUNTIME-BLOCKED', { note: 'set H3C_FIX_OTHER_SHOP_ID (a real foreign shop) — read-only' });
   }
+
   if (CFG.fixtures.shopId) {
     const res = await probe({
       method: 'POST', path: `/rest/v1/rpc/${RPC_CONTEXT}`, profile: 'ps01', token: runtimeJwt,
       body: { p_verified_line_user_id: '', p_shop_id: CFG.fixtures.shopId },
     });
-    const rejected = res.status >= 400 || res.snippet === 'null' || /"?(null|denied|unverified|invalid)"?/i.test(res.snippet || '');
-    record('POS-AUTHZ-2', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
-      http: res.status, code: res.code, note: 'blank p_verified_line_user_id must not yield a customer context', snippet: res.snippet,
-    });
+    if (CFG.strictH3d) {
+      const c = strictAuthzReject(res, AUTHZ_BLANK_RE);
+      record('POS-AUTHZ-2', 'positive-authz', c.pass ? 'PASS' : 'FAIL', {
+        http: res.status, code: res.code, strict: true, classifier: c.cls,
+        note: 'strict: blank p_verified_line_user_id against the real baseline shop must raise the exact identity / not-linked in-function error.',
+      });
+    } else {
+      const rejected = res.status >= 400 || res.snippet === 'null' || /"?(null|denied|unverified|invalid)"?/i.test(res.snippet || '');
+      record('POS-AUTHZ-2', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
+        http: res.status, code: res.code, note: 'blank p_verified_line_user_id must not yield a customer context', snippet: res.snippet,
+      });
+    }
   } else {
-    record('POS-AUTHZ-2', 'positive-authz', 'RUNTIME-BLOCKED', { note: 'set H3C_FIX_SHOP_ID (any real shop) to run the blank-line-user read probe' });
+    record('POS-AUTHZ-2', 'positive-authz', 'RUNTIME-BLOCKED', { note: 'set H3C_FIX_SHOP_ID (a real shop) to run the blank-line-user read probe' });
   }
+
   if (CFG.fixtures.otherPetIds.length && CFG.fixtures.shopId && CFG.fixtures.roomId && CFG.fixtures.ratePlanId) {
+    // strict: identical room/plan/start as the POS-2 positive quote; only p_pet_ids
+    // changes, to exactly one foreign pet (Pet B). Capacity 2 >= 1 so capacity can
+    // never be the earlier failure.
     const res = await probe({
       method: 'POST', path: `/rest/v1/rpc/${RPC_QUOTE}`, profile: 'ps01', token: runtimeJwt,
-      body: { ...quoteBody(), p_pet_ids: CFG.fixtures.otherPetIds },
+      body: { ...quoteBody(), p_pet_ids: [CFG.fixtures.otherPetIds[0]] },
     });
-    const rejected = res.status >= 400 || /"?(null|denied|not[_ ]?found|forbidden|not[_ ]?your|invalid)"?/i.test(res.snippet || '');
-    record('POS-AUTHZ-3', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
-      http: res.status, code: res.code, note: 'quote for another customer\'s pet ids must be rejected (quote is compute-only, non-mutating)', snippet: res.snippet,
-    });
+    if (CFG.strictH3d) {
+      const c = strictAuthzReject(res, AUTHZ_XCUST_RE);
+      record('POS-AUTHZ-3', 'positive-authz', c.pass ? 'PASS' : 'FAIL', {
+        http: res.status, code: res.code, strict: true, classifier: c.cls,
+        pet_count: 1, reused_positive_quote: true,
+        note: 'strict: quote for exactly one foreign-customer pet (Pet B), same room/plan/start as POS-2, must raise the exact "Invalid pet selection for booking owner" in-function error. capacity/room/plan errors = FAIL.',
+      });
+    } else {
+      const rejected = res.status >= 400 || /"?(null|denied|not[_ ]?found|forbidden|not[_ ]?your|invalid)"?/i.test(res.snippet || '');
+      record('POS-AUTHZ-3', 'positive-authz', rejected ? 'PASS' : 'FAIL', {
+        http: res.status, code: res.code, note: 'quote for another customer\'s pet ids must be rejected', snippet: res.snippet,
+      });
+    }
   } else {
     record('POS-AUTHZ-3', 'positive-authz', 'RUNTIME-BLOCKED', {
       note: 'set H3C_FIX_OTHER_PET_IDS + H3C_FIX_SHOP_ID/ROOM_ID/RATE_PLAN_ID (read-only) to run the cross-customer quote probe',
@@ -852,7 +983,46 @@ function selftest() {
     try { fs.unlinkSync(tmpSnapshot); } catch { /* ignore */ }
   }
 
-  process.stderr.write(failed ? `\nSELFTEST: ${failed} FAILURE(S)\n` : '\nSELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03, privilege H-08)\n');
+  // --- H3D strict mode (§8 / F07) ---
+  const goodFx = {
+    shopId: '0d15d05a-0000-4000-8000-00000000a001', otherShopId: '0d15d05a-0000-4000-8000-00000000b002',
+    roomId: '0d15d05a-0000-4000-8000-000000000031', ratePlanId: '0d15d05a-0000-4000-8000-000000000041',
+    lineUserId: 'H3D-PROOF-LINE-USER-A', petIds: ['0d15d05a-0000-4000-8000-00000aa00021'],
+    otherPetIds: ['0d15d05a-0000-4000-8000-00000bb00022'],
+    startAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+  };
+  ok(validateH3dFixtures(goodFx).length === 0, 'H3D: a complete consistent fixture set validates');
+  ok(validateH3dFixtures({ ...goodFx, shopId: 'not-a-uuid' }).some((e) => /SHOP_ID/.test(e)), 'H3D: malformed shop UUID rejected');
+  ok(validateH3dFixtures({ ...goodFx, petIds: [] }).some((e) => /PET_IDS/.test(e)), 'H3D: missing Pet A rejected');
+  ok(validateH3dFixtures({ ...goodFx, otherPetIds: goodFx.petIds.concat(goodFx.otherPetIds) }).some((e) => /OTHER_PET_IDS/.test(e)), 'H3D: >1 foreign pet rejected');
+  ok(validateH3dFixtures({ ...goodFx, otherPetIds: goodFx.petIds }).some((e) => /differ/.test(e)), 'H3D: Pet A == Pet B rejected');
+  ok(validateH3dFixtures({ ...goodFx, roomId: goodFx.shopId }).some((e) => /distinct/.test(e)), 'H3D: duplicate fixture UUIDs rejected');
+  ok(validateH3dFixtures({ ...goodFx, startAt: '' }).some((e) => /START_AT/.test(e)), 'H3D: missing start_at rejected (no default)');
+  ok(validateH3dFixtures({ ...goodFx, startAt: '2000-01-01T00:00:00Z' }).some((e) => /future/.test(e)), 'H3D: past start_at rejected');
+
+  const P0 = (msg) => ({ status: 400, code: 'P0001', snippet: msg });
+  const XRE = /invalid pet selection for booking owner/i;
+  ok(strictAuthzReject(P0('Invalid pet selection for booking owner.'), XRE).pass === true, 'H3D authz: exact invalid-pet branch -> PASS');
+  ok(strictAuthzReject(P0('Room Capacity Violation: capacity 2, selected 3.'), XRE).pass === false, 'H3D authz: capacity error -> FAIL');
+  ok(strictAuthzReject(P0('Room not found for shop.'), XRE).pass === false, 'H3D authz: room-not-found -> FAIL');
+  ok(strictAuthzReject(P0('Rate Plan is inactive.'), XRE).pass === false, 'H3D authz: inactive plan -> FAIL');
+  ok(strictAuthzReject({ status: 401, code: null, snippet: 'JWT expired' }, XRE).pass === false, 'H3D authz: 401 gateway -> FAIL');
+  ok(strictAuthzReject({ status: 403, code: null, snippet: '' }, XRE).pass === false, 'H3D authz: 403 -> FAIL');
+  ok(strictAuthzReject({ status: 404, code: 'PGRST202', snippet: '' }, XRE).pass === false, 'H3D authz: 404 routing -> FAIL');
+  ok(strictAuthzReject({ status: 500, code: null, snippet: '' }, XRE).pass === false, 'H3D authz: 5xx -> FAIL');
+  ok(strictAuthzReject({ status: -1, code: null, snippet: 'ETIMEDOUT' }, XRE).pass === false, 'H3D authz: transport/timeout -> FAIL');
+  ok(strictAuthzReject({ status: 400, code: 'PGRST100', snippet: 'parse error' }, XRE).pass === false, 'H3D authz: 400 parse (PGRST) -> FAIL');
+  ok(strictAuthzReject({ status: 200, code: null, snippet: '{}' }, XRE).pass === false, 'H3D authz: 2xx (not rejected) -> FAIL');
+  ok(strictAuthzReject(P0('<html>Bad Gateway</html>'), XRE).pass === false, 'H3D authz: in-function but wrong message -> FAIL');
+  ok(strictAuthzReject({ status: 400, code: 'P0001', snippet: '' }, XRE).pass === false, 'H3D authz: empty body -> FAIL');
+  ok(strictAuthzReject(P0('Pet owner not found or not linked to shop.'), /not linked to shop/i).pass === true, 'H3D authz: cross-shop branch -> PASS');
+
+  ok(positiveShapeOk({ status: 200, snippet: JSON.stringify({ shop: { id: goodFx.shopId }, owner: { id: 'x' }, pets: [{ id: goodFx.petIds[0] }] }) }, 'context', goodFx).ok === true, 'H3D positive context shape ok');
+  ok(positiveShapeOk({ status: 200, snippet: JSON.stringify({ shop: { id: 'other' }, owner: { id: 'x' }, pets: [] }) }, 'context', goodFx).ok === false, 'H3D positive context wrong shop -> not ok');
+  ok(positiveShapeOk({ status: 400, snippet: '{}' }, 'context', goodFx).ok === false, 'H3D positive context non-2xx -> not ok');
+  ok(positiveShapeOk({ status: 200, snippet: JSON.stringify({ roomId: goodFx.roomId, ratePlanId: goodFx.ratePlanId, startAt: 't', price: 1000 }) }, 'quote', goodFx).ok === true, 'H3D positive quote shape ok');
+
+  process.stderr.write(failed ? `\nSELFTEST: ${failed} FAILURE(S)\n` : '\nSELFTEST PASS (crypto, project-ref H-05, classifiers H-04, gate H-01, safety H-02/H-03, privilege H-08, H3D strict F07)\n');
   process.exit(failed ? 1 : 0);
 }
 

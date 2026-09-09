@@ -1,0 +1,1547 @@
+{
+  "tool": "h3d-catalog-manifest",
+  "version": 1,
+  "captured_at": "2026-09-09T13:55:00.008Z",
+  "project_ref": "ykxlqnshaaxmzzocpjlj",
+  "graph_root": "ps01.shops",
+  "graph_tables": [
+    "booking_pets",
+    "booking_requests",
+    "bookings",
+    "camera_access_audit",
+    "camera_rate_limit_buckets",
+    "camera_settings",
+    "camera_visitor_credentials",
+    "daily_reports",
+    "google_sync_mappings",
+    "import_batches",
+    "pet_owners",
+    "pets",
+    "room_rate_plans",
+    "rooms",
+    "shop_commercial_assignments",
+    "shop_subscriptions",
+    "shops",
+    "staff_users",
+    "subscription_audit_log",
+    "sync_queue"
+  ],
+  "graph_fks": [
+    {
+      "constraint": "daily_reports_shop_id_booking_id_pet_id_fkey",
+      "child": "daily_reports",
+      "parent": "booking_pets",
+      "child_cols": "{shop_id,booking_id,pet_id}",
+      "parent_cols": "{shop_id,booking_id,pet_id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_pets_shop_id_booking_id_fkey",
+      "child": "booking_pets",
+      "parent": "bookings",
+      "child_cols": "{shop_id,booking_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_requests_confirmed_booking_id_fkey",
+      "child": "booking_requests",
+      "parent": "bookings",
+      "child_cols": "{confirmed_booking_id}",
+      "parent_cols": "{id}",
+      "on_delete": "n",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_requests_owner_id_fkey",
+      "child": "booking_requests",
+      "parent": "pet_owners",
+      "child_cols": "{owner_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "bookings_shop_id_owner_id_fkey",
+      "child": "bookings",
+      "parent": "pet_owners",
+      "child_cols": "{shop_id,owner_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "r",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "pets_shop_id_owner_id_fkey",
+      "child": "pets",
+      "parent": "pet_owners",
+      "child_cols": "{shop_id,owner_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_pets_shop_id_pet_id_fkey",
+      "child": "booking_pets",
+      "parent": "pets",
+      "child_cols": "{shop_id,pet_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "r",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_requests_rate_plan_fk",
+      "child": "booking_requests",
+      "parent": "room_rate_plans",
+      "child_cols": "{shop_id,rate_plan_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "r",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "bookings_rate_plan_fk",
+      "child": "bookings",
+      "parent": "room_rate_plans",
+      "child_cols": "{shop_id,rate_plan_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "r",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_requests_room_id_fkey",
+      "child": "booking_requests",
+      "parent": "rooms",
+      "child_cols": "{room_id}",
+      "parent_cols": "{id}",
+      "on_delete": "r",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "bookings_shop_id_room_id_fkey",
+      "child": "bookings",
+      "parent": "rooms",
+      "child_cols": "{shop_id,room_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "r",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "room_rate_plans_shop_id_room_id_fkey",
+      "child": "room_rate_plans",
+      "parent": "rooms",
+      "child_cols": "{shop_id,room_id}",
+      "parent_cols": "{shop_id,id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "subscription_audit_log_subscription_id_fkey",
+      "child": "subscription_audit_log",
+      "parent": "shop_subscriptions",
+      "child_cols": "{subscription_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_requests_shop_id_fkey",
+      "child": "booking_requests",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "bookings_shop_id_fkey",
+      "child": "bookings",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "camera_settings_shop_id_fkey",
+      "child": "camera_settings",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "camera_visitor_credentials_shop_id_fkey",
+      "child": "camera_visitor_credentials",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "daily_reports_shop_id_fkey",
+      "child": "daily_reports",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "google_sync_mappings_shop_id_fkey",
+      "child": "google_sync_mappings",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "import_batches_shop_id_fkey",
+      "child": "import_batches",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "pet_owners_shop_id_fkey",
+      "child": "pet_owners",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "pets_shop_id_fkey",
+      "child": "pets",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "room_rate_plans_shop_id_fkey",
+      "child": "room_rate_plans",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "rooms_shop_id_fkey",
+      "child": "rooms",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "shop_commercial_assignments_shop_id_fkey",
+      "child": "shop_commercial_assignments",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "shop_subscriptions_shop_id_fkey",
+      "child": "shop_subscriptions",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "staff_users_shop_id_fkey",
+      "child": "staff_users",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "subscription_audit_log_shop_id_fkey",
+      "child": "subscription_audit_log",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "sync_queue_shop_id_fkey",
+      "child": "sync_queue",
+      "parent": "shops",
+      "child_cols": "{shop_id}",
+      "parent_cols": "{id}",
+      "on_delete": "c",
+      "deferrable": false,
+      "deferred": false
+    },
+    {
+      "constraint": "booking_requests_actioned_by_fkey",
+      "child": "booking_requests",
+      "parent": "staff_users",
+      "child_cols": "{actioned_by}",
+      "parent_cols": "{id}",
+      "on_delete": "a",
+      "deferrable": false,
+      "deferred": false
+    }
+  ],
+  "triggers": [
+    {
+      "table": "booking_pets",
+      "name": "trg_booking_pets_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "bookings",
+      "name": "sync_booking_occupancy_window_trigger",
+      "function": "ps01.sync_booking_occupancy_window",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update"
+      ],
+      "fdef_sha256": "b2ec9ec9af3cd86d99bf2c06a9d215c3c40157c9afd6dbffcd426ea0d3cc6590"
+    },
+    {
+      "table": "bookings",
+      "name": "trg_bookings_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "bookings",
+      "name": "trg_prevent_booking_owner_change",
+      "function": "ps01.prevent_booking_owner_change",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update"
+      ],
+      "fdef_sha256": "07a55215ce84dfafb25291a27ca23bbfdf18776d8c3ce8f170a946802d622d41"
+    },
+    {
+      "table": "camera_access_audit",
+      "name": "trg_camera_access_audit_no_truncate",
+      "function": "ps01.prevent_camera_access_audit_mutation",
+      "enabled": "O",
+      "is_row": false,
+      "timing": "before",
+      "events": [
+        "truncate"
+      ],
+      "fdef_sha256": "a0df3842288f290c1c504ff53657c9cc59a3545d0f9ac6741139cf7977dc21cd"
+    },
+    {
+      "table": "camera_access_audit",
+      "name": "trg_camera_access_audit_no_update_delete",
+      "function": "ps01.prevent_camera_access_audit_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "a0df3842288f290c1c504ff53657c9cc59a3545d0f9ac6741139cf7977dc21cd"
+    },
+    {
+      "table": "camera_settings",
+      "name": "trg_camera_settings_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "daily_reports",
+      "name": "trg_daily_reports_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "pet_owners",
+      "name": "trg_pet_owners_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "pets",
+      "name": "trg_enforce_pet_commercial_quota",
+      "function": "ps01.enforce_pet_commercial_quota",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert"
+      ],
+      "fdef_sha256": "0be5c295763dfc487125ee1ff6925afffde7ffcd0bfe63f7e937647140417ce9"
+    },
+    {
+      "table": "pets",
+      "name": "trg_pets_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "pets",
+      "name": "trg_prevent_active_pet_owner_change",
+      "function": "ps01.prevent_active_pet_owner_change",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update"
+      ],
+      "fdef_sha256": "6297bf14c6c1961d5b81d9d4667c8e7301a1b5f09e27e16f2330feb2c4cc931a"
+    },
+    {
+      "table": "rooms",
+      "name": "trg_enforce_room_commercial_quota",
+      "function": "ps01.enforce_room_commercial_quota",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert"
+      ],
+      "fdef_sha256": "8cf944322297eab2fbf28fb6267934b28bb39862d6fc74586b4c81979dfa81dc"
+    },
+    {
+      "table": "rooms",
+      "name": "trg_rooms_commercial_access",
+      "function": "ps01.enforce_shop_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746"
+    },
+    {
+      "table": "shop_commercial_assignments",
+      "name": "trg_prevent_commercial_assignment_authority_write",
+      "function": "ps01.prevent_commercial_assignment_authority_write",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "insert",
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "60b7c8b2e44d6262654db45edf08a0df10567782465481cc0a5447dcd926108d"
+    },
+    {
+      "table": "shop_commercial_assignments",
+      "name": "trg_sync_trusted_assignment_fixture",
+      "function": "ps01.sync_trusted_assignment_fixture_to_subscription",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "after",
+      "events": [
+        "insert",
+        "update"
+      ],
+      "fdef_sha256": "255ecb0de1d44264ed89293a69704135087d6b561b2b29343b315d40ada095fa"
+    },
+    {
+      "table": "shops",
+      "name": "trg_initialize_shop_subscription_after_insert",
+      "function": "ps01.initialize_shop_subscription_after_insert",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "after",
+      "events": [
+        "insert"
+      ],
+      "fdef_sha256": "68ec5bb3c66a9964bb65d8006f22c3243f39e27be23a3e8b705db1ad977c7d40"
+    },
+    {
+      "table": "shops",
+      "name": "trg_prevent_legacy_subscription_status_write",
+      "function": "ps01.prevent_legacy_subscription_status_write",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update"
+      ],
+      "fdef_sha256": "993eb7627cafeb16f761a0333c78300135c568492df599ccfbd8e26c210e2e5e"
+    },
+    {
+      "table": "shops",
+      "name": "trg_shops_commercial_access",
+      "function": "ps01.enforce_shop_profile_commercial_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update"
+      ],
+      "fdef_sha256": "2f7c87ef0e35e37127d3c49a1ce8770bd73814cf846fada5effd782101560370"
+    },
+    {
+      "table": "staff_users",
+      "name": "trg_enforce_last_active_owner",
+      "function": "ps01.enforce_last_active_owner",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "after",
+      "events": [
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "a2ca117c4f110a7be052ced0d0d57ee2fa3fccced518ccafd5016854e9d341cc"
+    },
+    {
+      "table": "subscription_audit_log",
+      "name": "trg_subscription_audit_immutable",
+      "function": "ps01.prevent_subscription_audit_mutation",
+      "enabled": "O",
+      "is_row": true,
+      "timing": "before",
+      "events": [
+        "update",
+        "delete"
+      ],
+      "fdef_sha256": "99112acc6b2e469d6753574952f9968d7f72df6a1bb427c8b1e6f313fa39037f"
+    }
+  ],
+  "control_functions": {
+    "assert_shop_commercial_mutation_allowed": "35c094b777afcb80b46cf39b3b373d3add95e40e7579ffa234f52f5edded2385",
+    "enforce_pet_commercial_quota": "0be5c295763dfc487125ee1ff6925afffde7ffcd0bfe63f7e937647140417ce9",
+    "enforce_room_commercial_quota": "8cf944322297eab2fbf28fb6267934b28bb39862d6fc74586b4c81979dfa81dc",
+    "enforce_shop_commercial_mutation": "88728e3eb8f3071b2387bb1d7a57922aa0b4280f62374b68f903b7adafdec746",
+    "initialize_shop_subscription_after_insert": "68ec5bb3c66a9964bb65d8006f22c3243f39e27be23a3e8b705db1ad977c7d40",
+    "initialize_shop_subscription_internal": "45b3ec4a9914098fd02c21c8261beee102e057a4b303346cb22cc3aeb58bed3a",
+    "resolve_shop_commercial_authority": "f1721802a31c372bcbc5e2489fd0ef4175b788d2c929cacd5c933435e6e0b28b",
+    "sync_legacy_subscription_status": "e245a1aba82c561d3395418061fafe6f22e45880cb82bf1684d7cb9e97087344"
+  },
+  "starter_package": {
+    "row": {
+      "id": "starter",
+      "name": "Starter",
+      "monthly_price": 990,
+      "annual_price": 9900,
+      "room_limit": 10,
+      "pet_history_limit": 300,
+      "support_tier": null,
+      "created_at": "2026-09-08T04:23:58.872Z"
+    },
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "monthly_price",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "annual_price",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "room_limit",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "pet_history_limit",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "support_tier",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      }
+    ]
+  },
+  "fixture_table_columns": [
+    {
+      "table_name": "pet_owners",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "shop_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "line_user_id",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "line_claim_token_hash",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "line_claim_expires_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "line_claim_used_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "first_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "last_name",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "phone",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "emergency_phone",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "address",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pet_owners",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "pets",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "pets",
+      "column_name": "shop_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "owner_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "species",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "breed",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "gender",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "birth_date",
+      "data_type": "date",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "weight_kg",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "avatar_url",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "special_care_notes",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "allergies",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "pets",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "shop_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "room_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "pricing_mode",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'FIXED_PACKAGE'::character varying"
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "unit",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "quantity",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "price",
+      "data_type": "numeric",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "is_active",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "room_rate_plans",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "shop_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "room_number",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "room_type",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "capacity_pets",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "1"
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "base_price_per_night",
+      "data_type": "numeric",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'available'::character varying"
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "maintenance_from",
+      "data_type": "date",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "maintenance_until",
+      "data_type": "date",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "maintenance_start_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "rooms",
+      "column_name": "maintenance_end_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "shop_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "package_id",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "commercial_offer",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'standard'::character varying"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "billing_interval",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'monthly'::character varying"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "trial_started_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "trial_ends_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "current_period_start",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "current_period_end",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "grace_period_end",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "cancel_at_period_end",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "cancelled_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "suspended_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "founding_member_continuity_valid",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "last_transition_source",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'migration'::character varying"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "last_transition_reason",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "shop_subscriptions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "shops",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "shops",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "slug",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "phone",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "line_oa_id",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "google_sheet_id",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "google_sheet_claim_token_hash",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "google_sheet_claim_expires_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "shops",
+      "column_name": "subscription_status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'trialing'::character varying"
+    },
+    {
+      "table_name": "shops",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "shop_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "subscription_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "actor_type",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "actor_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "action",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "previous_status",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "resulting_status",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "previous_package_id",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "resulting_package_id",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "previous_offer",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "resulting_offer",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "transition_source",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "reason",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "idempotency_key",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "request_fingerprint",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_audit_log",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    }
+  ],
+  "fixture_table_constraints": [
+    {
+      "table": "pet_owners",
+      "name": "pet_owners_line_claim_token_hash_key",
+      "def": "UNIQUE (line_claim_token_hash)"
+    },
+    {
+      "table": "pet_owners",
+      "name": "pet_owners_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "pet_owners",
+      "name": "pet_owners_shop_id_id_key",
+      "def": "UNIQUE (shop_id, id)"
+    },
+    {
+      "table": "pet_owners",
+      "name": "pet_owners_shop_id_line_user_id_key",
+      "def": "UNIQUE (shop_id, line_user_id)"
+    },
+    {
+      "table": "pet_owners",
+      "name": "pet_owners_shop_id_phone_key",
+      "def": "UNIQUE (shop_id, phone)"
+    },
+    {
+      "table": "pets",
+      "name": "pets_gender_check",
+      "def": "CHECK (((gender)::text = ANY ((ARRAY['male'::character varying, 'female'::character varying, 'neutered_male'::character varying, 'spayed_female'::character varying])::text[])))"
+    },
+    {
+      "table": "pets",
+      "name": "pets_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "pets",
+      "name": "pets_shop_id_id_key",
+      "def": "UNIQUE (shop_id, id)"
+    },
+    {
+      "table": "pets",
+      "name": "pets_species_check",
+      "def": "CHECK (((species)::text = ANY ((ARRAY['dog'::character varying, 'cat'::character varying])::text[])))"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_price_check",
+      "def": "CHECK ((price >= (0)::numeric))"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_pricing_mode_check",
+      "def": "CHECK (((pricing_mode)::text = 'FIXED_PACKAGE'::text))"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_quantity_check",
+      "def": "CHECK ((quantity > 0))"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_shop_id_id_key",
+      "def": "UNIQUE (shop_id, id)"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_shop_id_room_id_unit_quantity_key",
+      "def": "UNIQUE (shop_id, room_id, unit, quantity)"
+    },
+    {
+      "table": "room_rate_plans",
+      "name": "room_rate_plans_unit_check",
+      "def": "CHECK (((unit)::text = ANY ((ARRAY['HOUR'::character varying, 'DAY'::character varying, 'MONTH'::character varying])::text[])))"
+    },
+    {
+      "table": "rooms",
+      "name": "check_maintenance_dates",
+      "def": "CHECK ((((maintenance_from IS NULL) AND (maintenance_until IS NULL)) OR ((maintenance_from IS NOT NULL) AND (maintenance_until IS NOT NULL) AND (maintenance_until >= maintenance_from))))"
+    },
+    {
+      "table": "rooms",
+      "name": "check_maintenance_v2_window",
+      "def": "CHECK ((((maintenance_start_at IS NULL) AND (maintenance_end_at IS NULL)) OR ((maintenance_start_at IS NOT NULL) AND (maintenance_end_at IS NOT NULL) AND (maintenance_end_at > maintenance_start_at))))"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_base_price_per_night_check",
+      "def": "CHECK ((base_price_per_night >= (0)::numeric))"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_capacity_pets_check",
+      "def": "CHECK ((capacity_pets >= 1))"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_room_type_check",
+      "def": "CHECK (((room_type)::text = ANY ((ARRAY['standard'::character varying, 'deluxe'::character varying, 'vip'::character varying, 'cat_condo'::character varying])::text[])))"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_shop_id_id_key",
+      "def": "UNIQUE (shop_id, id)"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_shop_id_room_number_key",
+      "def": "UNIQUE (shop_id, room_number)"
+    },
+    {
+      "table": "rooms",
+      "name": "rooms_status_check",
+      "def": "CHECK (((status)::text = ANY ((ARRAY['available'::character varying, 'occupied'::character varying, 'cleaning'::character varying, 'maintenance'::character varying])::text[])))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "founding_member_requires_starter",
+      "def": "CHECK ((((commercial_offer)::text <> 'founding_member'::text) OR ((package_id)::text = 'starter'::text)))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "shop_subscriptions_billing_interval_check",
+      "def": "CHECK (((billing_interval)::text = ANY ((ARRAY['monthly'::character varying, 'annual'::character varying])::text[])))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "shop_subscriptions_commercial_offer_check",
+      "def": "CHECK (((commercial_offer)::text = ANY ((ARRAY['standard'::character varying, 'founding_member'::character varying])::text[])))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "shop_subscriptions_last_transition_source_check",
+      "def": "CHECK (((last_transition_source)::text = ANY ((ARRAY['bootstrap'::character varying, 'migration'::character varying, 'manual_admin'::character varying, 'system'::character varying, 'future_billing_event'::character varying])::text[])))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "shop_subscriptions_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "shop_subscriptions_shop_id_key",
+      "def": "UNIQUE (shop_id)"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "shop_subscriptions_status_check",
+      "def": "CHECK (((status)::text = ANY ((ARRAY['trialing'::character varying, 'active'::character varying, 'past_due'::character varying, 'grace_period'::character varying, 'suspended'::character varying, 'cancel_at_period_end'::character varying, 'cancelled'::character varying, 'expired'::character varying])::text[])))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "valid_period_window",
+      "def": "CHECK (((current_period_start IS NULL) OR (current_period_end IS NULL) OR (current_period_end > current_period_start)))"
+    },
+    {
+      "table": "shop_subscriptions",
+      "name": "valid_trial_window",
+      "def": "CHECK (((trial_started_at IS NULL) OR (trial_ends_at IS NULL) OR (trial_ends_at > trial_started_at)))"
+    },
+    {
+      "table": "shops",
+      "name": "shops_google_sheet_claim_token_hash_key",
+      "def": "UNIQUE (google_sheet_claim_token_hash)"
+    },
+    {
+      "table": "shops",
+      "name": "shops_google_sheet_id_key",
+      "def": "UNIQUE (google_sheet_id)"
+    },
+    {
+      "table": "shops",
+      "name": "shops_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "shops",
+      "name": "shops_slug_key",
+      "def": "UNIQUE (slug)"
+    },
+    {
+      "table": "shops",
+      "name": "shops_subscription_status_check",
+      "def": "CHECK (((subscription_status)::text = ANY ((ARRAY['trialing'::character varying, 'active'::character varying, 'past_due'::character varying, 'grace_period'::character varying, 'suspended'::character varying, 'cancel_at_period_end'::character varying, 'cancelled'::character varying, 'expired'::character varying])::text[])))"
+    },
+    {
+      "table": "subscription_audit_log",
+      "name": "subscription_audit_log_actor_type_check",
+      "def": "CHECK (((actor_type)::text = ANY ((ARRAY['system'::character varying, 'ps01_runtime'::character varying, 'platform_admin'::character varying, 'future_billing_event'::character varying])::text[])))"
+    },
+    {
+      "table": "subscription_audit_log",
+      "name": "subscription_audit_log_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "subscription_audit_log",
+      "name": "subscription_audit_log_subscription_id_idempotency_key_key",
+      "def": "UNIQUE (subscription_id, idempotency_key)"
+    },
+    {
+      "table": "subscription_audit_log",
+      "name": "subscription_audit_log_transition_source_check",
+      "def": "CHECK (((transition_source)::text = ANY ((ARRAY['bootstrap'::character varying, 'migration'::character varying, 'manual_admin'::character varying, 'system'::character varying, 'future_billing_event'::character varying])::text[])))"
+    }
+  ],
+  "fingerprint": "001c2c213f4a7086704da1e56879b82bee88f6f6054bd66c316e1791369d0619"
+}

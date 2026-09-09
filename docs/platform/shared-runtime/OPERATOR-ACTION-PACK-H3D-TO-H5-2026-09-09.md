@@ -3,20 +3,33 @@
 **Date:** 2026-09-09 (Asia/Bangkok)
 **For:** WSTERA authorized Supabase operator (CEO / Secretary GPT)
 **Environment:** WSTERA LAB (`ykxlqnshaaxmzzocpjlj`) **only**. Production LOCKED.
-**Parent:** the H3D-H5 long-run brief + the addendum + the operator-pack, AUTHZ-fixture, and disposable-fixture-prep remediation briefs (all under `docs/platform/shared-runtime/`)
-**Execution state:** `H3D DISPOSABLE AUTHZ FIXTURE PACKAGE PREPARED / LIVE DML AWAITING AUTHORIZATION` (tooling gate-green; see `evidence/H3D-DISPOSABLE-AUTHZ-FIXTURE-PREP-2026-09-09.md`)
+**Parent:** the H3D-H5 long-run brief + the addendum + the operator-pack / AUTHZ-fixture / disposable-fixture-prep / **final one-shot** remediation briefs (all under `docs/platform/shared-runtime/`)
+**Execution state:** `H3D FINAL REMEDIATION IMPLEMENTED / LIVE DML AWAITING SEPARATE AUTHORIZATION` (all §11 acceptance gates green; see `evidence/H3D-FINAL-REMEDIATION-2026-09-09.md`)
 
-The operator-pack architecture is complete and every offline gate is green. **But
-`--preflight` STOPs before the operator does anything**: `POS-AUTHZ-1/3` need
-REAL cross-shop / cross-customer PS01 rows and WSTERA LAB has zero PS01 business
-rows. House selected unblock option 1 — a bounded disposable fixture. The
-package is **prepared and review-ready but NOT applied**:
+Every §5–§10 remediation of the final one-shot brief is implemented. The H3D flow
+below is now the **16 gated transitions of §9** — no command crosses the mutation
+boundary without a separate external authorization receipt. The guarded fixture
+package is prepared and static-verified but **NOT applied**:
 
-- `fixtures/h3d-authz-fixture-precheck.sql` (SELECT-only)
-- `fixtures/h3d-authz-fixture-seed.sql` (8 inserts + 4 trigger support rows; one txn; fails closed)
-- `fixtures/h3d-authz-fixture-teardown.sql` (exact deletes + residue assertion)
+- `fixtures/h3d-authz-fixture-precheck.sql` (SELECT-only, EVIDENCE ONLY — never the guard)
+- `fixtures/h3d-authz-fixture-seed.sql` (§5: locks + 7 in-txn pre-DML assertions + exact +8/+4 delta + exact subscription/audit semantics + manifest)
+- `fixtures/h3d-authz-fixture-teardown.sql` (§6: ACCESS EXCLUSIVE audit lock + exact-id deletes with ROW_COUNT + residue zero + pre-seed count restoration)
+- `fixtures/h3d-expected-catalog-manifest.json` (version-controlled expected trigger/FK/function graph; `catalog-manifest.mjs --verify` STOPs on any drift)
 
-**Live authorization boundary:** `PREPARED / REVIEW-READY` → Secretary/House
+**Live authorization boundary:** `IMPLEMENTED / REVIEW-READY` → Secretary/House
+review → the four **external authorization receipts** of §9 (issued per phase, per
+commit + run id, ≤ 15 min TTL) → each guarded phase. Claude issues no `*_AUTHORIZED`
+receipt and applies no seed/teardown/Auth/grant/hook/run.
+
+<details><summary>historical: earlier state before the final one-shot remediation</summary>
+
+The tooling gate was green but `--preflight` STOPped: `POS-AUTHZ-1/3` need REAL
+cross-shop / cross-customer PS01 rows and WSTERA LAB has zero PS01 business rows.
+House selected unblock option 1 — a bounded disposable fixture — then commissioned
+the Codex final review whose 12 findings this pack now implements.
+</details>
+
+Historical boundary text: `PREPARED / REVIEW-READY` → Secretary/House
 review of those 3 SQL files → **explicit Owner/House authorization** → apply the
 seed. Claude does not apply it.
 
@@ -59,85 +72,50 @@ export H3D_OUT_DIR="docs/platform/shared-runtime/evidence"
 
 ---
 
-## H3D — two operator toggles + one agent command
+## H3D — 16 gated transitions (§9 of the final one-shot remediation brief)
 
-### Agent — preflight FIRST (before the operator touches the Dashboard)
+**No single command crosses the mutation boundary.** `--preflight-readonly` is
+mechanically mutation-free. Every mutating phase needs a *separate*, fresh,
+hash-linked external authorization receipt that the runner reads but cannot mint.
+Each phase writes a durable receipt (15-min TTL, invalidated on commit / catalog /
+fixture / hook-state drift). `node tools/shared-runtime/h3d/h3d-live-runner.mjs --state`
+prints the current chain.
 
+One-time: `H3D_RUN_ID` (a stable id for the whole authorized window),
+`H3D_HOUSE_ROOT`, `H3D_OUT_DIR`, `H3D_RECEIPTS_DIR`, the LAB env from STEP 0.
+
+| # | Owner | Prerequisite | Action | Mutation authority | Evidence |
+|---|---|---|---|---|---|
+| 1 | Agent | locked House + PS01 commits | `--reviewed` — catalog `--verify`, SELECT-only collision / baseline / inventory, fixture discovery. Writes `REVIEWED` receipt. | **none** | `H3D-REVIEWED-*.json` |
+| 2 | House / Owner | Step 1 PASS | issue a `FIXTURE_DML_AUTHORIZED` external receipt for this exact commit + `H3D_RUN_ID` | authorizes the seed only | the receipt file |
+| 3 | Agent / operator | Step 2 receipt + catalog `--verify` PASS | `psql -v manifest=… -f fixtures/h3d-authz-fixture-seed.sql` (guarded: 7 pre-DML assertions under `SHARE ROW EXCLUSIVE` locks, exact +8/+4 delta, exact subscription/audit semantics, emits a manifest) | fixture + trigger-support DML only | seed manifest JSON |
+| 4 | Agent | Step 3 manifest | `--verify-post-seed` (`H3D_SEED_MANIFEST=…`) — SELECT-only, matches manifest ids + topology + exact delta + fixture fingerprint. Writes `POST_SEED_VERIFIED` receipt. | **none** | `H3D-POST-SEED-VERIFIED-*.json` |
+| 5 | House / Owner | Step 4 PASS | issue a `HOOK_PROBE_AUTHORIZED` external receipt | temporary Auth user + grant probe only | the receipt file |
+| 6 | Agent / operator | Step 5 + fresh `POST_SEED_VERIFIED` | `--preflight-hook-probe --authorize-hook-probe <f> --expect-hook-off` — creates one probe identity + grant, checks the token stays `authenticated`, tears both down (ledger, verified). Writes `HOOK_OFF_CONFIRMED`. | Auth/grant probe only | `H3D-HOOK-PROBE-*.json` |
+| 7 | Human operator | Step 6 `HOOK_OFF_CONFIRMED` | **Supabase → Auth → Hooks → Custom Access Token → point at `wstera_platform_internal.custom_access_token_hook` → Enable.** Screenshot. Only this field; no `config push`. | one Dashboard control | screenshots |
+| 8 | Agent / operator | Step 7 | `--preflight-hook-probe --authorize-hook-probe <f> --expect-hook-on` — fresh probe yields `role=ps01_line_runtime`, exact project/lifetime checks, torn down + verified. Writes `HOOK_ON_CONFIRMED`. | Auth/grant probe only | `H3D-HOOK-PROBE-*.json` |
+| 9 | House / Owner | Step 8 PASS | issue a `RUN_AUTHORIZED` external receipt | run identities + grant only | the receipt file |
+| 10 | Agent / operator | Step 9 + fresh `HOOK_ON_CONFIRMED` + fixture fingerprint + catalog | `--run --authorize-run <f>` — runtime + control identities/grant (ledger); expired + control + fresh active tokens; fixed recorded `start_at`; spawn `h3c-proof-harness.mjs` with `H3C_STRICT_H3D=1` and every token in a **minimal child env**; strict AUTHZ + 2xx-positive matrix; failure-safe teardown of every registered resource on every path. Writes `RUN_COMPLETE` only on PASS. | bounded run DML | `H3D-RUN-*.json`, `H3D-LIVE-PROOF-*.json` |
+| 11 | Human operator | Step 10 terminal evidence (PASS **or** FAIL) | **Auth → Hooks → Custom Access Token → Disable.** Screenshot. | one Dashboard control | screenshots |
+| 12 | Agent / operator | Step 11 | confirm hook off (`--preflight-hook-probe … --expect-hook-off` if the Step 5 receipt still covers it); wait past the max `exp` of **every** issued token (`residualNarrowAuthorityUntil`); verify zero owned identities/grants. Writes `RESIDUAL_EXPIRED`. | authorized probe if the Step 5 receipt allows | `H3D-HOOK-PROBE-*.json` |
+| 13 | House / Owner | Step 12 PASS | issue a `FIXTURE_TEARDOWN_AUTHORIZED` external receipt | fixture teardown only | the receipt file |
+| 14 | Agent / operator | Step 13 + catalog `--verify` PASS | `psql -v manifest=… -f fixtures/h3d-authz-fixture-teardown.sql` (ACCESS EXCLUSIVE on `subscription_audit_log`, exact-id deletes with `ROW_COUNT`, immutable-audit disable/re-enable for exactly the two shops' audit ids, residue zero, counts restored). | exact fixture/support DELETE only | teardown NOTICE + `H3D-BK01-MT01…` re-run |
+| 15 | Agent | Step 14 | `lab-readonly-inventory.mjs` + `compare-inventory.mjs` vs `H3D-BASELINE-INVENTORY-2026-09-09.json` → SIGNATURE MATCH; assemble the closure package. Writes `RESTORED`. | **none** | closure package |
+| 16 | House | all evidence PASS | decide H3D closure | no automatic H3E/H3F/H4/H5 authority | — |
+
+On any failure after Step 7: **disable the hook first**, preserve the redacted
+recovery ledger IDs, `--teardown-only <uuid,uuid>` for runner-owned
+identities/grants, wait out token expiry, then decide fixture teardown. Do not
+run a later phase to "recover".
+
+### External authorization receipt format (House / Owner writes these; the runner never does)
+
+```json
+{ "kind": "h3d-external-authorization",
+  "state": "FIXTURE_DML_AUTHORIZED" | "HOOK_PROBE_AUTHORIZED" | "RUN_AUTHORIZED" | "FIXTURE_TEARDOWN_AUTHORIZED",
+  "run_id": "<H3D_RUN_ID>", "commit": "<House HEAD full SHA>",
+  "expires_at": "<ISO, <= 15 min out>", "signer": "<House / Owner reference, no sensitive data>" }
 ```
-node tools/shared-runtime/h3d/h3d-live-runner.mjs --preflight
-```
-`--preflight` verifies, all read-only, **before** creating any identity/grant:
-env present · `h3c-proof-harness.mjs` / `h3c-privilege-snapshot.sql` / H3B evidence
-on disk · a nullable `ps01.bookings` column resolves for `NEG-TBL-2` · the live
-privilege snapshot still matches the `ps01_line_runtime` boundary · **a real
-cross-shop + cross-customer AUTHZ fixture set is discoverable** (`discoverAuthzFixtures()`,
-SELECT-only). Only if all of that passes does it create + tear down a probe
-identity to report whether the hook is active.
-
-- **exit 1 / STOP** — a required read-only prerequisite is missing. **Currently
-  this is where it stops**: `Fixture A: no ps01.pet_owners row with a linked
-  line_user_id AND at least one owned pet exists in LAB`. Do **not** ask the
-  operator to enable the hook. Unblock = apply `fixtures/h3d-authz-fixture-seed.sql`
-  **after** explicit Owner/House authorization (see
-  `evidence/H3D-DISPOSABLE-AUTHZ-FIXTURE-PREP-2026-09-09.md`), then re-run `--preflight`.
-  Run `fixtures/h3d-authz-fixture-teardown.sql` after the H3D live proof.
-- **exit 2** — `NOT READY — operator must enable the Custom Access Token hook`. Do
-  operator action A, wait ~30s, re-run `--preflight`.
-- **exit 0** — `READY (hook active)`. Continue to `--run`.
-
-### Operator action A (Dashboard, ~1 min)
-
-1. **Supabase → project `wstera-lab` → Authentication → Hooks**.
-2. **Custom Access Token** hook → Postgres function
-   `wstera_platform_internal.custom_access_token_hook` → **Enable**. Screenshot before + after.
-   Change **only** this field. No project-wide `config push`.
-
-> If the Dashboard rejects a non-`public` hook schema: **STOP**, tell the agent
-> (brief §13). Do not move the hook to `public` or widen its ACL.
-
-### Agent — one command (~7 min; it self-waits for the expired-token window)
-
-```
-node tools/shared-runtime/h3d/h3d-live-runner.mjs --run ; echo "exit=$?"
-```
-`--run` does, in order: create a runtime + a control Auth identity → add one
-`ps01_line_runtime` grant (900 s row) → issue the runtime token that will be the
-**expired** input → issue the control token (must stay `role=authenticated`) →
-resolve the table column → **wait out the token expiry** → write a fresh privilege
-snapshot → issue the **active** runtime token → spawn `h3c-proof-harness.mjs` with
-all tokens in the child ENV (never argv/stdout) → read the verdict → **teardown
-identity-first**: delete both identities, delete the grant row, verify each exact
-UUID is gone → emit `H3D-RUN-*.json` + `H3D-LIVE-PROOF-*.json`.
-
-Evidence holds only: identity UUIDs, issuer/ref, role, iat/exp/lifetime, probe
-verdicts, HTTP/error classes. No raw token, ever.
-
-**H3D LIVE PASS** = `--run` exit 0 and `H3D-RUN-*.json` `verdict: "H3D LIVE PASS"`:
-- child `h3c-proof-harness` `verdict: PASS`, exitCode 0 (every required probe PASS);
-- `tokens.active.role = ps01_line_runtime`, `lifetimeSec ≤ 300`;
-- `tokens.control.role = authenticated` (hook is a no-op for non-allowlisted users);
-- `teardown`: both identities gone, our grant row gone, `grant_rows_after ≤ grant_rows_before`.
-
-**STOP** (`--run` exit 1) if: `verdict` starts `H3D RUN FAILED` (an error or a
-cleanup that could not be verified) or `H3D LIVE NOT PASS` (harness FAIL /
-INCOMPLETE — inspect `harness.gate` and the proof JSON `results[]`). A cleanup
-failure is a hard failure — chase the residual identity/grant with
-`--teardown-only <uuid,uuid>` using the UUIDs in `H3D-RUN-*.json`.
-
-### Operator action B (Dashboard, ~30 s) — after `--run` returns
-
-- **Authentication → Hooks → Custom Access Token → Disable.** Screenshot.
-- The last issued token stays valid until `residualNarrowAuthorityUntil` in
-  `H3D-RUN-*.json` (≤ 5 min out). Do not declare authority gone before it.
-
-### Agent finishes H3D
-
-- fill `evidence/H3D-PS01-DATA-API-PATH-PROOF-2026-09-09.md` §4 from `H3D-RUN-*.json`
-  + `H3D-LIVE-PROOF-*.json` (UUIDs / iss / ref / role / iat / exp / lifetime / verdicts only);
-- mark **H3D: PASS**; checkpoint + push both branches (brief §14);
-- `lab-readonly-inventory.mjs` + `compare-inventory.mjs` vs
-  `H3D-BASELINE-INVENTORY-2026-09-09.json` → expect **SIGNATURE MATCH** (teardown
-  leaves no LAB delta).
 
 ---
 
@@ -241,14 +219,15 @@ Every issued runtime/H4 token is capped at ≤ 5 minutes by the hook. After each
 
 | Lane | Branch | Remote | Base | HEAD (latest) | Parity |
 |---|---|---|---|---|---|
-| House | `work/house-h3d-h5-20260909` | `github.com/Gutumrod/saas-product-hub` | `94ce432` (master, contains the parent brief; `6b0020c` ancestor) | AUTHZ-fixture remediation commit on top of `35aef8e` (the CEO-locked authz brief) | `0/0` at each push |
-| PS01 | `work/ps01-h3d-data-api-20260909` | `github.com/Gutumrod/pawspace` | `c21c27c` (required source commit) | `4efee70` (H3D Data API adapter — unchanged this round) | `0/0` |
+| House | `work/house-h3d-h5-20260909` | `github.com/Gutumrod/saas-product-hub` | `94ce432` (master, contains the parent brief; `6b0020c` ancestor) | final one-shot remediation commit on top of `0a7430f` (the CEO-locked final review brief) | `0/0` at each push |
+| PS01 | `work/ps01-h3d-data-api-20260909` | `github.com/Gutumrod/pawspace` | `c21c27c` | `c169e5d` — brief-canonical adapter `4efee70` + Owner's own `test(ps01): add booking v2 verification evidence` on top; this lane did not touch it | `0/0` |
 
 Neither branch is merged. Original House `master` and the original PS01
 `build/ps-sr02-staging-2026-09-06` worktree (incl. its untracked handoff) are
 untouched. Secretary GPT owns the review/merge decision and the final HOUSE-A gate.
 
 **No WSTERA LAB mutation** has occurred through any H3D round — only read-only
-catalog / inventory / fixture-discovery queries. `--preflight` currently STOPs at
-the read-only AUTHZ fixture-discovery step, before it would create the
-hook-readiness probe identity (verified: `runtime_token_grants` row count 0 after).
+catalog / RPC-signature / inventory / fixture-discovery queries (verified after
+this round: `ps01.shops` 0, `runtime_token_grants` 0, `auth.users` 5). The H3D
+flow no longer has a single command that reaches the mutation boundary — see the
+§9 16-transition table above.
