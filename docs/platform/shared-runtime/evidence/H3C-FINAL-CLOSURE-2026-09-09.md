@@ -92,4 +92,3 @@ No production environment was touched. No submit mutation was executed. No JWT, 
 ## Final H3C Verdict
 
 **H3C: PASS / CLOSED.** All required live probes passed, identity-first teardown completed, residual JWT authority expired, proof fixtures and grants were removed, post-teardown signatures match the expected boundary, linked schema lint passed, and the final Dashboard Security Advisor refresh showed no H3C-attributable finding.
-

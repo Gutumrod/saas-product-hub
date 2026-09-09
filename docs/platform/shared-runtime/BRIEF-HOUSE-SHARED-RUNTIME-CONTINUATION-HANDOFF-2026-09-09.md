@@ -49,6 +49,10 @@ H-08 post-apply facts:
 
 ## H3C Closed State
 
+**H3C closure commit:** `152e7192cdcb803418eea04724202405190a3cda` (pushed, origin matched 0/0 after closure commit).
+
+
+
 H3C end-to-end live proof is **PASS / CLOSED** in WSTERA LAB.
 
 Canonical final evidence:
