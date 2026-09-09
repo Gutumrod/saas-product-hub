@@ -212,3 +212,20 @@ inventories, comparisons, evidence — the agent does with the LAB secrets it al
 Every issued runtime/H4 token is capped at ≤ 5 minutes by the hook. After each
 `Disable`, wait past the last token's `exp` (the runners print
 `residualNarrowAuthorityUntil`) before recording "authority gone".
+
+---
+
+## Branch / commit evidence (pushed)
+
+| Lane | Branch | Remote | Base | HEAD | Parity |
+|---|---|---|---|---|---|
+| House | `work/house-h3d-h5-20260909` | `github.com/Gutumrod/saas-product-hub` | `94ce432` (master, contains this brief; `6b0020c` ancestor) | `7e1f2bb` (H3D operator-pack remediation) + this doc-evidence commit on top | `0/0` at each push |
+| PS01 | `work/ps01-h3d-data-api-20260909` | `github.com/Gutumrod/pawspace` | `c21c27c` (required source commit) | `4efee70` (H3D Data API adapter) | `0/0` |
+
+Neither branch is merged. Original House `master` and the original PS01
+`build/ps-sr02-staging-2026-09-06` worktree (incl. its untracked handoff) are
+untouched. Secretary GPT owns the review/merge decision and the final HOUSE-A gate.
+
+No WSTERA LAB mutation has occurred through H3D preparation or the operator-pack
+remediation — only read-only catalog/inventory queries and a self-torn-down
+`--preflight` probe identity when explicitly run.
