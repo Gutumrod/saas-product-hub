@@ -1,0 +1,27 @@
+{
+  "captured_at": "2026-09-09T01:39:06.372097+00:00",
+  "project_ref": "ykxlqnshaaxmzzocpjlj",
+  "role": "ps01_line_runtime",
+  "role_no_login": true,
+  "exec_count": 3,
+  "exec_functions": [
+    {
+      "name": "get_customer_booking_context_v2_internal",
+      "args": "p_verified_line_user_id character varying, p_shop_id uuid"
+    },
+    {
+      "name": "quote_customer_booking_v2_internal",
+      "args": "p_verified_line_user_id character varying, p_shop_id uuid, p_room_id uuid, p_rate_plan_id uuid, p_pet_ids uuid[], p_start_at timestamp with time zone"
+    },
+    {
+      "name": "submit_booking_request_v2_internal",
+      "args": "p_verified_line_user_id character varying, p_shop_id uuid, p_room_id uuid, p_rate_plan_id uuid, p_pet_ids uuid[], p_start_at timestamp with time zone, p_special_requests text"
+    }
+  ],
+  "write_count": 0,
+  "write_relations": [],
+  "public_usage": true,
+  "public_rls_auto_enable_exec": false,
+  "local_service_usage": false,
+  "ps01_request_user_id_exec": false
+}
