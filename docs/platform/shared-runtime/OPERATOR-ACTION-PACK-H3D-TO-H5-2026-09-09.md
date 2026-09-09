@@ -3,15 +3,24 @@
 **Date:** 2026-09-09 (Asia/Bangkok)
 **For:** WSTERA authorized Supabase operator (CEO / Secretary GPT)
 **Environment:** WSTERA LAB (`ykxlqnshaaxmzzocpjlj`) **only**. Production LOCKED.
-**Parent:** `BRIEF-CLAUDE-H3D-H5-HOUSE-A-LONG-RUN-EXECUTION-2026-09-09.md` + `ADDENDUM-CLAUDE-PREPARE-UNTIL-OPERATOR-ACTION-2026-09-09.md` + `BRIEF-CLAUDE-H3D-OPERATOR-PACK-REMEDIATION-2026-09-09.md`
-**Execution state:** `OPERATOR ACTION PACK READY / H3D LIVE BLOCKED` (remediation applied)
+**Parent:** `BRIEF-CLAUDE-H3D-H5-HOUSE-A-LONG-RUN-EXECUTION-2026-09-09.md` + `ADDENDUM-CLAUDE-PREPARE-UNTIL-OPERATOR-ACTION-2026-09-09.md` + `BRIEF-CLAUDE-H3D-OPERATOR-PACK-REMEDIATION-2026-09-09.md` + `BRIEF-CLAUDE-H3D-AUTHZ-FIXTURE-REMEDIATION-2026-09-09.md`
+**Execution state:** `H3D LIVE BLOCKED — AUTHZ FIXTURE PREREQUISITE MISSING` (tooling gate-green; see `evidence/H3D-AUTHZ-FIXTURE-STOP-2026-09-09.md`)
 
-All PREPARE-ONLY work is done. For **H3D the operator does exactly two Dashboard
-toggles** (enable the hook, then disable it). Everything between — identities,
-grant row, both token issuances, the expired-token wait, the fresh privilege
-snapshot, the full H3C probe matrix, and identity-first teardown — is one agent
-command: `h3d-live-runner.mjs --run`. Tokens live only in memory / a child
-process env; nothing secret is printed, saved, or placed on a command line.
+The operator-pack architecture is complete and every offline gate is green. **But
+`--preflight` currently STOPs before the operator does anything**: `POS-AUTHZ-1`
+and `POS-AUTHZ-3` need REAL cross-shop / cross-customer PS01 rows, and WSTERA LAB
+has **zero** rows in `ps01.shops` / `pet_owners` / `pets` / `rooms` /
+`room_rate_plans` (H3C teardown removed them). Random UUIDs are not accepted for
+these probes. Seeding disposable PS01 fixtures is a LAB mutation that needs its
+own authorization — see the STOP evidence doc §7 for the three unblock options.
+
+Once real PS01 cross-tenant rows exist, the flow below runs unchanged: for
+**H3D the operator does exactly two Dashboard toggles** (enable the hook, then
+disable it). Everything between — fixture discovery, identities, grant row, both
+token issuances, the expired-token wait, the fresh privilege snapshot, the full
+H3C probe matrix, and identity-first teardown — is one agent command:
+`h3d-live-runner.mjs --run`. Tokens live only in memory / a child process env;
+nothing secret is printed, saved, or placed on a command line.
 
 Branches (both isolated, committed, **pushed** — see the final section for SHAs):
 - House: `work/house-h3d-h5-20260909` — worktree `D:\AI-Workspace\runtime\worktrees\house-h3d-h5-20260909`
@@ -51,16 +60,20 @@ export H3D_OUT_DIR="docs/platform/shared-runtime/evidence"
 ```
 node tools/shared-runtime/h3d/h3d-live-runner.mjs --preflight
 ```
-`--preflight` (no hosted mutation beyond a self-torn-down probe identity) verifies:
-env present · `h3c-proof-harness.mjs` / `h3c-privilege-snapshot.sql` / H3B evidence on
-disk · a nullable `ps01.bookings` column resolves for `NEG-TBL-2` · the live
-privilege snapshot still matches the `ps01_line_runtime` boundary · the probe
-identity + grant it created were fully removed · whether the hook is currently active.
+`--preflight` verifies, all read-only, **before** creating any identity/grant:
+env present · `h3c-proof-harness.mjs` / `h3c-privilege-snapshot.sql` / H3B evidence
+on disk · a nullable `ps01.bookings` column resolves for `NEG-TBL-2` · the live
+privilege snapshot still matches the `ps01_line_runtime` boundary · **a real
+cross-shop + cross-customer AUTHZ fixture set is discoverable** (`discoverAuthzFixtures()`,
+SELECT-only). Only if all of that passes does it create + tear down a probe
+identity to report whether the hook is active.
 
+- **exit 1 / STOP** — a required read-only prerequisite is missing. **Currently
+  this is where it stops**: `Fixture A: no ps01.pet_owners row with a linked
+  line_user_id exists in LAB`. Do **not** ask the operator to enable the hook.
+  See `evidence/H3D-AUTHZ-FIXTURE-STOP-2026-09-09.md`.
 - **exit 2** — `NOT READY — operator must enable the Custom Access Token hook`. Do
   operator action A, wait ~30s, re-run `--preflight`.
-- **exit 1 / STOP** — a required input can't be resolved read-only. Do **not** ask
-  the operator to enable the hook. Report the reason.
 - **exit 0** — `READY (hook active)`. Continue to `--run`.
 
 ### Operator action A (Dashboard, ~1 min)
@@ -217,15 +230,16 @@ Every issued runtime/H4 token is capped at ≤ 5 minutes by the hook. After each
 
 ## Branch / commit evidence (pushed)
 
-| Lane | Branch | Remote | Base | HEAD | Parity |
+| Lane | Branch | Remote | Base | HEAD (latest) | Parity |
 |---|---|---|---|---|---|
-| House | `work/house-h3d-h5-20260909` | `github.com/Gutumrod/saas-product-hub` | `94ce432` (master, contains this brief; `6b0020c` ancestor) | `7e1f2bb` (H3D operator-pack remediation) + this doc-evidence commit on top | `0/0` at each push |
-| PS01 | `work/ps01-h3d-data-api-20260909` | `github.com/Gutumrod/pawspace` | `c21c27c` (required source commit) | `4efee70` (H3D Data API adapter) | `0/0` |
+| House | `work/house-h3d-h5-20260909` | `github.com/Gutumrod/saas-product-hub` | `94ce432` (master, contains the parent brief; `6b0020c` ancestor) | AUTHZ-fixture remediation commit on top of `35aef8e` (the CEO-locked authz brief) | `0/0` at each push |
+| PS01 | `work/ps01-h3d-data-api-20260909` | `github.com/Gutumrod/pawspace` | `c21c27c` (required source commit) | `4efee70` (H3D Data API adapter — unchanged this round) | `0/0` |
 
 Neither branch is merged. Original House `master` and the original PS01
 `build/ps-sr02-staging-2026-09-06` worktree (incl. its untracked handoff) are
 untouched. Secretary GPT owns the review/merge decision and the final HOUSE-A gate.
 
-No WSTERA LAB mutation has occurred through H3D preparation or the operator-pack
-remediation — only read-only catalog/inventory queries and a self-torn-down
-`--preflight` probe identity when explicitly run.
+**No WSTERA LAB mutation** has occurred through any H3D round — only read-only
+catalog / inventory / fixture-discovery queries. `--preflight` currently STOPs at
+the read-only AUTHZ fixture-discovery step, before it would create the
+hook-readiness probe identity (verified: `runtime_token_grants` row count 0 after).

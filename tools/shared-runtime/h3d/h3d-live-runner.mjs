@@ -169,6 +169,97 @@ async function resolvePs01TableCol() {
   });
 }
 
+// Read-only discovery of a REAL cross-tenant authorization fixture set from
+// current WSTERA LAB data (H3D authz-fixture remediation 2026-09-09). SELECT
+// only — every query is checked for mutating keywords before execution. Returns
+// { ok:true, fixtures } or { ok:false, reason } (a scarcity STOP, not an error).
+//
+// PS01 relationship model (verified from the live RPC bodies + catalog):
+//   ps01.pet_owners(id, shop_id, line_user_id)   -- the customer<->shop link
+//   ps01.shops(id, slug)
+//   ps01.pets(id, shop_id, owner_id)
+//   ps01.rooms(id, shop_id, status)
+//   ps01.room_rate_plans(id, shop_id, room_id, is_active)
+// get_customer_booking_context_v2_internal / quote_customer_booking_v2_internal
+// resolve the owner via (shop_id = p_shop_id AND line_user_id = verified), then
+// quote validates pet ownership against that owner.
+const MUTATING_SQL = /\b(insert|update|delete|upsert|merge|create|alter|drop|truncate|grant|revoke)\b/i;
+async function discoverAuthzFixtures() {
+  return withDb(async (c) => {
+    const sel = async (name, sql, params = []) => {
+      if (MUTATING_SQL.test(sql)) throw new Error(`discovery query "${name}" is not read-only`);
+      return (await c.query(sql, params)).rows;
+    };
+
+    // Fixture A — baseline: a real pet_owner with a linked LINE identity.
+    const [baseline] = await sel("baseline",
+      `SELECT po.id AS owner_id, po.shop_id, po.line_user_id
+       FROM ps01.pet_owners po
+       JOIN ps01.shops s ON s.id = po.shop_id
+       WHERE po.line_user_id IS NOT NULL AND btrim(po.line_user_id) <> ''
+       ORDER BY po.created_at NULLS LAST, po.id
+       LIMIT 1`);
+    if (!baseline) return { ok: false, reason: "Fixture A: no ps01.pet_owners row with a linked line_user_id exists in LAB" };
+
+    // Fixture B — cross-shop: a real second shop the baseline LINE user is NOT linked to.
+    const [otherShop] = await sel("otherShop",
+      `SELECT s.id AS shop_id
+       FROM ps01.shops s
+       WHERE s.id <> $1
+         AND NOT EXISTS (
+           SELECT 1 FROM ps01.pet_owners po2
+           WHERE po2.shop_id = s.id AND btrim(po2.line_user_id) = btrim($2))
+       ORDER BY s.id
+       LIMIT 1`, [baseline.shop_id, baseline.line_user_id]);
+    if (!otherShop) return { ok: false, reason: "Fixture B: no second ps01.shops row exists that the baseline line_user is provably not linked to" };
+
+    // real room + active rate plan for the baseline shop (so a quote rejection is
+    // about the foreign pets, not a missing room/plan).
+    const [room] = await sel("room",
+      `SELECT id FROM ps01.rooms WHERE shop_id = $1 ORDER BY id LIMIT 1`, [baseline.shop_id]);
+    const [plan] = await sel("plan",
+      `SELECT id FROM ps01.room_rate_plans WHERE shop_id = $1 AND is_active = TRUE ORDER BY id LIMIT 1`, [baseline.shop_id]);
+    if (!room) return { ok: false, reason: "Fixture C support: baseline shop has no ps01.rooms row for the quote probe" };
+    if (!plan) return { ok: false, reason: "Fixture C support: baseline shop has no active ps01.room_rate_plans row for the quote probe" };
+
+    // Fixture C — cross-customer pets: real pets owned by a different customer.
+    const foreignPets = await sel("foreignPets",
+      `SELECT id FROM ps01.pets WHERE owner_id <> $1 ORDER BY id LIMIT 2`, [baseline.owner_id]);
+    if (foreignPets.length === 0) return { ok: false, reason: "Fixture C: no ps01.pets owned by a customer other than the baseline owner" };
+
+    return {
+      ok: true,
+      fixtures: {
+        baselineShopId: baseline.shop_id,
+        baselineOwnerId: baseline.owner_id,
+        baselineLineUserId: baseline.line_user_id,
+        otherShopId: otherShop.shop_id,
+        roomId: room.id,
+        ratePlanId: plan.id,
+        otherPetIds: foreignPets.map((r) => r.id),
+      },
+    };
+  });
+}
+// non-PII assertion projection for evidence.
+function fixtureAssertion(f) {
+  return {
+    baseline_shop_id: f.baselineShopId,
+    baseline_owner_id: f.baselineOwnerId,
+    baseline_line_user_ref: `${String(f.baselineLineUserId).slice(0, 3)}…${crypto.createHash("sha256").update(String(f.baselineLineUserId)).digest("hex").slice(0, 8)}`,
+    cross_shop_id: f.otherShopId,
+    quote_room_id: f.roomId,
+    quote_rate_plan_id: f.ratePlanId,
+    cross_customer_pet_ids: f.otherPetIds,
+    relationship_assertions: [
+      "baseline_owner is a real ps01.pet_owners row with shop_id=baseline_shop_id and a linked line_user_id",
+      "cross_shop_id is a real ps01.shops row with NO pet_owners link for the baseline line_user (proven by NOT EXISTS)",
+      "quote_room_id / quote_rate_plan_id are real active rows in baseline_shop_id",
+      "cross_customer_pet_ids are real ps01.pets rows whose owner_id <> baseline_owner_id",
+    ],
+  };
+}
+
 function spawnHarness(env) {
   return new Promise((resolve) => {
     execFile("node", [HARNESS], { env, timeout: 150000, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
@@ -205,6 +296,21 @@ async function preflight() {
   checks.privilege_snapshot_valid = snapOk;
   if (!snapOk) fail("privilege snapshot does not match the expected ps01_line_runtime boundary");
 
+  // REAL cross-tenant authorization fixtures — read-only, BEFORE any operator hook action.
+  let discovery = { ok: false, reason: "not attempted" };
+  try { discovery = await discoverAuthzFixtures(); }
+  catch (e) { fail(`AUTHZ fixture discovery error: ${e.message}`); }
+  checks.authz_fixtures_discovered = discovery.ok;
+  if (!discovery.ok) {
+    out(`H3D-PREFLIGHT-${Date.now()}.json`, {
+      step: "preflight", generatedAt: new Date().toISOString(), checks,
+      resolved: { ps01_table_col: col },
+      authz_fixture_discovery: { ok: false, reason: discovery.reason },
+      verdict: `STOP — real cross-shop / cross-customer AUTHZ fixtures cannot be discovered read-only (${discovery.reason}). Seeding PS01 business rows is a LAB mutation and is not authorized here.`,
+    });
+    fail(`AUTHZ fixture discovery: ${discovery.reason}`);
+  }
+
   const before = await grantRowCount();
   checks.grant_rows_before = before;
 
@@ -230,6 +336,7 @@ async function preflight() {
   const result = {
     step: "preflight", generatedAt: new Date().toISOString(), checks,
     resolved: { ps01_table_col: col },
+    authz_fixture_discovery: { ok: true, assertion: fixtureAssertion(discovery.fixtures) },
     probe_token: tokenClass ? { role: tokenClass.role, lifetimeSec: tokenClass.lifetimeSec, ref: tokenClass.ref } : null,
     verdict: hookActive ? "READY (hook active) — run --run" : "NOT READY — operator must enable the Custom Access Token hook, then re-run --preflight",
   };
@@ -272,6 +379,12 @@ async function run() {
     const tableCol = await resolvePs01TableCol();
     if (!tableCol) throw new Error("could not resolve ps01.bookings column");
 
+    // REAL authorization fixtures — no random-UUID fallback (authz-fixture remediation).
+    const discovery = await discoverAuthzFixtures();
+    if (!discovery.ok) throw new Error(`AUTHZ fixture discovery failed: ${discovery.reason} — cannot run POS-AUTHZ-1/3 without real foreign relationships`);
+    const fx = discovery.fixtures;
+    rec.authz_fixtures = fixtureAssertion(fx);
+
     // wait until the expired token is genuinely past exp.
     const waitMs = Math.max(0, (expiredClass.exp + CFG.expiryMarginSec) * 1000 - Date.now());
     process.stderr.write(`waiting ${Math.round(waitMs / 1000)}s for the runtime token to expire...\n`);
@@ -299,12 +412,13 @@ async function run() {
       H3C_H3B_EVIDENCE: H3B_EVIDENCE,
       H3C_PS01_TABLE: "bookings",
       H3C_PS01_TABLE_COL: tableCol,
-      H3C_FIX_SHOP_ID: crypto.randomUUID(),
-      H3C_FIX_OTHER_SHOP_ID: crypto.randomUUID(),
-      H3C_FIX_LINE_USER_ID: `U${crypto.randomBytes(16).toString("hex")}`,
-      H3C_FIX_ROOM_ID: crypto.randomUUID(),
-      H3C_FIX_RATE_PLAN_ID: crypto.randomUUID(),
-      H3C_FIX_OTHER_PET_IDS: `${crypto.randomUUID()},${crypto.randomUUID()}`,
+      // real, internally consistent authorization matrix from live LAB rows:
+      H3C_FIX_SHOP_ID: fx.baselineShopId,
+      H3C_FIX_LINE_USER_ID: fx.baselineLineUserId,
+      H3C_FIX_OTHER_SHOP_ID: fx.otherShopId,
+      H3C_FIX_ROOM_ID: fx.roomId,
+      H3C_FIX_RATE_PLAN_ID: fx.ratePlanId,
+      H3C_FIX_OTHER_PET_IDS: fx.otherPetIds.join(","),
       H3C_OUT: harnessJsonPath,
     };
     process.stderr.write("running h3c-proof-harness (child process, tokens in env only)...\n");
@@ -400,6 +514,25 @@ function selftest() {
   ok(src.includes("no_new_residual_grant") && src.includes("grant_rows_after <= grantRowsBefore"), "pre-existing grant not treated as our failure");
   // preflight fails closed before operator action on missing repo files / snapshot / col.
   ok(src.includes("fail(") && src.includes("hook_active") && src.includes("process.exit(hookActive ? 0 : 2)"), "preflight fails closed / signals hook state");
+
+  // authz-fixture remediation: POS-AUTHZ-1/3 fixtures come from real LAB rows, never random UUIDs.
+  const authzKeys = ["H3C_FIX_SHOP_ID", "H3C_FIX_OTHER_SHOP_ID", "H3C_FIX_ROOM_ID", "H3C_FIX_RATE_PLAN_ID", "H3C_FIX_OTHER_PET_IDS", "H3C_FIX_LINE_USER_ID"];
+  for (const k of authzKeys) {
+    const line = src.split("\n").find((l) => l.includes(`${k}:`)) || "";
+    ok(line.includes("fx.") && !/randomUUID|randomBytes|randomInt/.test(line), `${k} sourced from discovered fixture, no random fallback`);
+  }
+  ok(src.includes("async function discoverAuthzFixtures") && src.includes("MUTATING_SQL.test(sql)"), "discoverAuthzFixtures exists and rejects any mutating query");
+  ok(!MUTATING_SQL.test(src.slice(src.indexOf("async function discoverAuthzFixtures"), src.indexOf("// non-PII assertion projection"))),
+    "discoverAuthzFixtures body contains no mutating SQL keyword");
+  ok(src.indexOf("await discoverAuthzFixtures()") < src.indexOf("hook-readiness probe"),
+    "preflight runs fixture discovery BEFORE the hook-readiness probe");
+  ok(src.includes("STOP — real cross-shop / cross-customer AUTHZ fixtures cannot be discovered read-only"),
+    "preflight emits a scarcity STOP verdict when discovery fails");
+  ok(src.includes("AUTHZ fixture discovery failed:") && src.includes("cannot run POS-AUTHZ-1/3 without real foreign relationships"),
+    "--run aborts (no fallback) when discovery fails");
+  // MUTATING_SQL must actually catch the words it claims to.
+  ok(MUTATING_SQL.test("... INSERT INTO x ...") && MUTATING_SQL.test("delete from") && !MUTATING_SQL.test("SELECT id FROM ps01.pets"),
+    "MUTATING_SQL guard matches write keywords, not SELECT");
 
   process.stderr.write(bad ? `\nSELFTEST: ${bad} FAILURE(S)\n` : "\nSELFTEST PASS (token classify, no-abs-path, secure handoff, required inputs, verified teardown)\n");
   process.exit(bad ? 1 : 0);
