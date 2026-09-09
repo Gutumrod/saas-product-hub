@@ -60,3 +60,14 @@ Authorized minimum addition:
 - no billing provider identifiers, payment state, assignment row, or production-like entitlement is created.
 
 This subscription is fixture support only and must be removed during teardown after dependent room/pet rows are deleted. The failed pre-amendment transaction was verified to have left zero H3C fixture rows.
+## Runtime finding amendment 2 — canonical shop bootstrap supersedes manual subscription insert
+
+The second bounded transaction also rolled back fully. Runtime inspection proved `ps01.shops` has `trg_initialize_shop_subscription_after_insert`, which calls `initialize_shop_subscription_internal()`.
+
+Therefore the prior amendment's manual `shop_subscriptions` insert is **superseded** and must not be executed. Creating Shop A canonically creates:
+- one `starter / standard / monthly / trialing` subscription;
+- `trial_started_at=now()` and `trial_ends_at=now()+30 days`;
+- one `subscription.initialized` audit row;
+- legacy shop subscription status synchronized by canonical PS01 logic.
+
+The final fixture transaction must rely on that trigger and add no manual subscription row. Teardown may delete Shop A after dependent H3C rows; canonical `ON DELETE CASCADE` removes its generated subscription and audit row. Both failed fixture attempts were verified to leave zero H3C rows.
