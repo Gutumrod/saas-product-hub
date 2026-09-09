@@ -9,20 +9,18 @@
 //   LAB_DB_URL         postgres connection string for a House SELECT-only session
 //   INVENTORY_OUT      output JSON path (default: stdout)
 //   INVENTORY_LABEL    free-text label recorded in the output (e.g. "H3F post-apply")
-//   PG_MODULE_ROOT     dir whose node_modules has `pg` (default: PS01 staging worktree)
+//
+// `pg` is this tool tree's own declared dependency (tools/shared-runtime/package.json);
+// run `npm install` in tools/shared-runtime once. No cross-worktree / absolute paths.
 //
 // Exit 0 on success, 1 on connection failure, 2 on missing env.
 
-import { createRequire } from "node:module";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import process from "node:process";
+import pg from "pg";
 
-const PG_ROOT =
-  process.env.PG_MODULE_ROOT ||
-  "D:/AI-Workspace/projects/saas-product-hub/products/PawSpace-pssr02-staging/";
-const require = createRequire(PG_ROOT.endsWith("/") ? PG_ROOT : PG_ROOT + "/");
-const { Client } = require("pg");
+const { Client } = pg;
 
 const url = process.env.LAB_DB_URL;
 if (!url) {
