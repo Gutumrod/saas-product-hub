@@ -49,3 +49,14 @@ After proof capture, remove temporary authority and proof data fail-closed:
 ## Gate
 
 Fixture provisioning itself is not H3C PASS. H3C remains blocked until token verification, all required positive/negative probes, and teardown evidence are complete.
+## Runtime finding amendment — commercial guard
+
+The first bounded fixture transaction was rejected before commit by canonical PS01 commercial guards: both pet and room creation require initialized commercial authority.
+
+Authorized minimum addition:
+- one temporary `ps01.shop_subscriptions` row for Shop A only;
+- `package_id='starter'`, `commercial_offer='standard'`, `billing_interval='monthly'`;
+- `status='trialing'`, with finite `trial_started_at=now()` and `trial_ends_at=now()+1 hour`;
+- no billing provider identifiers, payment state, assignment row, or production-like entitlement is created.
+
+This subscription is fixture support only and must be removed during teardown after dependent room/pet rows are deleted. The failed pre-amendment transaction was verified to have left zero H3C fixture rows.
