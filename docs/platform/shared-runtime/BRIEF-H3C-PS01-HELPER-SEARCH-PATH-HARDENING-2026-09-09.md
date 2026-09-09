@@ -47,7 +47,8 @@ Apply the smallest metadata-only hardening:
 2. Forward migration must fail closed if any helper is missing, overloaded unexpectedly, not owned by `ps01_migrator`, already carries function-local config, or is SECURITY DEFINER.
 3. Apply only through House platform migration authority in WSTERA LAB.
 4. Re-read live metadata immediately after apply.
-5. Re-run Security Advisor and confirm the three mutable-search-path findings are gone without new attributable findings.\n6. Re-run the H3C privilege snapshot checks relevant to the runtime boundary.
+5. Re-run Security Advisor and confirm the three mutable-search-path findings are gone without new attributable findings.
+6. Re-run the H3C privilege snapshot checks relevant to the runtime boundary.
 7. Record a dated post-apply evidence document before proceeding to Auth identity/hook activation.
 
 ## Rollback Contract
@@ -71,4 +72,3 @@ PASS only if:
 ## Next Authorized Action
 
 Create, review, commit, and push the exact forward/rollback migration artifacts. Only after the repository is clean at that checkpoint may House apply the forward migration to WSTERA LAB and capture post-apply evidence.
-\n

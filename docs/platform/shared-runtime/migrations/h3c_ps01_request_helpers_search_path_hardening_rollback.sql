@@ -24,7 +24,8 @@ BEGIN
     'ps01_request_user_id',
     'ps01_request_email',
     'ps01_request_name'
-  ] LOOP\n    SELECT p.oid,
+  ] LOOP
+    SELECT p.oid,
            pg_get_userbyid(p.proowner),
            p.proacl::text,
            p.prosecdef,
@@ -78,4 +79,4 @@ BEGIN
       RAISE EXCEPTION 'search_path reset failed for ps01.%()', v_name;
     END IF;
   END LOOP;
-END $$;\n
+END $$;
