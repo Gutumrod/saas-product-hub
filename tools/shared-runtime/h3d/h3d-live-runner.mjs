@@ -174,15 +174,22 @@ async function resolvePs01TableCol() {
 // only — every query is checked for mutating keywords before execution. Returns
 // { ok:true, fixtures } or { ok:false, reason } (a scarcity STOP, not an error).
 //
-// PS01 relationship model (verified from the live RPC bodies + catalog):
-//   ps01.pet_owners(id, shop_id, line_user_id)   -- the customer<->shop link
+// PS01 relationship model (verified from the live RPC bodies + baseline DDL):
+//   ps01.pet_owners(id, shop_id, line_user_id)  UNIQUE(shop_id,line_user_id) -- customer<->shop link
 //   ps01.shops(id, slug)
-//   ps01.pets(id, shop_id, owner_id)
-//   ps01.rooms(id, shop_id, status)
-//   ps01.room_rate_plans(id, shop_id, room_id, is_active)
-// get_customer_booking_context_v2_internal / quote_customer_booking_v2_internal
-// resolve the owner via (shop_id = p_shop_id AND line_user_id = verified), then
-// quote validates pet ownership against that owner.
+//   ps01.pets(id, shop_id, owner_id)   FK (shop_id,owner_id) -> pet_owners(shop_id,id)
+//   ps01.rooms(id, shop_id, capacity_pets)
+//   ps01.room_rate_plans(id, shop_id, room_id, is_active)  FK (shop_id,room_id) -> rooms(shop_id,id)
+//
+// resolve_booking_v2_quote_internal: rate plan matched on (id, shop_id, room_id)
+//   -> assert_booking_window_available_internal: owner must exist for shop; room
+//   capacity_pets >= |pets|; every pet must satisfy (shop_id, owner_id, id).
+//
+// Invariant A (House review): room + active rate plan MUST be one joined pair
+//   where plan.room_id = room.id AND both belong to the baseline shop.
+// Invariant B (House review): the POS-AUTHZ-3 foreign pet MUST be in the baseline
+//   shop, owned by a different real pet_owners row in that same shop — so the
+//   rejection proves cross-CUSTOMER ownership isolation, not just shop scope.
 const MUTATING_SQL = /\b(insert|update|delete|upsert|merge|create|alter|drop|truncate|grant|revoke)\b/i;
 async function discoverAuthzFixtures() {
   return withDb(async (c) => {
@@ -191,15 +198,21 @@ async function discoverAuthzFixtures() {
       return (await c.query(sql, params)).rows;
     };
 
-    // Fixture A — baseline: a real pet_owner with a linked LINE identity.
+    // Fixture A — baseline: a real pet_owner with a linked LINE identity + at
+    // least one pet of that owner (baseline positive context).
     const [baseline] = await sel("baseline",
       `SELECT po.id AS owner_id, po.shop_id, po.line_user_id
        FROM ps01.pet_owners po
        JOIN ps01.shops s ON s.id = po.shop_id
        WHERE po.line_user_id IS NOT NULL AND btrim(po.line_user_id) <> ''
+         AND EXISTS (SELECT 1 FROM ps01.pets p WHERE p.shop_id = po.shop_id AND p.owner_id = po.id)
        ORDER BY po.created_at NULLS LAST, po.id
        LIMIT 1`);
-    if (!baseline) return { ok: false, reason: "Fixture A: no ps01.pet_owners row with a linked line_user_id exists in LAB" };
+    if (!baseline) return { ok: false, reason: "Fixture A: no ps01.pet_owners row with a linked line_user_id AND at least one owned pet exists in LAB" };
+
+    const [baselinePet] = await sel("baselinePet",
+      `SELECT id FROM ps01.pets WHERE shop_id = $1 AND owner_id = $2 ORDER BY id LIMIT 1`,
+      [baseline.shop_id, baseline.owner_id]);
 
     // Fixture B — cross-shop: a real second shop the baseline LINE user is NOT linked to.
     const [otherShop] = await sel("otherShop",
@@ -213,19 +226,26 @@ async function discoverAuthzFixtures() {
        LIMIT 1`, [baseline.shop_id, baseline.line_user_id]);
     if (!otherShop) return { ok: false, reason: "Fixture B: no second ps01.shops row exists that the baseline line_user is provably not linked to" };
 
-    // real room + active rate plan for the baseline shop (so a quote rejection is
-    // about the foreign pets, not a missing room/plan).
-    const [room] = await sel("room",
-      `SELECT id FROM ps01.rooms WHERE shop_id = $1 ORDER BY id LIMIT 1`, [baseline.shop_id]);
-    const [plan] = await sel("plan",
-      `SELECT id FROM ps01.room_rate_plans WHERE shop_id = $1 AND is_active = TRUE ORDER BY id LIMIT 1`, [baseline.shop_id]);
-    if (!room) return { ok: false, reason: "Fixture C support: baseline shop has no ps01.rooms row for the quote probe" };
-    if (!plan) return { ok: false, reason: "Fixture C support: baseline shop has no active ps01.room_rate_plans row for the quote probe" };
+    // Invariant A — room + active rate plan as ONE joined pair in the baseline shop.
+    const [pair] = await sel("roomPlanPair",
+      `SELECT r.id AS room_id, rp.id AS rate_plan_id, r.capacity_pets
+       FROM ps01.rooms r
+       JOIN ps01.room_rate_plans rp
+         ON rp.room_id = r.id AND rp.shop_id = r.shop_id
+       WHERE r.shop_id = $1 AND rp.is_active = TRUE
+       ORDER BY r.id, rp.id
+       LIMIT 1`, [baseline.shop_id]);
+    if (!pair) return { ok: false, reason: "Fixture C support: baseline shop has no (room + active room_rate_plans WHERE plan.room_id = room.id) pair" };
 
-    // Fixture C — cross-customer pets: real pets owned by a different customer.
+    // Invariant B — foreign pet: baseline shop, different real owner in that shop.
     const foreignPets = await sel("foreignPets",
-      `SELECT id FROM ps01.pets WHERE owner_id <> $1 ORDER BY id LIMIT 2`, [baseline.owner_id]);
-    if (foreignPets.length === 0) return { ok: false, reason: "Fixture C: no ps01.pets owned by a customer other than the baseline owner" };
+      `SELECT p.id
+       FROM ps01.pets p
+       JOIN ps01.pet_owners po2 ON po2.id = p.owner_id AND po2.shop_id = p.shop_id
+       WHERE p.shop_id = $1 AND po2.id <> $2
+       ORDER BY p.id
+       LIMIT LEAST(2, $3::int)`, [baseline.shop_id, baseline.owner_id, Math.max(1, pair.capacity_pets)]);
+    if (foreignPets.length === 0) return { ok: false, reason: "Fixture C: no ps01.pets in the baseline shop owned by a different pet_owners row (cross-customer, same shop)" };
 
     return {
       ok: true,
@@ -233,9 +253,10 @@ async function discoverAuthzFixtures() {
         baselineShopId: baseline.shop_id,
         baselineOwnerId: baseline.owner_id,
         baselineLineUserId: baseline.line_user_id,
+        baselinePetIds: baselinePet ? [baselinePet.id] : [],
         otherShopId: otherShop.shop_id,
-        roomId: room.id,
-        ratePlanId: plan.id,
+        roomId: pair.room_id,
+        ratePlanId: pair.rate_plan_id,
         otherPetIds: foreignPets.map((r) => r.id),
       },
     };
@@ -247,10 +268,13 @@ function fixtureAssertion(f) {
     baseline_shop_id: f.baselineShopId,
     baseline_owner_id: f.baselineOwnerId,
     baseline_line_user_ref: `${String(f.baselineLineUserId).slice(0, 3)}…${crypto.createHash("sha256").update(String(f.baselineLineUserId)).digest("hex").slice(0, 8)}`,
+    baseline_pet_ids: f.baselinePetIds,
     cross_shop_id: f.otherShopId,
     quote_room_id: f.roomId,
     quote_rate_plan_id: f.ratePlanId,
     cross_customer_pet_ids: f.otherPetIds,
+    invariant_A: "quote_room_id + quote_rate_plan_id are one joined pair: room_rate_plans.room_id = rooms.id AND both shop_id = baseline_shop_id AND plan is_active",
+    invariant_B: "each cross_customer_pet_id is a ps01.pets row with shop_id = baseline_shop_id and owner_id <> baseline_owner_id, backed by a real second ps01.pet_owners row in baseline_shop_id",
     relationship_assertions: [
       "baseline_owner is a real ps01.pet_owners row with shop_id=baseline_shop_id and a linked line_user_id",
       "cross_shop_id is a real ps01.shops row with NO pet_owners link for the baseline line_user (proven by NOT EXISTS)",
@@ -415,6 +439,7 @@ async function run() {
       // real, internally consistent authorization matrix from live LAB rows:
       H3C_FIX_SHOP_ID: fx.baselineShopId,
       H3C_FIX_LINE_USER_ID: fx.baselineLineUserId,
+      H3C_FIX_PET_IDS: fx.baselinePetIds.join(","),
       H3C_FIX_OTHER_SHOP_ID: fx.otherShopId,
       H3C_FIX_ROOM_ID: fx.roomId,
       H3C_FIX_RATE_PLAN_ID: fx.ratePlanId,
@@ -534,7 +559,25 @@ function selftest() {
   ok(MUTATING_SQL.test("... INSERT INTO x ...") && MUTATING_SQL.test("delete from") && !MUTATING_SQL.test("SELECT id FROM ps01.pets"),
     "MUTATING_SQL guard matches write keywords, not SELECT");
 
-  process.stderr.write(bad ? `\nSELFTEST: ${bad} FAILURE(S)\n` : "\nSELFTEST PASS (token classify, no-abs-path, secure handoff, required inputs, verified teardown)\n");
+  // House review Invariant A + B (disposable-fixture-prep brief).
+  const discBody = src.slice(src.indexOf("async function discoverAuthzFixtures"), src.indexOf("// non-PII assertion projection"));
+  const roomPlanQ = discBody.slice(discBody.indexOf('"roomPlanPair"'), discBody.indexOf('[baseline.shop_id])', discBody.indexOf('"roomPlanPair"')));
+  ok(/rp\.room_id\s*=\s*r\.id/.test(roomPlanQ) && /rp\.shop_id\s*=\s*r\.shop_id/.test(roomPlanQ) && /r\.shop_id\s*=\s*\$1/.test(roomPlanQ) && /rp\.is_active\s*=\s*TRUE/i.test(roomPlanQ),
+    "Invariant A: room+plan discovered as one pair joined on shop_id AND room_id, plan active");
+  const foreignPetQ = discBody.slice(discBody.indexOf('"foreignPets"'), discBody.indexOf("if (foreignPets.length"));
+  ok(/JOIN ps01\.pet_owners po2 ON po2\.id = p\.owner_id AND po2\.shop_id = p\.shop_id/.test(foreignPetQ)
+     && /p\.shop_id\s*=\s*\$1/.test(foreignPetQ) && /po2\.id\s*<>\s*\$2/.test(foreignPetQ),
+    "Invariant B: foreign pet constrained to baseline shop, owned by a real distinct pet_owners row in that shop");
+  ok(src.includes("H3C_FIX_PET_IDS: fx.baselinePetIds.join") && discBody.includes("baselinePet"),
+    "baseline positive-context pet (Fixture A) discovered and wired");
+  ok(src.includes("invariant_A:") && src.includes("invariant_B:"), "fixtureAssertion records both invariants for the reviewer");
+  // no random substitute for ANY authz fixture, including line user + baseline pet.
+  for (const k of ["H3C_FIX_SHOP_ID", "H3C_FIX_LINE_USER_ID", "H3C_FIX_PET_IDS", "H3C_FIX_OTHER_SHOP_ID", "H3C_FIX_ROOM_ID", "H3C_FIX_RATE_PLAN_ID", "H3C_FIX_OTHER_PET_IDS"]) {
+    const line = src.split("\n").find((l) => l.trim().startsWith(`${k}:`)) || "";
+    ok(line.includes("fx.") && !/random/i.test(line), `${k}: no random substitute`);
+  }
+
+  process.stderr.write(bad ? `\nSELFTEST: ${bad} FAILURE(S)\n` : "\nSELFTEST PASS (token classify, no-abs-path, secure handoff, required inputs, verified teardown, authz invariants A+B)\n");
   process.exit(bad ? 1 : 0);
 }
 

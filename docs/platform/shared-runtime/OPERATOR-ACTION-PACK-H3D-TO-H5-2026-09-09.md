@@ -3,18 +3,24 @@
 **Date:** 2026-09-09 (Asia/Bangkok)
 **For:** WSTERA authorized Supabase operator (CEO / Secretary GPT)
 **Environment:** WSTERA LAB (`ykxlqnshaaxmzzocpjlj`) **only**. Production LOCKED.
-**Parent:** `BRIEF-CLAUDE-H3D-H5-HOUSE-A-LONG-RUN-EXECUTION-2026-09-09.md` + `ADDENDUM-CLAUDE-PREPARE-UNTIL-OPERATOR-ACTION-2026-09-09.md` + `BRIEF-CLAUDE-H3D-OPERATOR-PACK-REMEDIATION-2026-09-09.md` + `BRIEF-CLAUDE-H3D-AUTHZ-FIXTURE-REMEDIATION-2026-09-09.md`
-**Execution state:** `H3D LIVE BLOCKED — AUTHZ FIXTURE PREREQUISITE MISSING` (tooling gate-green; see `evidence/H3D-AUTHZ-FIXTURE-STOP-2026-09-09.md`)
+**Parent:** the H3D-H5 long-run brief + the addendum + the operator-pack, AUTHZ-fixture, and disposable-fixture-prep remediation briefs (all under `docs/platform/shared-runtime/`)
+**Execution state:** `H3D DISPOSABLE AUTHZ FIXTURE PACKAGE PREPARED / LIVE DML AWAITING AUTHORIZATION` (tooling gate-green; see `evidence/H3D-DISPOSABLE-AUTHZ-FIXTURE-PREP-2026-09-09.md`)
 
 The operator-pack architecture is complete and every offline gate is green. **But
-`--preflight` currently STOPs before the operator does anything**: `POS-AUTHZ-1`
-and `POS-AUTHZ-3` need REAL cross-shop / cross-customer PS01 rows, and WSTERA LAB
-has **zero** rows in `ps01.shops` / `pet_owners` / `pets` / `rooms` /
-`room_rate_plans` (H3C teardown removed them). Random UUIDs are not accepted for
-these probes. Seeding disposable PS01 fixtures is a LAB mutation that needs its
-own authorization — see the STOP evidence doc §7 for the three unblock options.
+`--preflight` STOPs before the operator does anything**: `POS-AUTHZ-1/3` need
+REAL cross-shop / cross-customer PS01 rows and WSTERA LAB has zero PS01 business
+rows. House selected unblock option 1 — a bounded disposable fixture. The
+package is **prepared and review-ready but NOT applied**:
 
-Once real PS01 cross-tenant rows exist, the flow below runs unchanged: for
+- `fixtures/h3d-authz-fixture-precheck.sql` (SELECT-only)
+- `fixtures/h3d-authz-fixture-seed.sql` (8 inserts + 4 trigger support rows; one txn; fails closed)
+- `fixtures/h3d-authz-fixture-teardown.sql` (exact deletes + residue assertion)
+
+**Live authorization boundary:** `PREPARED / REVIEW-READY` → Secretary/House
+review of those 3 SQL files → **explicit Owner/House authorization** → apply the
+seed. Claude does not apply it.
+
+Once the seed is applied (real PS01 cross-tenant rows exist), the flow below runs unchanged: for
 **H3D the operator does exactly two Dashboard toggles** (enable the hook, then
 disable it). Everything between — fixture discovery, identities, grant row, both
 token issuances, the expired-token wait, the fresh privilege snapshot, the full
@@ -70,8 +76,11 @@ identity to report whether the hook is active.
 
 - **exit 1 / STOP** — a required read-only prerequisite is missing. **Currently
   this is where it stops**: `Fixture A: no ps01.pet_owners row with a linked
-  line_user_id exists in LAB`. Do **not** ask the operator to enable the hook.
-  See `evidence/H3D-AUTHZ-FIXTURE-STOP-2026-09-09.md`.
+  line_user_id AND at least one owned pet exists in LAB`. Do **not** ask the
+  operator to enable the hook. Unblock = apply `fixtures/h3d-authz-fixture-seed.sql`
+  **after** explicit Owner/House authorization (see
+  `evidence/H3D-DISPOSABLE-AUTHZ-FIXTURE-PREP-2026-09-09.md`), then re-run `--preflight`.
+  Run `fixtures/h3d-authz-fixture-teardown.sql` after the H3D live proof.
 - **exit 2** — `NOT READY — operator must enable the Custom Access Token hook`. Do
   operator action A, wait ~30s, re-run `--preflight`.
 - **exit 0** — `READY (hook active)`. Continue to `--run`.
