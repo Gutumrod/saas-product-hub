@@ -1,0 +1,724 @@
+{
+  "captured_at": "2026-09-09T08:10:49.122Z",
+  "target": "wstera-lab ykxlqnshaaxmzzocpjlj",
+  "mode": "READ-ONLY",
+  "queries": {
+    "q1_roles": [
+      {
+        "rolname": "anon",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "statement_timeout=3s"
+        ]
+      },
+      {
+        "rolname": "authenticated",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "statement_timeout=8s"
+        ]
+      },
+      {
+        "rolname": "authenticator",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": true,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "session_preload_libraries=supautils, safeupdate",
+          "statement_timeout=8s",
+          "lock_timeout=8s",
+          "pgrst.db_schemas=public, graphql_public, local_service, ps01"
+        ]
+      },
+      {
+        "rolname": "dashboard_user",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": true,
+        "rolcreatedb": true,
+        "rolcanlogin": false,
+        "rolreplication": true,
+        "rolbypassrls": false,
+        "rolconfig": null
+      },
+      {
+        "rolname": "postgres",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": true,
+        "rolcreatedb": true,
+        "rolcanlogin": true,
+        "rolreplication": true,
+        "rolbypassrls": true,
+        "rolconfig": [
+          "search_path=\"\\$user\", public, extensions"
+        ]
+      },
+      {
+        "rolname": "ps01_line_runtime",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "statement_timeout=8s",
+          "lock_timeout=8s"
+        ]
+      },
+      {
+        "rolname": "ps01_migrator",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": null
+      },
+      {
+        "rolname": "ps01_runtime",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": null
+      },
+      {
+        "rolname": "ps01_runtime_login",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": true,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "search_path=ps01, pg_catalog",
+          "statement_timeout=8s",
+          "lock_timeout=8s"
+        ]
+      },
+      {
+        "rolname": "service_role",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": true,
+        "rolconfig": null
+      },
+      {
+        "rolname": "supabase_admin",
+        "rolsuper": true,
+        "rolinherit": true,
+        "rolcreaterole": true,
+        "rolcreatedb": true,
+        "rolcanlogin": true,
+        "rolreplication": true,
+        "rolbypassrls": true,
+        "rolconfig": [
+          "search_path=\"$user\", public, auth, extensions",
+          "log_statement=none"
+        ]
+      },
+      {
+        "rolname": "supabase_auth_admin",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": true,
+        "rolcreatedb": false,
+        "rolcanlogin": true,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "search_path=auth",
+          "idle_in_transaction_session_timeout=60000",
+          "log_statement=none"
+        ]
+      },
+      {
+        "rolname": "supabase_functions_admin",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": true,
+        "rolcreatedb": false,
+        "rolcanlogin": true,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": null
+      },
+      {
+        "rolname": "supabase_read_only_user",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": true,
+        "rolreplication": false,
+        "rolbypassrls": true,
+        "rolconfig": [
+          "default_transaction_read_only=on"
+        ]
+      },
+      {
+        "rolname": "supabase_storage_admin",
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreaterole": true,
+        "rolcreatedb": false,
+        "rolcanlogin": true,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconfig": [
+          "search_path=storage",
+          "log_statement=none"
+        ]
+      }
+    ],
+    "q2_memberships": [
+      {
+        "member_role": "authenticator",
+        "granted_role": "anon",
+        "admin_option": false,
+        "inherit_option": false,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "authenticator",
+        "granted_role": "authenticated",
+        "admin_option": false,
+        "inherit_option": false,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "authenticator",
+        "granted_role": "ps01_line_runtime",
+        "admin_option": false,
+        "inherit_option": false,
+        "set_option": true,
+        "grantor": "postgres"
+      },
+      {
+        "member_role": "authenticator",
+        "granted_role": "ps01_runtime",
+        "admin_option": false,
+        "inherit_option": false,
+        "set_option": true,
+        "grantor": "postgres"
+      },
+      {
+        "member_role": "authenticator",
+        "granted_role": "service_role",
+        "admin_option": false,
+        "inherit_option": false,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "anon",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "authenticated",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "authenticator",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "pg_create_subscription",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "pg_monitor",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "pg_read_all_data",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "pg_signal_backend",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "ps01_line_runtime",
+        "admin_option": true,
+        "inherit_option": false,
+        "set_option": false,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "ps01_migrator",
+        "admin_option": false,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "postgres"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "ps01_migrator",
+        "admin_option": true,
+        "inherit_option": false,
+        "set_option": false,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "ps01_runtime",
+        "admin_option": true,
+        "inherit_option": false,
+        "set_option": false,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "ps01_runtime_login",
+        "admin_option": true,
+        "inherit_option": false,
+        "set_option": false,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "service_role",
+        "admin_option": true,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "postgres",
+        "granted_role": "supabase_privileged_role",
+        "admin_option": false,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "supabase_admin"
+      },
+      {
+        "member_role": "ps01_runtime_login",
+        "granted_role": "ps01_runtime",
+        "admin_option": false,
+        "inherit_option": true,
+        "set_option": true,
+        "grantor": "postgres"
+      }
+    ],
+    "q4_ps01_authority": [
+      {
+        "role_name": "ps01_line_runtime",
+        "db_connect": true,
+        "db_create": false,
+        "public_create": false,
+        "public_usage": true,
+        "ps01_usage": true,
+        "ps01_internal_usage": false,
+        "local_service_usage": false,
+        "mt01_usage": false,
+        "net_usage": true,
+        "cron_usage": false,
+        "auth_usage": false,
+        "storage_usage": false,
+        "migration_insert": false,
+        "createrole": false,
+        "createdb": false,
+        "bypassrls": false,
+        "canlogin": false
+      },
+      {
+        "role_name": "ps01_migrator",
+        "db_connect": true,
+        "db_create": false,
+        "public_create": false,
+        "public_usage": true,
+        "ps01_usage": true,
+        "ps01_internal_usage": true,
+        "local_service_usage": false,
+        "mt01_usage": false,
+        "net_usage": true,
+        "cron_usage": false,
+        "auth_usage": false,
+        "storage_usage": false,
+        "migration_insert": false,
+        "createrole": false,
+        "createdb": false,
+        "bypassrls": false,
+        "canlogin": false
+      },
+      {
+        "role_name": "ps01_runtime",
+        "db_connect": true,
+        "db_create": false,
+        "public_create": false,
+        "public_usage": true,
+        "ps01_usage": true,
+        "ps01_internal_usage": false,
+        "local_service_usage": false,
+        "mt01_usage": false,
+        "net_usage": true,
+        "cron_usage": false,
+        "auth_usage": false,
+        "storage_usage": false,
+        "migration_insert": false,
+        "createrole": false,
+        "createdb": false,
+        "bypassrls": false,
+        "canlogin": false
+      },
+      {
+        "role_name": "ps01_runtime_login",
+        "db_connect": true,
+        "db_create": false,
+        "public_create": false,
+        "public_usage": true,
+        "ps01_usage": true,
+        "ps01_internal_usage": false,
+        "local_service_usage": false,
+        "mt01_usage": false,
+        "net_usage": true,
+        "cron_usage": false,
+        "auth_usage": false,
+        "storage_usage": false,
+        "migration_insert": false,
+        "createrole": false,
+        "createdb": false,
+        "bypassrls": false,
+        "canlogin": true
+      }
+    ],
+    "q10_global": [
+      {
+        "storage_bucket_count": "2",
+        "storage_bucket_ids": [
+          "deposit-slips",
+          "ps01-daily-report-photos"
+        ],
+        "cron_job_count": "8",
+        "cron_job_names": [
+          "daily-evening",
+          "daily-morning",
+          "task-0900",
+          "task-1030",
+          "task-1130",
+          "task-1300",
+          "task-1330",
+          "task-2000"
+        ],
+        "extension_count": "8",
+        "extensions": [
+          {
+            "n": "btree_gist",
+            "v": "1.7"
+          },
+          {
+            "n": "pg_cron",
+            "v": "1.6.4"
+          },
+          {
+            "n": "pg_net",
+            "v": "0.20.3"
+          },
+          {
+            "n": "pg_stat_statements",
+            "v": "1.11"
+          },
+          {
+            "n": "pgcrypto",
+            "v": "1.3"
+          },
+          {
+            "n": "plpgsql",
+            "v": "1.0"
+          },
+          {
+            "n": "supabase_vault",
+            "v": "0.3.1"
+          },
+          {
+            "n": "uuid-ossp",
+            "v": "1.1"
+          }
+        ],
+        "global_migration_count": "41",
+        "latest_global_migration_version": "20260909013819",
+        "data_api_schemas": "pgrst.db_schemas=public, graphql_public, local_service, ps01"
+      }
+    ],
+    "q10b_recent_migrations": [
+      {
+        "version": "20260909013819",
+        "name": "h3c_ps01_request_helpers_search_path_hardening"
+      },
+      {
+        "version": "20260908143818",
+        "name": "h3c_public_rls_auto_enable_acl_hardening"
+      },
+      {
+        "version": "20260908123549",
+        "name": "h3c_auth_runtime_token_support"
+      },
+      {
+        "version": "20260908122004",
+        "name": "h3_ps01_line_runtime_boundary"
+      },
+      {
+        "version": "20260908103450",
+        "name": "bk01_platform_bootstrap_rollback"
+      },
+      {
+        "version": "20260908103209",
+        "name": "bk01_platform_bootstrap"
+      },
+      {
+        "version": "20260908084606",
+        "name": "mt_mp_02_verification_probe_20260908"
+      },
+      {
+        "version": "20260908083459",
+        "name": "mt_mp_02_atomic_claims"
+      },
+      {
+        "version": "20260908083145",
+        "name": "mt_mp_02_explicit_server_only_deny"
+      },
+      {
+        "version": "20260908083054",
+        "name": "mt_mp_02_persistence_reference"
+      },
+      {
+        "version": "20260908073552",
+        "name": "ps01_runtime_login_lab_boundary"
+      },
+      {
+        "version": "20260907181500",
+        "name": "skip_overdue_line_reminders"
+      }
+    ],
+    "q11_schema_counts": [
+      {
+        "schema_name": "local_service",
+        "owner": "postgres",
+        "tables": "21",
+        "functions": "61",
+        "policies": "26",
+        "indexes": "61",
+        "foreign_keys": "35"
+      },
+      {
+        "schema_name": "mt01",
+        "owner": "postgres",
+        "tables": "6",
+        "functions": "2",
+        "policies": "6",
+        "indexes": "12",
+        "foreign_keys": "7"
+      },
+      {
+        "schema_name": "mt01_private",
+        "owner": "postgres",
+        "tables": "0",
+        "functions": "2",
+        "policies": "0",
+        "indexes": "0",
+        "foreign_keys": "0"
+      },
+      {
+        "schema_name": "ps01",
+        "owner": "ps01_migrator",
+        "tables": "21",
+        "functions": "92",
+        "policies": "16",
+        "indexes": "58",
+        "foreign_keys": "32"
+      },
+      {
+        "schema_name": "ps01_internal",
+        "owner": "ps01_migrator",
+        "tables": "1",
+        "functions": "0",
+        "policies": "0",
+        "indexes": "1",
+        "foreign_keys": "0"
+      },
+      {
+        "schema_name": "wstera_platform_internal",
+        "owner": "postgres",
+        "tables": "1",
+        "functions": "1",
+        "policies": "0",
+        "indexes": "1",
+        "foreign_keys": "0"
+      }
+    ],
+    "q12_sessions": [
+      {
+        "usename": "authenticator",
+        "application_name": "PostgREST 14.5",
+        "state": "idle",
+        "sessions": "1"
+      },
+      {
+        "usename": "postgres",
+        "application_name": "pg_net 0.20.3",
+        "state": "idle",
+        "sessions": "1"
+      },
+      {
+        "usename": "postgres",
+        "application_name": "Supavisor",
+        "state": "active",
+        "sessions": "1"
+      }
+    ],
+    "priv_snapshot": [
+      {
+        "snapshot": {
+          "role": "ps01_line_runtime",
+          "exec_count": 3,
+          "captured_at": "2026-09-09T08:10:50.473286+00:00",
+          "project_ref": "ykxlqnshaaxmzzocpjlj",
+          "write_count": 0,
+          "public_usage": true,
+          "role_no_login": true,
+          "exec_functions": [
+            {
+              "args": "p_verified_line_user_id character varying, p_shop_id uuid",
+              "name": "get_customer_booking_context_v2_internal"
+            },
+            {
+              "args": "p_verified_line_user_id character varying, p_shop_id uuid, p_room_id uuid, p_rate_plan_id uuid, p_pet_ids uuid[], p_start_at timestamp with time zone",
+              "name": "quote_customer_booking_v2_internal"
+            },
+            {
+              "args": "p_verified_line_user_id character varying, p_shop_id uuid, p_room_id uuid, p_rate_plan_id uuid, p_pet_ids uuid[], p_start_at timestamp with time zone, p_special_requests text",
+              "name": "submit_booking_request_v2_internal"
+            }
+          ],
+          "write_relations": [],
+          "local_service_usage": false,
+          "ps01_request_user_id_exec": false,
+          "public_rls_auto_enable_exec": false
+        }
+      }
+    ],
+    "h3c_residue": [
+      {
+        "auth_user_count": "5",
+        "suspicious_proof_users": "0",
+        "token_grants_table_exists": true
+      }
+    ],
+    "h3c_grants": [
+      {
+        "grant_rows": "0"
+      }
+    ],
+    "ps01_v2_execs": [
+      {
+        "proname": "get_customer_booking_context_v2_internal",
+        "args": "p_verified_line_user_id character varying, p_shop_id uuid",
+        "owner": "ps01_migrator",
+        "prosecdef": true,
+        "line_runtime_exec": true,
+        "anon_exec": false,
+        "authenticated_exec": false,
+        "ps01_runtime_exec": true
+      },
+      {
+        "proname": "quote_customer_booking_v2_internal",
+        "args": "p_verified_line_user_id character varying, p_shop_id uuid, p_room_id uuid, p_rate_plan_id uuid, p_pet_ids uuid[], p_start_at timestamp with time zone",
+        "owner": "ps01_migrator",
+        "prosecdef": true,
+        "line_runtime_exec": true,
+        "anon_exec": false,
+        "authenticated_exec": false,
+        "ps01_runtime_exec": true
+      },
+      {
+        "proname": "submit_booking_request_v2_internal",
+        "args": "p_verified_line_user_id character varying, p_shop_id uuid, p_room_id uuid, p_rate_plan_id uuid, p_pet_ids uuid[], p_start_at timestamp with time zone, p_special_requests text",
+        "owner": "ps01_migrator",
+        "prosecdef": true,
+        "line_runtime_exec": true,
+        "anon_exec": false,
+        "authenticated_exec": false,
+        "ps01_runtime_exec": true
+      }
+    ],
+    "hook_fn": [
+      {
+        "nspname": "wstera_platform_internal",
+        "proname": "custom_access_token_hook",
+        "prosecdef": false,
+        "owner": "postgres"
+      }
+    ],
+    "advisor_secdef_views": [
+      {
+        "nspname": "local_service",
+        "relname": "shop_public_profile"
+      }
+    ]
+  },
+  "connected_as": "postgres",
+  "database": "postgres",
+  "pg_version": "PostgreSQL 17.6 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit"
+}
