@@ -1,4 +1,4 @@
-﻿# BRIEF — Claude Long-Run H3D -> H5 / HOUSE-A Review-Ready Execution
+# BRIEF — Claude Long-Run H3D -> H5 / HOUSE-A Review-Ready Execution
 
 **Date:** 2026-09-09 (Asia/Bangkok)
 **Mode:** WSTERA HOUSE / SHARED-RUNTIME / LONG-RUN EXECUTION
@@ -76,6 +76,24 @@ H3C is `PASS / CLOSED`.
 Do not rerun H3C merely for convenience. Reuse its evidence as immutable input unless H3D/H3E exposes a regression.
 
 ## 5. Mandatory Workspace Isolation
+
+### Claude Desktop: initial Open Folder / working directory
+
+When starting this assignment in Claude Desktop, open this folder first:
+
+`D:\AI-Workspace\projects\saas-product-hub`
+
+This is the coordinator/House repository containing the canonical brief and shared-runtime evidence. Claude should read this brief from that root, verify the House checkpoint, inspect the PS01 source repo by absolute path, and only then create the isolated execution worktrees below.
+
+Do **not** open `PawSpace-pssr02-staging` as the only Claude working directory for the long run. That repo is only the PS01 source lane, while H3E/H3F/H4/H5 and HOUSE-A evidence belong to the House/platform lane.
+
+After isolation is created, actual execution should happen in these work directories:
+- House execution workdir: `D:\AI-Workspace\runtime\worktrees\house-h3d-h5-20260909`
+- PS01 execution workdir: `D:\AI-Workspace\runtime\worktrees\ps01-h3d-data-api-20260909`
+
+The original roots remain inspection-only/reference roots during execution:
+- House original: `D:\AI-Workspace\projects\saas-product-hub`
+- PS01 original: `D:\AI-Workspace\projects\saas-product-hub\products\PawSpace-pssr02-staging`
 
 Do not execute the long run on the existing House master worktree or the dirty PS01 source worktree.
 
