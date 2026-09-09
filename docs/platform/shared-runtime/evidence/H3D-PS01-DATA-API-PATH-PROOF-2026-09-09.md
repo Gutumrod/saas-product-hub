@@ -104,7 +104,13 @@ Blocking dependency: the hosted Supabase **Custom Access Token Hook must be enab
 
 Per brief §7 ("If hosted Auth hook activation cannot be changed safely without an operator, finish all static H3D work, write a precise H3D-LIVE-ACTION-REQUIRED blocker, and STOP before H3D PASS. Do not proceed to H3E.") and §13 / §17B.
 
-Full operator runbook: `H3D-LIVE-ACTION-REQUIRED-2026-09-09.md`.
+Full operator runbook: `H3D-LIVE-ACTION-REQUIRED-2026-09-09.md`; consolidated
+end-to-end pack (H3D→H5): `../OPERATOR-ACTION-PACK-H3D-TO-H5-2026-09-09.md`.
+
+Scripted-except-the-toggle: `tools/shared-runtime/h3d/h3d-live-runner.mjs`
+(`--selftest` PASS) automates identity provisioning, the grant row, token
+issuance, and identity-first teardown; the operator only enables/disables the
+hosted hook. The probe matrix reuses `tools/shared-runtime/h3c/h3c-proof-harness.mjs`.
 
 ## 5. What was NOT changed
 
