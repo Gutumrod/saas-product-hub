@@ -1,0 +1,395 @@
+{
+  "harness": "h3c-proof-harness",
+  "generatedAt": "2026-09-09T04:44:33.180Z",
+  "target": "https://ykxlqnshaaxmzzocpjlj.supabase.co",
+  "expectedProjectRef": "ykxlqnshaaxmzzocpjlj",
+  "mode": "safe-read-only",
+  "tokenClaims": {
+    "iss": "https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1",
+    "role": "ps01_line_runtime",
+    "aud": "authenticated",
+    "exp": 1788929373,
+    "iat": 1788929073,
+    "lifetimeSec": 300,
+    "sub_prefix": "56fbbb…",
+    "ref_claim": null,
+    "session_id_present": true
+  },
+  "residualNarrowAuthorityUntil": "2026-09-09T04:49:33.000Z",
+  "verdict": "FAIL",
+  "gate": {
+    "verdict": "FAIL",
+    "note": null,
+    "duplicates": [],
+    "unknownVerdicts": [],
+    "missing": [],
+    "requiredNotPass": [
+      "POS-GRANTS",
+      "NEG-PUB-1",
+      "NEG-INT-1",
+      "NEG-MT-1",
+      "NEG-MT-2",
+      "NEG-WPI-1",
+      "NEG-NET-1",
+      "NEG-NET-1b",
+      "NEG-CRON-1",
+      "NEG-AUTH-1",
+      "NEG-EXT-1",
+      "NEG-STOR-1",
+      "NEG-EXP-1"
+    ],
+    "advisoryNonPass": [
+      "POS-3:RUNTIME-BLOCKED",
+      "NEG-ROLE-2:NOT TESTABLE"
+    ]
+  },
+  "counts": {
+    "PASS": 23,
+    "RUNTIME-BLOCKED": 3,
+    "FAIL": 11,
+    "NOT TESTABLE": 1
+  },
+  "results": [
+    {
+      "id": "TOK-1",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "alg=ES256"
+    },
+    {
+      "id": "TOK-2",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "against https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1/.well-known/jwks.json"
+    },
+    {
+      "id": "TOK-3",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "iss=https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1"
+    },
+    {
+      "id": "TOK-4",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "role=ps01_line_runtime (expect ps01_line_runtime)"
+    },
+    {
+      "id": "TOK-5",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "exp-iat=300s (max 300s) — from JWT, not OAuth expires_in"
+    },
+    {
+      "id": "TOK-6",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "valid"
+    },
+    {
+      "id": "TOK-7",
+      "category": "token",
+      "verdict": "PASS",
+      "detail": "project ref from token evidence only (issuer/claim/JWKS): {\"issuerRef\":\"ykxlqnshaaxmzzocpjlj\",\"jwksRef\":\"ykxlqnshaaxmzzocpjlj\",\"claimRef\":null}"
+    },
+    {
+      "id": "POS-GRANTS",
+      "category": "positive",
+      "verdict": "RUNTIME-BLOCKED",
+      "note": "snapshot checks={\"projectRef\":true,\"role\":true,\"noLogin\":true,\"exactExecCount\":true,\"exactExecNames\":true,\"zeroWrites\":true,\"noPublicRlsExec\":true,\"noLocalServiceUsage\":true,\"noPs01HelperExec\":true,\"fresh\":false} ageMs=1176918",
+      "source": "D:\\AI-Workspace\\projects\\saas-product-hub\\docs\\platform\\shared-runtime\\evidence\\H3C-FINAL-PRIVILEGE-SNAPSHOT-2026-09-09.json"
+    },
+    {
+      "id": "POS-1",
+      "category": "positive",
+      "verdict": "PASS",
+      "target": "get_customer_booking_context_v2_internal",
+      "mode": "fixture",
+      "http": 200,
+      "code": null,
+      "note": "read RPC; boundary = 2xx OR an in-function PG error (class 22/23/P0…). 5xx / routing / auth error = not reached",
+      "snippet": "{\"pets\": [{\"id\": \"060465dd-9c64-4906-b214-9491451fd33d\", \"name\": \"H3C-Proof-Pet-A\", \"breed\": null, \"species\": \"dog\", \"weightKg\": null}], \"shop\": {\"id\": \"66d6340e-3f07-428e-af44-c2e42e4a943c\", \"name\": \"H3C-PROOF-20260909 Shop A\", \"slug\": \"h3c-proof-20260909-a-66d6340e\"}, \"owner\": "
+    },
+    {
+      "id": "POS-2",
+      "category": "positive",
+      "verdict": "PASS",
+      "target": "quote_customer_booking_v2_internal",
+      "mode": "fixture",
+      "http": 200,
+      "code": null,
+      "note": "quote is a pricing/compute RPC — non-persistence by the Order V1 / PS01 contract; House to confirm from RPC source",
+      "snippet": "{\"unit\": \"DAY\", \"endAt\": \"2026-09-12T03:09:18.05142+00:00\", \"price\": 100.00, \"roomId\": \"4ad0a21a-9907-44cc-8607-be44f9b20a6e\", \"startAt\": \"2026-09-11T03:09:18.05142+00:00\", \"quantity\": 1, \"ratePlanId\": \"6e59b9b1-ec2c-4a2b-9c91-90982efb0325\", \"pricingMode\": \"FIXED_PACKAGE\"}"
+    },
+    {
+      "id": "POS-3",
+      "category": "positive",
+      "verdict": "RUNTIME-BLOCKED",
+      "note": "submit RPC is mutating; safe mode never calls it. Grant boundary is proven by POS-GRANTS. To run a controlled mutating check: H3C_ALLOW_SUBMIT_PROBE=1 H3C_SUBMIT_DISPOSABLE_ACK=1 + disposable fixtures + manual cleanup."
+    },
+    {
+      "id": "POS-AUTHZ-1",
+      "category": "positive-authz",
+      "verdict": "PASS",
+      "http": 400,
+      "code": "P0001",
+      "note": "cross-shop p_shop_id must not return another shop context (weak signal from harness; House confirms from RPC body/logs)",
+      "snippet": "{\"code\":\"P0001\",\"details\":null,\"hint\":null,\"message\":\"Pet owner not found or not linked to shop.\"}"
+    },
+    {
+      "id": "POS-AUTHZ-2",
+      "category": "positive-authz",
+      "verdict": "PASS",
+      "http": 400,
+      "code": "P0001",
+      "note": "blank p_verified_line_user_id must not yield a customer context",
+      "snippet": "{\"code\":\"P0001\",\"details\":null,\"hint\":null,\"message\":\"Invalid LINE identity.\"}"
+    },
+    {
+      "id": "POS-AUTHZ-3",
+      "category": "positive-authz",
+      "verdict": "PASS",
+      "http": 400,
+      "code": "P0001",
+      "note": "quote for another customer's pet ids must be rejected (quote is compute-only, non-mutating)",
+      "snippet": "{\"code\":\"P0001\",\"details\":null,\"hint\":null,\"message\":\"Invalid pet selection for booking owner.\"}"
+    },
+    {
+      "id": "POS-CONTROL-1",
+      "category": "control",
+      "verdict": "PASS",
+      "detail": "identityOk=true role=authenticated lifetime=3600s (expect signed+authenticated+uncapped)",
+      "checks": [
+        {
+          "k": "alg",
+          "ok": true,
+          "detail": "alg=ES256"
+        },
+        {
+          "k": "signature",
+          "ok": true,
+          "detail": "against https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1/.well-known/jwks.json"
+        },
+        {
+          "k": "issuer-shape",
+          "ok": true,
+          "detail": "iss=https://ykxlqnshaaxmzzocpjlj.supabase.co/auth/v1"
+        },
+        {
+          "k": "project-ref",
+          "ok": true,
+          "detail": "{\"issuerRef\":\"ykxlqnshaaxmzzocpjlj\",\"jwksRef\":\"ykxlqnshaaxmzzocpjlj\",\"claimRef\":null}"
+        },
+        {
+          "k": "role",
+          "ok": true,
+          "detail": "role=authenticated"
+        },
+        {
+          "k": "not-expired",
+          "ok": true,
+          "detail": "valid"
+        }
+      ]
+    },
+    {
+      "id": "NEG-SD-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 403,
+      "code": "42501",
+      "expected": "ps01 helper is not allowlisted for runtime role",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for function ps01_request_user_id\"}"
+    },
+    {
+      "id": "NEG-SD-2",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 403,
+      "code": "42501",
+      "expected": "non-allowlisted read-only SECURITY DEFINER RPC must be unreachable",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for function get_customer_booking_context_internal\"}"
+    },
+    {
+      "id": "NEG-ROLE-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 403,
+      "code": "42501",
+      "expected": "local_service schema is unreachable to runtime role",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for schema local_service\"}"
+    },
+    {
+      "id": "NEG-PUB-1",
+      "category": "negative",
+      "verdict": "RUNTIME-BLOCKED",
+      "note": "fresh privilege snapshot must prove public_rls_auto_enable_exec=false; do not invoke this event-trigger function through Data API"
+    },
+    {
+      "id": "NEG-TBL-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 403,
+      "code": "42501",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for function current_staff_shop_id\"}"
+    },
+    {
+      "id": "NEG-LS-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 403,
+      "code": "42501",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for schema local_service\"}"
+    },
+    {
+      "id": "NEG-INT-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: ps01_internal\"}"
+    },
+    {
+      "id": "NEG-MT-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: mt01\"}"
+    },
+    {
+      "id": "NEG-MT-2",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: mt01_private\"}"
+    },
+    {
+      "id": "NEG-WPI-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: wstera_platform_internal\"}"
+    },
+    {
+      "id": "NEG-NET-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: net\"}"
+    },
+    {
+      "id": "NEG-NET-1b",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: net\"}"
+    },
+    {
+      "id": "NEG-CRON-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: cron\"}"
+    },
+    {
+      "id": "NEG-AUTH-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: auth\"}"
+    },
+    {
+      "id": "NEG-EXT-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 406,
+      "code": "PGRST106",
+      "expected": "fail closed (401/403/404)",
+      "snippet": "{\"code\":\"PGRST106\",\"details\":null,\"hint\":\"Only the following schemas are exposed: public, graphql_public, local_service, ps01\",\"message\":\"Invalid schema: extensions\"}"
+    },
+    {
+      "id": "NEG-TBL-2",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 403,
+      "code": "42501",
+      "note": "PATCH against a nonexistent PK — non-mutating even if the role had UPDATE. 2xx = role has write authority = FAIL.",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for table bookings\"}"
+    },
+    {
+      "id": "NEG-STOR-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 400,
+      "code": "AccessDenied",
+      "expected": "401/403 (role is not service_role)",
+      "snippet": "{\"statusCode\":\"403\",\"error\":\"Unauthorized\",\"message\":\"permission denied for schema storage\",\"code\":\"AccessDenied\"}"
+    },
+    {
+      "id": "NEG-EXP-1",
+      "category": "negative",
+      "verdict": "FAIL",
+      "http": 200,
+      "code": null,
+      "snippet": "{\"pets\": [{\"id\": \"060465dd-9c64-4906-b214-9491451fd33d\", \"name\": \"H3C-Proof-Pet-A\", \"breed\": null, \"species\": \"dog\", \"weightKg\": null}], \"shop\": {\"id\": \"66d6340e-3f07-428e-af44-c2e42e4a943c\", \"name\": \"H3C-PROOF-20260909 Shop A\", \"slug\": \"h3c-proof-20260909-a-66d6340e\"}, \"owner\": "
+    },
+    {
+      "id": "NEG-SIG-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 401,
+      "code": "PGRST301",
+      "snippet": "{\"code\":\"PGRST301\",\"details\":\"None of the keys was able to decode the JWT\",\"hint\":null,\"message\":\"No suitable key or wrong key type\"}"
+    },
+    {
+      "id": "NEG-SIG-2",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 401,
+      "code": "PGRST301",
+      "note": "payload role=postgres + stale signature must be rejected",
+      "snippet": "{\"code\":\"PGRST301\",\"details\":\"None of the keys was able to decode the JWT\",\"hint\":null,\"message\":\"No suitable key or wrong key type\"}"
+    },
+    {
+      "id": "NEG-ROLE-2",
+      "category": "negative",
+      "verdict": "NOT TESTABLE",
+      "note": "a validly-signed token with role=service_role/authenticator/postgres cannot be produced without a signing path the design withholds; covered by threat-model TM-7 (CHECK constraint + hook re-check + pg_roles check + authenticator membership). Advisory."
+    },
+    {
+      "id": "NEG-KEY-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 401,
+      "code": "No API key found in request",
+      "expected": "401 from gateway",
+      "snippet": "{\"hint\":\"No `apikey` request header or url param was found.\",\"message\":\"No API key found in request\"}"
+    },
+    {
+      "id": "NEG-ANON-1",
+      "category": "negative",
+      "verdict": "PASS",
+      "http": 401,
+      "code": "42501",
+      "expected": "anon has no EXECUTE -> fail",
+      "snippet": "{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"permission denied for schema ps01\"}"
+    }
+  ]
+}

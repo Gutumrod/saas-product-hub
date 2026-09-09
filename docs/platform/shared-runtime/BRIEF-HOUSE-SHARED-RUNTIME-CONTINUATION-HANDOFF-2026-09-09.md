@@ -1,4 +1,4 @@
-# BRIEF — WSTERA House Shared-Runtime Continuation Handoff
+# BRIEF â€” WSTERA House Shared-Runtime Continuation Handoff
 
 **Date:** 2026-09-09 (Asia/Bangkok)
 **Mode:** WSTERA HOUSE / SHARED-RUNTIME / BUILD-TO-SELL
@@ -16,7 +16,7 @@ Production remains locked unless separately authorized. Shared-runtime work is W
 
 ## Current House Objective
 
-Close the remaining H3C live proof safely, then continue H3D/H3E/H3F -> H4 -> H5 -> HOUSE-A so BK01 can retry Junction A.
+H3C is now PASS / CLOSED. Continue H3D/H3E/H3F -> H4 -> H5 -> HOUSE-A so BK01 can retry Junction A only after the separate House gate closes.
 
 Build-to-Sell remains the priority. Do not open unrelated Council/research/gates.
 
@@ -32,9 +32,9 @@ Latest House evidence:
 - `evidence/H3C-POST-H08-PRIVILEGE-SNAPSHOT-2026-09-08.json`
 
 Latest commits:
-- `c2765f1` — merge Claude H3C proof pack Rev2
-- `8fa3d75` — harden H3C public RPC boundary
-- `7af3e19` — record H3C H-08 hardening proof
+- `c2765f1` â€” merge Claude H3C proof pack Rev2
+- `8fa3d75` â€” harden H3C public RPC boundary
+- `7af3e19` â€” record H3C H-08 hardening proof
 
 H-08 post-apply facts:
 - `public.rls_auto_enable()` EXECUTE removed from anon/authenticated/service_role/ps01_line_runtime.
@@ -47,28 +47,32 @@ H-08 post-apply facts:
 - Storage bucket count remains 2; cron job count remains 8.
 - `ps01_runtime_login` remains LOGIN and is not yet retired.
 
-## Important Remaining H3C Work
+## H3C Closed State
 
-H3C end-to-end live proof has NOT been run.
-The next House execution must follow the canonical H3C brief exactly and must remain WSTERA LAB only.
+H3C end-to-end live proof is **PASS / CLOSED** in WSTERA LAB.
 
-Required sequence before any H3C PASS claim:
-1. Re-read `BRIEF-H3C-AUTH-ISSUED-RUNTIME-TOKEN-PROOF-2026-09-08.md` and current House evidence.
-2. Reconfirm repo clean / origin 0/0 and LAB-only target.
-3. Resolve the three PS01 mutable-search-path helpers before live proof if still present:
-   - `ps01.ps01_request_user_id()`
-   - `ps01.ps01_request_email()`
-   - `ps01.ps01_request_name()`
-   Use bounded PS01/platform-approved remediation with fixed `search_path`; do not broaden EXECUTE.
-4. Provision a LAB-only Supabase Auth service identity through supported Auth Admin/Dashboard flow; never write `auth.users` directly and never reuse a human/customer identity.
-5. Add one finite House allowlist row for `ps01_line_runtime` with concrete `valid_until`.
-6. Enable only the Custom Access Token Hook through field-level hosted Auth configuration; broad `supabase config push` is forbidden.
-7. Capture fresh privilege snapshot <=15 minutes before token issuance using `tools/shared-runtime/h3c/h3c-privilege-snapshot.sql`.
-8. Obtain a real Auth-issued ES256 token and run the safe-mode proof harness + required negative matrix.
-9. Teardown identity-first: invalidate service identity/sessions/refresh tokens, then remove/disable grant, then disable hook as authorized.
-10. Record `residualNarrowAuthorityUntil` and do not claim temporary token authority is gone before JWT expiry or direct rejection proof.
+Canonical final evidence:
+- `evidence/H3C-FINAL-LIVE-PROOF-ATTEMPT1-2026-09-09.json` — preserved failed diagnostic attempt;
+- `evidence/H3C-FINAL-LIVE-PROOF-ATTEMPT2-2026-09-09.json` — final live matrix PASS;
+- `evidence/H3C-FINAL-PRIVILEGE-SNAPSHOT-ATTEMPT2-2026-09-09.json` - fresh privilege snapshot consumed by the final matrix;
+- `evidence/H3C-FINAL-POST-TEARDOWN-SIGNATURE-2026-09-09.json` — post-teardown boundary signature;
+- `evidence/H3C-FINAL-CLOSURE-2026-09-09.md` — durable H3C closure record;
+- `evidence/H3C-FIXTURE-TEARDOWN-MAINTENANCE-2026-09-09.sql` — exact bounded fixture teardown.
 
-Default proof mode must remain non-mutating. The submit RPC is advisory/opt-in only and must not be required for PASS.
+Final H3C facts:
+- 36 required harness probes PASS; no required missing/non-pass probes;
+- mutating submit RPC remained disabled/advisory;
+- final runtime token was Auth-issued ES256 with `ps01_line_runtime` and 300-second lifetime;
+- expired-token rejection PASS after explicit expiry margin;
+- proof Auth identities = 0 and runtime-token grants = 0 after identity-first teardown;
+- hosted Custom Access Token Hook disabled by authorized operator after proof;
+- final residual JWT authority expired before teardown closure;
+- proof fixtures/subscriptions/audit/bookings independently verified at zero residue;
+- post-teardown role/API/storage/cron signatures match the expected H3C boundary;
+- linked DB schema lint returned `No schema errors found`;
+- final Dashboard Security Advisor refresh reported only the pre-existing `local_service.shop_public_profile` SECURITY DEFINER view and no H3C-attributable finding.
+
+The next authorized House work is H3D/H3E/H3F. Do not rerun H3C unless later evidence shows regression.
 
 ## H3C Runtime Boundary Facts Already Independently Verified
 
@@ -115,4 +119,4 @@ No Production. No broad config push. No direct signing material. No project-wide
 
 Start the new chat by verifying disk/git state against this handoff. If the checkpoint has moved, inspect every intervening commit before continuing.
 
-Then continue only the minimum work required to make H3C live proof safe and executable. Do not claim H3C PASS, HOUSE-A PASS, or BK01 Junction A PASS without live evidence and a durable gate record.
+Then continue with the minimum authorized H3D/H3E/H3F work required by the shared-runtime isolation program. H3C is closed; do not claim HOUSE-A PASS or BK01 Junction A PASS until H3D/H3E/H3F -> H4 -> H5 are complete with durable evidence.

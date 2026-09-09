@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-09-09T05:16:08.32442+00:00",
+  "project_ref": "ykxlqnshaaxmzzocpjlj",
+  "environment": "WSTERA LAB",
+  "role": "ps01_line_runtime",
+  "role_no_login": true,
+  "exec_count": 3,
+  "exec_functions": [
+    "get_customer_booking_context_v2_internal",
+    "quote_customer_booking_v2_internal",
+    "submit_booking_request_v2_internal"
+  ],
+  "write_count": 0,
+  "public_rls_auto_enable_exec": false,
+  "local_service_usage": false,
+  "ps01_request_user_id_exec": false,
+  "storage_bucket_count": 2,
+  "cron_job_count": 8,
+  "data_api_schemas": "public, graphql_public, local_service, ps01",
+  "support_grant_count": 0,
+  "proof_user_count": 0,
+  "fixture_residue": {
+    "shops": 0,
+    "owners": 0,
+    "pets": 0,
+    "rooms": 0,
+    "rate_plans": 0,
+    "subscriptions": 0,
+    "audit": 0,
+    "bookings": 0
+  }
+}

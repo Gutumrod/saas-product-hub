@@ -290,8 +290,15 @@ function boundaryReached(res) {
 function failsClosed(res) {
   if (res.status === 401 || res.status === 403) return true;
   if (res.status === 404) return true;
-  if (res.status === 400 && ROUTING_NOT_FOUND.has(res.code)) return true;
+  if ((res.status === 400 || res.status === 406) && ROUTING_NOT_FOUND.has(res.code)) return true;
   return false;
+}
+
+function storageFailsClosed(res) {
+  if (res.status === 401 || res.status === 403) return true;
+  return res.status === 400 && res.code === 'AccessDenied' &&
+    /\"statusCode\"\s*:\s*\"403\"/.test(res.snippet || '') &&
+    /(Unauthorized|permission denied)/i.test(res.snippet || '');
 }
 
 // ---------------------------------------------------------------------------
@@ -610,7 +617,7 @@ async function main() {
   for (const [id, opts] of negGet) {
     const res = await probe({ method: 'GET', ...opts, token: runtimeJwt });
     record(id, 'negative', failsClosed(res) ? 'PASS' : 'FAIL', {
-      http: res.status, code: res.code, expected: 'fail closed (401/403/404)', snippet: res.snippet,
+      http: res.status, code: res.code, expected: 'explicit access/routing denial', snippet: res.snippet,
     });
   }
   // NEG-TBL-2: non-mutating write-authority probe — PATCH a guaranteed-nonexistent PK.
@@ -638,8 +645,8 @@ async function main() {
   // storage API
   {
     const res = await probe({ method: 'GET', path: '/storage/v1/bucket', token: runtimeJwt });
-    record('NEG-STOR-1', 'negative', res.status === 401 || res.status === 403 ? 'PASS' : 'FAIL', {
-      http: res.status, code: res.code, expected: '401/403 (role is not service_role)', snippet: res.snippet,
+    record('NEG-STOR-1', 'negative', storageFailsClosed(res) ? 'PASS' : 'FAIL', {
+      http: res.status, code: res.code, expected: 'explicit storage access denial (native 401/403 or wrapped AccessDenied/403)', snippet: res.snippet,
     });
   }
 
@@ -770,6 +777,14 @@ function selftest() {
   ok(boundaryReached({ status: 400, code: 'PGRST100' }) === false, 'boundary: parse error not in-function');
   ok(failsClosed({ status: 403 }) === true && failsClosed({ status: 200 }) === false && failsClosed({ status: 500 }) === false,
     'failsClosed: 403 yes / 200 no / 500 no');
+  ok(failsClosed({ status: 406, code: 'PGRST106' }) === true,
+    'failsClosed: 406 PGRST106 invalid schema is explicit routing denial');
+  ok(failsClosed({ status: 406, code: null }) === false,
+    'failsClosed: generic 406 without known routing code does not pass');
+  ok(storageFailsClosed({ status: 400, code: 'AccessDenied', snippet: '{\"statusCode\":\"403\",\"error\":\"Unauthorized\",\"message\":\"permission denied for schema storage\"}' }) === true,
+    'storage: explicit 403 AccessDenied wrapped as HTTP 400 passes');
+  ok(storageFailsClosed({ status: 400, code: 'AccessDenied', snippet: '{}' }) === false,
+    'storage: ambiguous HTTP 400 does not pass');
 
   // --- H-01: gate contract ---
   const base = () => [
