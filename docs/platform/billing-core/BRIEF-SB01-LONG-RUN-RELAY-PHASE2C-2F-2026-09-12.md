@@ -8,7 +8,7 @@ Primary execution workflow: `WF-RELAY-01 v1.2.0`
 Supporting implementation contract: `WF-DEV-01 v1.1.0`
 Work type: `DIRECT-APPROVED`
 Release policy: `RELAY_STANDARD`
-Execution status: `HOLD — BRIEF READY / DO NOT RUN YET`
+Execution status: `READY FOR OWNER LAUNCH / NOT LAUNCHED`
 Final hard stop: `READY FOR SOL/OWNER REVIEW — SB01 PHASE 2F PROJECTION CONTRACT`
 
 ## Owner direction
@@ -19,7 +19,7 @@ Hermes holds the approved plan, dispatches agents, persists stage evidence/check
 
 Owner/Sol must be called only for an explicit hard stop, decision gap, architecture/security/business contract change, unauthorized mutation requirement, unrecoverable executor/runtime failure, repair-loop exhaustion, or the final Phase 2F review checkpoint.
 
-This brief does not authorize immediate execution. Prepare only. Hermes must not be started until the Relay runtime parity gate below is PASS and Owner gives the explicit launch instruction.
+This brief does not authorize immediate execution by itself. Relay runtime parity is now PASS. Owner launch authorizes Hermes to start orchestration and run PRE-01; no substantive agent stage may release unless PRE-01 passes fail-closed.
 
 ## Locked role map
 
@@ -114,17 +114,21 @@ House/Sol R3 independently verified:
 
 Long-Run execution must start only from a clean exact revision descended from this accepted baseline and after all preparation/governance commits are pinned.
 
-## PRE-00 — Mandatory Relay runtime parity gate
+## PRE-00 — Relay runtime parity gate — PASS
 
-Observed during brief preparation:
-- Workflow Registry / `WF-RELAY-01 v1.2.0` currently records runtime procedure `kanban-external-agent-dispatch v2.3.6`.
-- Canonical Windows runtime file currently declares `kanban-external-agent-dispatch v2.3.8`.
-- Observed runtime path: `D:\AI-Workspace\runtime\hermes-native\data\skills\devops\kanban-external-agent-dispatch\SKILL.md`.
-- Observed SHA-256: `F8AFFA7C0430FA645581129BB01B60C5AF2BEA2CA36CD1C5C9E853CA2B4CD809`.
+Resolved by task `RELAY-RUNTIME-PARITY-001`.
 
-This mismatch is a HARD HOLD under Relay preflight. Before execution, governance/runtime synchronization must establish one canonical approved combination and fresh-session verification must prove Hermes sees that same runtime metadata/version.
+Canonical verified state:
+- Workflow Registry: `WF-RELAY-01 v1.2.0` -> `kanban-external-agent-dispatch v2.3.8`.
+- Workflow registry main closure commit: `713c7124e7743e731583b755ba87c5fad9ba24a1`.
+- Canonical Windows runtime: `kanban-external-agent-dispatch v2.3.8`.
+- Runtime path: `D:\AI-Workspace\runtime\hermes-native\data\skills\devops\kanban-external-agent-dispatch\SKILL.md`.
+- Runtime SHA-256: `F8AFFA7C0430FA645581129BB01B60C5AF2BEA2CA36CD1C5C9E853CA2B4CD809`.
+- Runtime-home guard: PASS; effective process/gateway home = `D:\AI-Workspace\runtime\hermes-native\data`.
+- Named external executor readiness: Claude PASS, AGY PASS, Qwen PASS, Codex PASS.
+- `execution_backend = direct_external_process`; `transport_model = none`.
 
-Do not reinterpret `WF-RELAY-01 v1.2.0` silently against v2.3.8. Do not downgrade the runtime to force a match. Resolve and persist the parity decision first.
+PRE-00 is closed. Do not reopen or downgrade runtime during this pilot unless fresh evidence shows a material runtime integrity failure.
 
 ## PRE-01 — Mandatory execution preflight
 
@@ -308,13 +312,14 @@ Do not expand this Long-Run pilot into:
 
 ## Launch condition
 
-This brief is `PREPARED / NOT LAUNCHED`.
+This brief is `READY FOR OWNER LAUNCH / NOT LAUNCHED`.
 
-Hermes may launch only after ALL are true:
-1. Relay workflow/runtime parity is resolved and persisted;
-2. fresh-session runtime verification PASS;
-3. complete Relay preflight PASS;
-4. revision-pinned stage graph/dispatch materialization is inspectable;
-5. Owner explicitly instructs launch.
+Preparation gates already satisfied:
+1. Relay workflow/runtime parity resolved and persisted — PASS.
+2. fresh-session/runtime-home verification — PASS.
+3. AGY/Qwen direct readiness probes — PASS; full named-executor readiness reported PASS after parity remediation.
+4. revision-pinned Long-Run task graph and first-stage dispatch must be present in the SB01 repo launch packet.
 
-Until then: `HOLD — DO NOT RUN`.
+Owner launch authorizes Hermes to begin orchestration only. Hermes must first persist PRE-01 complete Relay preflight. If PRE-01 is not PASS, stop before substantive AGY/Qwen/Codex/Claude execution.
+
+Until explicit Owner launch: `READY FOR OWNER LAUNCH — NOT RUNNING`.
