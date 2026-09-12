@@ -148,6 +148,27 @@ Before any substantive agent call, Hermes must persist a complete Relay prefligh
 
 If a required selected executor is unavailable, do not silently substitute another agent. HOLD or re-plan only through an explicitly recorded Sol/Owner-approved routing change.
 
+## Production portability rule — Owner locked 2026-09-12
+
+WSTERA LAB is a temporary proof environment, not the permanent SB01 deployment target. All Phase 2C-2F implementation and evidence must remain production-portable.
+
+Mandatory rules:
+- tracked source, migrations, schemas, tests, contracts, and runtime behavior must not hardcode WSTERA LAB project IDs, hosts, credentials, Stripe Test keys, webhook signing secrets, Test Price IDs, callback URLs, or other environment-specific values;
+- environment/provider-specific values must enter through approved profile/config/secret boundaries only;
+- database evolution must be reproducible from versioned migrations/contracts; production is created by applying the same approved migrations, not by copying LAB test data or treating LAB as the production database;
+- LAB disposable/test records and proof fixtures must never be promoted as production data;
+- production provisioning is expected to replace LAB/Test bindings with production-only values, including BILLING_DATABASE_URL, Stripe Live credentials, production webhook endpoint/signing secret, production Product/Price bindings, and production return URLs;
+- Stripe CLI listener secrets and localhost webhook forwarding are test-only evidence mechanisms and must never become production configuration;
+- production webhook registration must use the real public SB01 production endpoint and a separately provisioned production signing secret;
+- evidence must label LAB/Test versus Production/Live state explicitly so a green LAB proof cannot be misrepresented as production readiness;
+- any LAB-specific value embedded in tracked source or required for business logic is a portability defect and must fail the relevant checkpoint;
+- promotion to production must be a provisioning/deploy/migrate/verify operation against an approved SB01 artifact, not a redesign or rewrite of the billing core.
+
+Expected production promotion path after Owner authorization:
+deploy approved SB01 artifact -> apply approved migrations -> provision production profiles/secrets -> register production webhook -> smoke/financial-truth verification -> release decision
+
+This rule does NOT authorize production deployment, Live Stripe mutation, production database mutation, or Live webhook registration during the current Phase 2C-2F Long-Run. Current execution remains LAB + Stripe TEST only until a separate Owner-authorized production gate.
+
 ## Long-Run stage graph
 
 ### LR-2C — HTTP + Stripe Test vertical slice
