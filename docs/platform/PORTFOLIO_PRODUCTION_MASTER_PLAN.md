@@ -48,6 +48,35 @@ Revision history:
 Operational status index: `docs/CURRENT_STATUS.md`.
 
 ---
+
+## Organizational cybersecurity program overlay — 2026-09-19
+
+> **Owner-directed cross-cutting program.** This overlay does not replace the seven-product execution sequence and does not stop unrelated House work to build a security platform first. It establishes the organization-level security program that every future production transition must consume.
+
+Canonical program:
+
+`Gutumrod/wstera-workflows/programs/security/WSTERA-CYBERSECURITY-DEFENSE-RESEARCH-PROGRAM.md`
+
+Pinned adoption commit at creation:
+
+`afa6d268de3d2ccb9b44620591dea9c26cb04c44`
+
+The program expands WSTERA security beyond per-product release checks into a permanent organization capability covering threat intelligence, identity/secrets, attack-surface defense, supply-chain security, cloud/data security, detection engineering, AI/agent/MCP security, incident response/recovery, controlled adversarial validation, and public defensive research.
+
+House integration rule:
+
+- continue the active House critical path;
+- preserve valid existing security evidence;
+- close critical security gaps where they intersect the production critical path;
+- do not let a product bypass its existing G2/G3/G4/G6/G7 security/recovery/operations evidence;
+- before a new production-readiness claim, apply the canonical WSTERA Production Readiness Standard and the applicable WSTERA Cybersecurity Program evidence;
+- do not mass-refactor all products merely because the organization program now exists;
+- threat-intelligence findings that are plausibly exploitable against the live stack may interrupt normal sequencing when the security program's STOP/HOLD conditions are met.
+
+The public-research mission is defensive: WSTERA may publish sanitized architecture patterns, hardening guidance, detection rules, postmortems, reusable controls and security research after containment/patching and responsible-disclosure obligations are satisfied.
+
+
+---
 ## 0. Planning-input constraint
 
 Three inputs may order this plan: **dependency order, engineering maturity, and risk.** Nothing
