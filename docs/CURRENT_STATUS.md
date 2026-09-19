@@ -1,11 +1,61 @@
 # SaaS Product Hub - Current Portfolio Status
 
-**Reconciled:** 2026-09-08 (Asia/Bangkok)
+**Reconciled:** 2026-09-19 (Asia/Bangkok) — House LONG_RUN T0 overlay; see below.
 **Parent repository:** `Gutumrod/saas-product-hub`
-**Parent branch/HEAD before this closeout:** `master @ c7bf944`
+**Parent branch/HEAD before this closeout:** `work/house-production-closure-longrun-20260919 @ a502421` (T0 reconciliation); governance base `master @ 1556d8a`
 **Execution authority:** `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md` revision 3 + later explicit owner decisions
 **Purpose:** current-state overlay. This file does not replace product PRDs, architecture contracts, gate evidence or historical daily logs.
-**Latest Owner overlay:** 2026-09-08
+**Latest Owner overlay:** 2026-09-19 (House production closure LONG_RUN)
+
+---
+
+## 2026-09-19 House Production Closure LONG_RUN (current)
+
+Task: `WSTERA-HOUSE-PRODUCTION-CLOSURE-001`. Workflow `WF-DEV-01 v1.3.0 / LONG_RUN` +
+`WF-RELAY-01 v1.3.0` (runtime `kanban-external-agent-dispatch v2.5.3`).
+Coordination branch: `work/house-production-closure-longrun-20260919`.
+
+### Verified current state at T0
+
+- **House coordination baseline is reconciled.** `origin/master` (`1556d8a`) is now an ancestor
+  of the LONG_RUN branch at `a502421`. The merge brought in WSTERA production-readiness
+  governance (`9793a5b`) and the organization-wide cybersecurity program overlay (`1556d8a`);
+  changed paths were governance documents only (`AGENTS.md`,
+  `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md`). Prior House/SB01 evidence history is
+  preserved; no rebase/reset/force push occurred.
+- **Hub/Control platform.** `Gutumrod/hub-web`. Default `main @ 8a3e493`. Active platform branch
+  `feature/platform-control-plane @ 125af843` is 30 commits ahead / 0 behind `main`, Draft PR #1
+  open. House closure branch `work/house-platform-closure-20260919` is currently identical to
+  `feature/platform-control-plane` at `125af843`.
+- **R15 Hub DB least privilege: still OPEN.** Hub runtime has not yet moved off the Project A
+  database-owner identity to a scoped `hub_web_app` role, and denial to `billing_core` /
+  `billing_core_staging` is not yet proven. This is stage T1 of the current Task and is not
+  closed as of this overlay.
+- **Product-event signer boundary: still open.** The webhook continues to use one shared HMAC
+  secret with a caller-selected `productSlug`, which does not satisfy the Master Plan's
+  server-bound per-product signer contract. Stage T2 of the current Task.
+- **Shared one-time fulfillment: not implemented.** No `hub-web` implementation for the P1/L4
+  delivery/grant/revoke/reissue capability was found. Stage T3 of the current Task.
+- **Control billing read integration: dependency-HOLD.** Control remains fail-closed pending an
+  accepted SB01 authoritative read projection. Control invariant `canExecutePaymentActions:
+  false` remains in force. Stage T4 of the current Task.
+- **SB01 external lane.** `Gutumrod/stripe-billing`
+  `work/sb01-central-billing-pc-20260911 @ 4d8311b`: LR-2C, LR-2D and LR-2E are each
+  CLOSED / PASS with independent Codex PASS (LR-2E at `cd7363cf`); **LR-2F is not yet
+  released**. SB01 is a separate active lane and is not House implementation scope.
+- **Production claims.** No `PRODUCTION_READY` or `LIVE_PROVEN` claim is made by this overlay.
+  Per `policies/PRODUCTION-READINESS-STANDARD.md` v1.0.0,
+  `BUILD_PASS != PRODUCTION_READY != LIVE_PROVEN != OPERATED_STABLE`.
+- **Product readiness.** No product is declared production-ready by House evidence. This Task
+  scopes shared House/platform capability only.
+
+### Historical content below
+
+Everything below this section is retained as historical record at its original reconciliation
+date. It is not rewritten. Where a historical sentence conflicts with the current overlay
+above, the overlay governs current state and the historical text remains as provenance.
+
+---
 
 ## 2026-09-08 DC01 Public Pilot / PV Gate Overlay
 

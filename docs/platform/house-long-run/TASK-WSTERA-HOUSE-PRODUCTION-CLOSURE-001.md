@@ -1,30 +1,30 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: READY_FOR_HERMES_PREFLIGHT
+Status: T0 GATE PASS — AWAITING B0 INDEPENDENT REVIEW
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
 Runtime Procedure: kanban-external-agent-dispatch v2.5.3
 Repository: Gutumrod/saas-product-hub
-Workspace: RESOLVE_AND_PIN_DURING_PRE-01
-Branch / Worktree: work/house-production-closure-longrun-20260919 / RESOLVE_DURING_PRE-01
+Workspace: D:\AI-Workspace\projects\saas-product-hub
+Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: f84a59c5d602ca37c95727997a0d63a709ddd63e
+Current Commit: a502421bfc28bdd3c35458d58f433e3f96248f81
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: Hermes
-Current Checkpoint: PRE-01 LONG_RUN PREFLIGHT
+Current Worker: (none — T0 deterministic stages complete; B0 reviewer next)
+Current Checkpoint: CP-05 T0/B0
 Current Stage: T0
-Current Work Unit: T0-WU01
+Current Work Unit: T0-WU03 COMPLETE
 Current Review Batch: B0
-Current State: READY
+Current State: REVIEW_REQUIRED
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: N/A — Hermes must materialize the first worker dispatch only after PRE-01 passes
+Latest Dispatch: N/A — T0 used Hermes deterministic gates + OpenCode-slot work performed by Hermes (see evidence deviation D-1)
 Dispatch Revision: N/A
-Latest Reviewer Packet: N/A
+Latest Reviewer Packet: docs/platform/house-long-run/EVIDENCE-PRE01-T0-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: Hermes reads the locked brief + manifest, runs PRE-01 fail-closed, resolves exact local worktrees/runtime provenance, updates this Task checkpoint, then releases T0-WU01 only if PRE-01 passes.
+Next Allowed Action: Codex independent B0 review of T0 state integrity on exact revision a502421. On BATCH_APPROVED -> release T1.
 
 ## Objective
 
@@ -77,8 +77,8 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 | CP-01 Flow Selection | PASS | Owner / coordinator | Brief + Workflow Registry v1.5.0 | WF-DEV-01 v1.3.0 LONG_RUN + Relay v1.3.0/v2.5.3 |
 | CP-02 Brief | PASS | Owner | BRIEF-WSTERA-HOUSE-PRODUCTION-CLOSURE-LONG-RUN-2026-09-19.md | Owner approved |
 | CP-03 Manifest Lock | PASS | Owner | RUN-MANIFEST... @ f84a59c5 | APPROVED |
-| CP-04 PRE-01 | READY | Hermes | pending | must PASS before worker release |
-| CP-05 T0/B0 | PENDING | OpenCode/Qwen/Codex | pending | House state reconciled |
+| CP-04 PRE-01 | PASS | Hermes | EVIDENCE-PRE01-T0... §1 | PASS — 1 runtime repair (`RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS`), opencode UNAVAILABLE (deviation D-1) |
+| CP-05 T0/B0 | T0 GATE PASS / B0 PENDING | Hermes / Codex | EVIDENCE-PRE01-T0... §2 | House state reconciled at `a502421` |
 | CP-06 T1/B1 | PENDING | OpenCode/Qwen/Codex | pending | R15 package approved |
 | CP-07 T2/B2 | PENDING | OpenCode/Qwen/Codex | pending | signer boundary approved |
 | CP-08 T3/B3 | PENDING | OpenCode/Qwen/Codex | pending | fulfillment approved |
@@ -91,12 +91,12 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 
 ```text
 Manifest Revision: f84a59c5d602ca37c95727997a0d63a709ddd63e
-Stage State: READY
-Issue Fingerprint: NONE
-Local Fix Attempts: 0/2
+Stage State: REVIEW_REQUIRED (B0)
+Issue Fingerprint: RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS (repaired, 1/2)
+Local Fix Attempts: 0/2 (T0)
 Reviewer Remediation Attempts: 0/2
 Senior Escalations: 0/1 per authorized escalation decision
-Primary Reviewer Status: Codex required at declared batch boundaries
+Primary Reviewer Status: Codex B0 review pending on a502421
 Active Independent Reviewer: NONE
 ```
 
