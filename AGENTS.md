@@ -47,6 +47,32 @@ Selecting MT01 or finding `payment` / `subscription` modules does not authorize 
 
 Any build-capable Agent Relay dispatch must satisfy the canonical Relay reuse preflight. Missing or failed applicable reuse evidence is a hard HOLD before build cards are created or released.
 
+## Mandatory WSTERA Production Readiness Gate
+
+Canonical authority:
+
+`Gutumrod/wstera-workflows:policies/PRODUCTION-READINESS-STANDARD.md`
+
+Canonical evidence record:
+
+`Gutumrod/wstera-workflows:templates/PRODUCTION-READINESS-RECORD-TEMPLATE.md`
+
+For every product/module/platform capability:
+
+`BUILD_PASS != PRODUCTION_READY != LIVE_PROVEN != OPERATED_STABLE`.
+
+Tests green, reviewer PASS, merge, deploy, or one successful run must not be used as production-readiness proof.
+
+Before any production-ready/live-stable claim:
+
+1. pin the exact candidate revision/artifact and target environment;
+2. complete all applicable G1-G10 readiness gates;
+3. create/update the Production Readiness Record;
+4. verify observability, recovery, security, operational ownership, and live acceptance evidence;
+5. HOLD if any required gate/evidence is missing.
+
+This gate applies prospectively to every new readiness claim. Existing products keep their evidence-backed current state and are assessed/remediated one at a time; do not mass-promote or mass-fail them.
+
 ## Existing Products
 
 This governance change is prospective. Do not mass-refactor existing products. Audit and remediate them one at a time under separate approved scopes.
