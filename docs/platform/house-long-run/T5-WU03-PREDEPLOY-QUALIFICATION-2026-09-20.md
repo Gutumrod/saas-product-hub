@@ -13,7 +13,7 @@ Review Batch: B5 (pre-deploy) · Recorded: 2026-09-20 (Asia/Bangkok) · Orchestr
 |---|---|
 | Repository | `Gutumrod/hub-web` |
 | Branch | `work/house-platform-closure-20260919` |
-| **Frozen candidate revision** | **`e6d367ceb431a806eb4ab8a859f644a6af7efac3`** |
+| **Frozen candidate revision** | **`679ff279e5ff2a9a3006bea79ccc6ccde90715ec`** |
 | Base before T5 | `381fef3f639f1b6da225c217ce6ddd3e0f29cd61` (B4-approved) |
 | Remote parity | verified equal to `origin/work/house-platform-closure-20260919` |
 | Coordination repo revision | `Gutumrod/saas-product-hub` `work/house-production-closure-longrun-20260919` |

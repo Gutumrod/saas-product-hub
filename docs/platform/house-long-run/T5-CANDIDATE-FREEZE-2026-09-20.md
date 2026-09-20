@@ -11,7 +11,7 @@ reference this file by name instead of repeating a SHA, so a candidate move cann
 |---|---|
 | Repository | `Gutumrod/hub-web` |
 | Branch | `work/house-platform-closure-20260919` |
-| **Frozen revision** | **`e6d367ceb431a806eb4ab8a859f644a6af7efac3`** |
+| **Frozen revision** | **`679ff279e5ff2a9a3006bea79ccc6ccde90715ec`** |
 | Remote parity | upstream equals the same SHA (verified) |
 | Worktree | clean (verified) |
 | Coordination revision | `Gutumrod/saas-product-hub` `work/house-production-closure-longrun-20260919` |
@@ -20,7 +20,7 @@ reference this file by name instead of repeating a SHA, so a candidate move cann
 
 ```
 cd apps/hub-web
-git rev-parse HEAD                      -> e6d367ceb431a806eb4ab8a859f644a6af7efac3
+git rev-parse HEAD                      -> 679ff279e5ff2a9a3006bea79ccc6ccde90715ec
 git status --short                      -> empty
 git rev-parse @{u}                      -> same SHA
 npx tsc --noEmit                        -> exit 0
@@ -39,7 +39,8 @@ npx vitest run                          -> 25 files, 366 tests, all passing
 | `0bde138` | T5 B5 R1 remediation |
 | `0e4494d` | scanner-fixture fix |
 | `61acf52` | B5 R2 remediation + import-closure guard |
-| **`e6d367c`** | **B5 R3 remediation: allowlisted-module blind spot closed — FROZEN CANDIDATE** |
+| `e6d367c` | B5 R3 remediation: allowlisted-module blind spot closed |
+| **`679ff27`** | **B5 R5 remediation: external-import declaration + outbound-call guard + narrowed claim — FROZEN CANDIDATE** |
 
 ## Freeze rule
 
