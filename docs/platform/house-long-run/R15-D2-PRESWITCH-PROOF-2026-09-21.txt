@@ -1,0 +1,35 @@
+real profiles.id for OV-1: 4102aa6e-3481-4af6-b76f-0af66d609bc4
+
+=== D2.1 CONNECTION IDENTITY (must be hub_web_app, not the owner) ===
+  current_user=hub_web_app session_user=hub_web_app
+  identity is hub_web_app: PASS
+
+=== D2.2 POSITIVE CONTROL — every required operation of matrix 4.1 (rolled back) ===
+  SELECT public.products                 OK rows=0
+  SELECT public.product_assets           OK rows=0
+  SELECT public.product_installations    OK rows=0
+  INSERT public.products                OK id=4
+  INSERT public.product_assets          OK (uploadedBy = real value)
+  INSERT public.product_installations   OK
+  UPDATE public.product_installations   OK (1 row)
+  duplicate (productId,externalEventId) rejected with 23505: PASS
+  rolled back — nothing persisted
+
+=== D2.2 NEGATIVE CONTROLS (privileges that must NOT exist) ===
+  SELECT public.profiles         denied 42501 — PASS
+  DELETE public.products         denied 42501 — PASS
+  UPDATE public.products         denied 42501 — PASS
+  DELETE public.product_assets   denied 42501 — PASS
+  CREATE TABLE in public         denied 42501 — PASS
+
+=== OV-1: FK to public.profiles using the REAL uploadedBy / recordedBy values ===
+  product_assets INSERT with real uploadedBy: SUCCEEDED -> FK check needs no profiles SELECT
+  product_installations INSERT with real recordedBy: SUCCEEDED
+  rolled back — nothing persisted
+
+=== D2.2 billing deny (disposition A: absence-invariant, NOT a DENY PASS) ===
+  billing_core: 42P01 — schema does not exist in Project A
+  billing_core_staging: 42P01 — schema does not exist in Project A
+  => absence-invariant; mandatory re-verification when billing_core is created here.
+
+=== D2 RESULT: PASS ===
