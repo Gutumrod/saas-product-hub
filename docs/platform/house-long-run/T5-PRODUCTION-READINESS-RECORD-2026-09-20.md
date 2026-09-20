@@ -12,6 +12,11 @@ Coordination revision: `Gutumrod/saas-product-hub` `work/house-production-closur
 `BUILD_PASS != PRODUCTION_READY != LIVE_PROVEN != OPERATED_STABLE`. Nothing below authorises a
 production claim until the corresponding evidence exists.
 
+
+> **Revision authority:** the frozen candidate revision for T5 is stated in exactly one place —
+> `T5-CANDIDATE-FREEZE-2026-09-20.md`. The SHA repeated in this document is a convenience copy;
+> if the two ever disagree, that file wins and this document is stale.
+
 **Revision-consistency note:** every candidate reference in this record is bound to
 `e6d367ceb431a806eb4ab8a859f644a6af7efac3`, the frozen, committed and pushed candidate. The earlier
 `15b1579` figures described the pre-remediation candidate; they are retained only in the change-set
