@@ -70,15 +70,45 @@ direct-Postgres runtime does not require `public.profiles`.
 
 ## F. Schema-derived requirements
 
+### F.1 Sequence privileges
+
 - `apps/hub-web/drizzle/schema.ts:61,90,128` — `generatedAlwaysAsIdentity()` on `products.id`,
   `product_assets.id`, `product_installations.id` → INSERT requires `USAGE` on the backing sequences
-- `apps/hub-web/drizzle/schema.ts:12-34` — enums referenced by those tables: `user_role`,
-  `product_status`, `asset_type`, `installation_status`, `installation_source`
+
+### F.2 Enum types — CORRECTED (erratum, see §K)
+
+The production tables use exactly these four enum types:
+
+| Enum type | Used by | Evidence |
+|---|---|---|
+| `product_status` | `products.status` | `schema.ts:20`, used at `schema.ts:67` |
+| `asset_type` | `product_assets.assetType` | `schema.ts:21`, used at `schema.ts:94` |
+| `installation_status` | `product_installations.status` | `schema.ts:28`, used at `schema.ts:136` |
+| `installation_source` | `product_installations.source` | `schema.ts:34`, used at `schema.ts:139` |
+
+**`user_role` is EXCLUDED.** `user_role` (`schema.ts:12`) is referenced only by
+`profiles.role` (`schema.ts:44`), and `public.profiles` is excluded from the `hub_web_app` grant set
+by the Owner ruling. Granting `USAGE` on `user_role` would therefore be an unnecessary privilege.
+
+> Erratum origin: an earlier version of this section listed `user_role` alongside the four
+> production enums by citing the whole range `schema.ts:12-34`. That range includes the excluded
+> enum. Corrected here; the corrected form is what the write lanes must use.
+
+### F.3 Indexes and foreign keys
+
 - `apps/hub-web/drizzle/schema.ts:76` — `products_slug_unique`
 - `apps/hub-web/drizzle/schema.ts:106-109` — `product_assets_product_storage_unique`
 - `apps/hub-web/drizzle/schema.ts:152-155` — `product_installations_event_unique`
   (the three unique indexes resolve the runtime's `ON CONFLICT` targets)
 - Foreign keys constraining runtime writes: `schema.ts:91-93`, `:100-102`, `:129-131`, `:142`
+
+**Foreign-key caveat (flagged by B1 as untested):** `product_assets.uploadedBy → profiles.id`
+(`schema.ts:100-102`, `ON DELETE RESTRICT`) and `product_installations.recordedBy → profiles.id`
+(`:142`, `ON DELETE SET NULL`) reference `public.profiles`. A runtime INSERT that supplies a value
+for `uploadedBy` / `recordedBy` causes PostgreSQL to perform a referential-integrity lookup on
+`public.profiles`, which may require `SELECT`/`REFERENCES` on the referenced table even though the
+runtime never queries `profiles` directly. **This must be verified against the live database before
+R15 apply; it is recorded as an open verification item, not as a granted privilege.**
 
 ## G. RLS state on `public.profiles` (Owner decision context)
 
@@ -111,3 +141,25 @@ direct-Postgres runtime does not require `public.profiles`.
 - `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md:896` — R15: runtime connects as Project A
   `postgres` **owner**; correct state = dedicated `hub_web_app` **login role** scoped to exactly the
   `public` objects used — no ownership, no `CREATE`, no escalating membership
+
+### J.1 VERBATIM source text at `PORTFOLIO_PRODUCTION_MASTER_PLAN.md:896`
+
+The following strings are quoted **directly from the Master Plan**, not from this pack. Any artifact
+that quotes them must attribute them to `PORTFOLIO_PRODUCTION_MASTER_PLAN.md:896`:
+
+- "denial tests prove"
+- "Pre-data gate"
+- "defeats every grant boundary"
+- `postgres.coyelzlgukvpgguqpjdi` (the owner pooler identity)
+- "billing_core_staging"
+
+> Attribution note (B1 finding): an earlier artifact attributed several of these strings to this
+> pack's §J. They are **not** in this pack — this pack's §J carries only the condensed sentence
+> above. The facts are correct; the attribution was wrong. Use the Master Plan citation.
+
+## K. Errata ledger
+
+| # | Item | Correction |
+|---|---|---|
+| K-1 | §F previously listed `user_role` among the environment's required enum types | Corrected in §F.2. `user_role` belongs to the excluded `profiles.role`; production tables use only `product_status`, `asset_type`, `installation_status`, `installation_source`. Granting `user_role` would violate the "no more" least-privilege rule. Root cause: the original citation pointed at the whole range `schema.ts:12-34`, which spans the excluded enum. |
+| K-2 | §J previously served as the attribution for Master-Plan-only strings | Corrected by adding §J.1. Root cause: this pack condensed the R15 authority line and dropped surrounding verbatim text that sibling artifacts then quoted. |
