@@ -19,15 +19,15 @@ Coordinator: Hermes
 Current Worker: `00bdb1b5-70d2-4e41-b97d-f1f238e9bf31` (LIVE) · rollback target `9db4fb70-a5e5-4989-94b5-1d271ab10055`
 Current Checkpoint: CP-10 T5/B5 closure — OWNER_HOLD
 Current Stage: T5
-Current Work Unit: R15 D0 COMPLETE (read-only) · STOPPED before D1 by the Owner's P4/U4 clause 3 — Owner decision required on the corrected topology
+Current Work Unit: R15 D0-D4 COMPLETE — schema remediated, hub_web_app live, DATABASE_URL switched, runtime verified
 Current Review Batch: B5
 Current State: OWNER_HOLD
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
 Latest Dispatch: B5 closure -> agent-codex OWNER_DECISION_REQUIRED at hub-web 679ff27 (deployed)
 Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
-Latest Reviewer Packet: docs/platform/house-long-run/R15-D0-PREFLIGHT-OUTCOME-2026-09-20.md (current) · OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md (SUPERSEDED — R15 was authorized; retained as history)
+Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current)
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: STOP — Codex returned OWNER_DECISION_REQUIRED. A bounded Owner authorization for schema remediation is prepared and ready to approve in R15-D0-DECISION-OUTCOME-2026-09-20.md §5 (target Project A only; apply 0007 + create/apply additive 0008; no db:push; no 0002-0006; no billing/roles/RLS/secrets/Worker changes). No execution until approved.
+Next Allowed Action: R15 D0-D4 COMPLETE (schema remediated 9/9, hub_web_app scoped role live, DATABASE_URL switched, runtime verified, Worker 9a004fa9). Per the manifest, a fresh B5 independent re-review of this exact deployed state is required next, then T6.
 
 ## Objective
 
