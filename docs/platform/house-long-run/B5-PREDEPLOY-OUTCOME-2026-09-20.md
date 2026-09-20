@@ -50,21 +50,19 @@ which contradicts the invariant claim carried from T3/T4.
   (`service.ts:14`), backed by `DEMO_*` fixtures.
 - `DemoCommandExecutor` is fixture-based and its own code says
   "Deterministic simulation outcome hook (Phase 7)".
-- A grep across the whole control-plane for `getDb` / `sql\`` / `drizzle` / `postgres` (excluding tests)
-  returns **nothing** — the control plane is **fixture-only and does not touch a database, Stripe, or
-  any provider**.
+- The billing-action execution chain contains no `getDb` / `sql\`` / `drizzle` / `postgres` provider
+  call (excluding tests) — that **billing-action path** is fixture-only and does not touch a database,
+  Stripe, or any provider. This is not a claim about every Control path: `adapters/control-db.ts`
+  and work-queue paths may use Supabase.
 
 So `executeBillingAction` is a **simulation**, not a payment mutation. The invariant is not violated in
 substance — **but the claim as written is wrong**, because it asserts the whole Control surface has no
 billing-mutation capability when the router does expose such an endpoint operating on demo fixtures.
 
-**This is classified BLOCKING / OWNER SCOPE by the reviewer.** Two dispositions are possible:
-
-- **(a)** Owner explicitly scopes `customersTree` / `executeBillingAction` as pre-existing
-  simulation-only behaviour, and the invariant claim is rewritten to say so precisely
-  (`canExecutePaymentActions` false **and** any billing-action endpoint operates only on demo fixtures,
-  with no provider/DB path) — then T5 may proceed.
-- **(b)** The endpoints are remediated before deploy.
+The Finding-4 ruling selected the narrow wording-only remedy: the pre-existing admin-only endpoints
+remain, the billing-action path is explicitly simulation-only over `DEMO_*` fixtures, and the exact
+wording plus its RBAC, route-to-executor, static reachability, and read-only snapshot tests are now
+part of T5 evidence. Removing the endpoints would expand scope and is prohibited by the ruling.
 
 Hermes does **not** have authority to decide that a pre-existing, demo-scoped capability is acceptable
 on the Owner's behalf, and must not silently rewrite the claim to make the deploy pass.
