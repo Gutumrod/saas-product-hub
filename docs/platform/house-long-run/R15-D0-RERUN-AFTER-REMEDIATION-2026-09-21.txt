@@ -1,0 +1,30 @@
+declared tables in schema.ts : 9
+declared enums  in schema.ts : 9
+
+=== PRESENT in Project A (9/9) ===
+  profiles                           cols=  7  rows=1
+  products                           cols= 13  rows=0
+  product_assets                     cols= 10  rows=0
+  product_installations              cols= 13  rows=0
+  fulfillment_records                cols= 27  rows=0
+  fulfillment_recipients             cols=  8  rows=0
+  fulfillment_deliveries             cols= 16  rows=0
+  fulfillment_lifecycle_operations   cols=  9  rows=0
+  fulfillment_audit                  cols= 13  rows=0
+
+=== ABSENT from Project A (0/9) ===
+
+=== enum types in Project A ===
+  user_role                  present
+  product_status             present
+  asset_type                 present
+  installation_status        present
+  installation_source        present
+  fulfillment_status         present
+  fulfillment_artifact_kind  present
+  fulfillment_delivery_status present
+  fulfillment_lifecycle_operation present
+
+=== migration bookkeeping ===
+  drizzle.__drizzle_migrations : null
+  public.__drizzle_migrations  : null

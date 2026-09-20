@@ -1,0 +1,25 @@
+
+=== APPLY 0007_shared_one_time_fulfillment.sql ===
+  OK  fulfillment_records                cols=27
+  OK  fulfillment_recipients             cols=8
+  OK  fulfillment_deliveries             cols=16
+  OK  fulfillment_lifecycle_operations   cols=9
+  OK  fulfillment_audit                  cols=13
+  OK  enum fulfillment_status             labels=5
+  OK  enum fulfillment_artifact_kind      labels=2
+  OK  enum fulfillment_delivery_status    labels=5
+  OK  enum fulfillment_lifecycle_operation labels=2
+  COMMITTED (0007_shared_one_time_fulfillment.sql)
+
+=== APPLY 0008_product_installations.sql ===
+  OK  product_installations              cols=13
+  OK  enum installation_status            labels=4
+  OK  enum installation_source            labels=2
+  OK  product_installations FKs=2 uniqueIndex=1 columns=13
+  COMMITTED (0008_product_installations.sql)
+
+=== POST-APPLY CATALOG STATE ===
+  public tables: fulfillment_audit, fulfillment_deliveries, fulfillment_lifecycle_operations, fulfillment_recipients, fulfillment_records, product_assets, product_installations, products, profiles
+  public enums : asset_type, fulfillment_artifact_kind, fulfillment_delivery_status, fulfillment_lifecycle_operation, fulfillment_status, installation_source, installation_status, product_status, user_role
+
+=== RESULT: APPLIED — all assertions passed ===
