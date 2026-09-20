@@ -9,7 +9,7 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: house `db88bd22b5ca6db2a4940d0d1560ffca8180b18f` / hub-web `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (frozen candidate, deployed)
+Current Commit: house `34400c2ad7557050865b614fcdc613b33d3de498` / hub-web `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (frozen candidate, deployed)
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
@@ -18,11 +18,11 @@ Current Checkpoint: CP-10 T5/B5 closure — OWNER_HOLD
 Current Stage: T5
 Current Work Unit: T5-WU05/WU06 COMPLETE · B5 closure = OWNER_DECISION_REQUIRED (awaiting Owner R15 decision)
 Current Review Batch: B5
-Current State: READY
+Current State: OWNER_HOLD
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B4 R5 -> agent-codex BATCH_APPROVED at hub-web 381fef3
-Dispatch Revision: docs/platform/house-long-run/B4-R5-REVIEW-REPORT-CODEX-2026-09-20.md
-Latest Reviewer Packet: docs/platform/house-long-run/B4-REVIEW-CLOSURE-2026-09-20.md
+Latest Dispatch: B5 closure -> agent-codex OWNER_DECISION_REQUIRED at hub-web 679ff27 (deployed)
+Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
+Latest Reviewer Packet: docs/platform/house-long-run/OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 Next Allowed Action: STOP — Owner decision required on the R15 provisioning authority. See OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md. No T6/B6 entry, and no further production mutation, until resolved.
 
@@ -96,7 +96,7 @@ Issue Fingerprint: closed — T3_IMPLEMENTATION_TURN_BUDGET_EXHAUSTED_BEFORE_COR
 Local Fix Attempts: 1/2 (T3 scope bug)
 Reviewer Remediation Attempts: 0/2 (this cycle)
 Senior Escalations: 0/1
-Primary Reviewer Status: Codex — B0 BATCH_APPROVED, B1 BATCH_APPROVED (2 rounds), B2 BATCH_APPROVED (2 rounds); B3 pending on hub-web ae29d20
+Primary Reviewer Status: Codex — B0-B4 BATCH_APPROVED (B1 2 rounds, B2 2 rounds, B3 2 rounds, B4 5 rounds); B5 predeploy BATCH_APPROVED (7 rounds); B5 closure OWNER_DECISION_REQUIRED
 Active Independent Reviewer: NONE
 ```
 
