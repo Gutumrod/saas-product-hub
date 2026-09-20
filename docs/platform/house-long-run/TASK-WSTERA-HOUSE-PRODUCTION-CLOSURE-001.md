@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T0 GATE PASS — AWAITING B0 INDEPENDENT REVIEW
+Status: T1 READY — B0 BATCH_APPROVED (0 blocking findings)
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -9,22 +9,22 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: a502421bfc28bdd3c35458d58f433e3f96248f81
+Current Commit: 28f571de053c6a7433268e707fe9b9244162d31a (T0 content revision; B0-approved)
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: (none — T0 deterministic stages complete; B0 reviewer next)
-Current Checkpoint: CP-05 T0/B0
-Current Stage: T0
-Current Work Unit: T0-WU03 COMPLETE
-Current Review Batch: B0
-Current State: REVIEW_REQUIRED
+Current Worker: (none — T1 to be released)
+Current Checkpoint: CP-06 T1/B1
+Current Stage: T1
+Current Work Unit: T1-WU01 (PRIVILEGE INVENTORY)
+Current Review Batch: B1
+Current State: READY
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: N/A — T0 used Hermes deterministic gates + OpenCode-slot work performed by Hermes (see evidence deviation D-1)
-Dispatch Revision: N/A
-Latest Reviewer Packet: docs/platform/house-long-run/EVIDENCE-PRE01-T0-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md
+Latest Dispatch: B0 R2 -> agent-codex BATCH_APPROVED at 28f571d
+Dispatch Revision: docs/platform/house-long-run/DISPATCH-B0-R2-CODEX-2026-09-19.md
+Latest Reviewer Packet: docs/platform/house-long-run/B0-REVIEW-CLOSURE-2026-09-19.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: Codex independent B0 review of T0 state integrity on exact revision a502421. On BATCH_APPROVED -> release T1.
+Next Allowed Action: Release T1-WU01 (privilege inventory: inspect actual hub-web DB access code/config/migrations, write exact required privilege matrix + implementation plan). No production mutation.
 
 ## Objective
 
@@ -78,8 +78,8 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 | CP-02 Brief | PASS | Owner | BRIEF-WSTERA-HOUSE-PRODUCTION-CLOSURE-LONG-RUN-2026-09-19.md | Owner approved |
 | CP-03 Manifest Lock | PASS | Owner | RUN-MANIFEST... @ f84a59c5 | APPROVED |
 | CP-04 PRE-01 | PASS | Hermes | EVIDENCE-PRE01-T0... §1 | PASS — 1 runtime repair (`RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS`), opencode UNAVAILABLE (deviation D-1) |
-| CP-05 T0/B0 | T0 GATE PASS / B0 PENDING | Hermes / Codex | EVIDENCE-PRE01-T0... §2 | House state reconciled at `a502421` |
-| CP-06 T1/B1 | PENDING | OpenCode/Qwen/Codex | pending | R15 package approved |
+| CP-05 T0/B0 | **PASS / B0 BATCH_APPROVED** | Hermes / Codex | B0-REVIEW-CLOSURE-2026-09-19.md | T0 reconciled at `a502421`; B0 approved at `28f571d`, 0 blocking |
+| CP-06 T1/B1 | READY | (T1 workers TBD) / Codex | pending | R15 package approval required |
 | CP-07 T2/B2 | PENDING | OpenCode/Qwen/Codex | pending | signer boundary approved |
 | CP-08 T3/B3 | PENDING | OpenCode/Qwen/Codex | pending | fulfillment approved |
 | CP-09 T4/B4 | PENDING_DEPENDENCY | OpenCode/Qwen/Codex | waits for accepted SB01 LR-2F | Control read boundary approved |
@@ -91,12 +91,12 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 
 ```text
 Manifest Revision: f84a59c5d602ca37c95727997a0d63a709ddd63e
-Stage State: REVIEW_REQUIRED (B0)
+Stage State: READY (T1)
 Issue Fingerprint: RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS (repaired, 1/2)
-Local Fix Attempts: 0/2 (T0)
+Local Fix Attempts: 0/2 (T1)
 Reviewer Remediation Attempts: 0/2
 Senior Escalations: 0/1 per authorized escalation decision
-Primary Reviewer Status: Codex B0 review pending on a502421
+Primary Reviewer Status: Codex — B0 BATCH_APPROVED at 28f571d; next required at B1
 Active Independent Reviewer: NONE
 ```
 
