@@ -1,0 +1,117 @@
+{
+  "captured_at": "2026-09-20T14:59:46.840Z",
+  "records": [
+    [
+      "all_schemas",
+      [
+        {
+          "schema": "auth",
+          "owner": "supabase_admin",
+          "objects": 139,
+          "tables": 27
+        },
+        {
+          "schema": "extensions",
+          "owner": "postgres",
+          "objects": 2,
+          "tables": 0
+        },
+        {
+          "schema": "graphql",
+          "owner": "supabase_admin",
+          "objects": 0,
+          "tables": 0
+        },
+        {
+          "schema": "graphql_public",
+          "owner": "supabase_admin",
+          "objects": 0,
+          "tables": 0
+        },
+        {
+          "schema": "pgbouncer",
+          "owner": "pgbouncer",
+          "objects": 0,
+          "tables": 0
+        },
+        {
+          "schema": "public",
+          "owner": "pg_database_owner",
+          "objects": 10,
+          "tables": 3
+        },
+        {
+          "schema": "realtime",
+          "owner": "supabase_admin",
+          "objects": 13,
+          "tables": 3
+        },
+        {
+          "schema": "storage",
+          "owner": "supabase_admin",
+          "objects": 25,
+          "tables": 8
+        },
+        {
+          "schema": "vault",
+          "owner": "supabase_admin",
+          "objects": 4,
+          "tables": 1
+        }
+      ]
+    ],
+    [
+      "billingish_schemas",
+      []
+    ],
+    [
+      "databases",
+      [
+        {
+          "datname": "postgres",
+          "owner": "postgres"
+        }
+      ]
+    ],
+    [
+      "tables_matching_billing_names",
+      [
+        {
+          "schema": "pg_catalog",
+          "name": "pg_subscription",
+          "relkind": "r",
+          "_x": "1"
+        },
+        {
+          "schema": "pg_catalog",
+          "name": "pg_subscription_rel",
+          "relkind": "r",
+          "_x": "1"
+        },
+        {
+          "schema": "realtime",
+          "name": "subscription",
+          "relkind": "r",
+          "_x": "1"
+        }
+      ]
+    ],
+    [
+      "public_tables",
+      [
+        {
+          "schema": "public",
+          "name": "product_assets"
+        },
+        {
+          "schema": "public",
+          "name": "products"
+        },
+        {
+          "schema": "public",
+          "name": "profiles"
+        }
+      ]
+    ]
+  ]
+}

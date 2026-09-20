@@ -1,0 +1,95 @@
+{
+  "captured_at": "2026-09-20T14:59:24.990Z",
+  "records": [
+    {
+      "step": "D0.2",
+      "label": "current_user",
+      "value": "postgres"
+    },
+    {
+      "step": "D0.2",
+      "label": "session_user",
+      "value": "postgres"
+    },
+    {
+      "step": "D0.2",
+      "label": "database",
+      "value": "postgres"
+    },
+    {
+      "step": "D0.2",
+      "label": "server_version_prefix",
+      "value": "PostgreSQL 17.6"
+    },
+    {
+      "step": "D0.2",
+      "label": "hub_web_app exists (expect ZERO rows at baseline)",
+      "value": 0
+    },
+    {
+      "step": "D0.2",
+      "label": "hub_web_app row",
+      "value": []
+    },
+    {
+      "step": "D0.2",
+      "label": "public.profiles RLS state",
+      "value": [
+        {
+          "relname": "profiles",
+          "relrowsecurity": true,
+          "relforcerowsecurity": false
+        }
+      ]
+    },
+    {
+      "step": "D0.2",
+      "label": "public.profiles policies",
+      "value": [
+        {
+          "polname": "profiles_self_read",
+          "roles": [
+            "authenticated"
+          ]
+        },
+        {
+          "polname": "profiles_internal_read",
+          "roles": [
+            "authenticated"
+          ]
+        },
+        {
+          "polname": "profiles_service_write",
+          "roles": [
+            "service_role"
+          ]
+        }
+      ]
+    },
+    {
+      "step": "D0.2",
+      "label": "objects owned by hub_web_app (expect 0)",
+      "value": 0
+    },
+    {
+      "step": "D0.4",
+      "label": "billing schemas present",
+      "value": []
+    },
+    {
+      "step": "D0.4",
+      "label": "billing_core present",
+      "value": false
+    },
+    {
+      "step": "D0.4",
+      "label": "billing_core_staging present",
+      "value": false
+    },
+    {
+      "step": "D0.4",
+      "label": "PUBLIC grants inside billing schemas (grantee=0)",
+      "value": []
+    }
+  ]
+}
