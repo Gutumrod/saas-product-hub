@@ -5,6 +5,10 @@ Review Batch: B5 (pre-deploy) · Recorded: 2026-09-20 (Asia/Bangkok) · Orchestr
 
 ## Candidate freeze
 
+> **Revision authority:** the frozen candidate revision for T5 is stated in exactly one place —
+> `T5-CANDIDATE-FREEZE-2026-09-20.md`. The SHA repeated in this document is a convenience copy;
+> if the two ever disagree, that file wins and this document is stale.
+
 | Item | Value |
 |---|---|
 | Repository | `Gutumrod/hub-web` |
