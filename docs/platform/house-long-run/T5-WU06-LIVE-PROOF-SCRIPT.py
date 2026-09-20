@@ -36,8 +36,19 @@ def head(url: str, follow: bool = False):
 
 
 def post_json(url: str, payload: dict, headers: dict | None = None):
+    """POST JSON with a realistic User-Agent.
+
+    A bare Python urllib UA is blocked at the Cloudflare edge (HTTP 403, `error code: 1010`),
+    which would report an edge WAF block as if it were the application failing closed. Measured:
+    the identical POST from curl / browser / Stripe-style UAs reaches the Worker and returns the
+    application's own `401 {"error":"invalid signature"}`. The realistic UA is therefore required
+    for this probe to be evidence about the APPLICATION rather than about the edge.
+    """
     body = json.dumps(payload).encode()
-    h = {"Content-Type": "application/json"}
+    h = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) hermes-wu06-smoke",
+    }
     if headers:
         h.update(headers)
     req = urllib.request.Request(url, data=body, method="POST", headers=h)
@@ -85,13 +96,17 @@ for label, hh in (("apex", h), ("platform", h2)):
 s5, _, _ = head(f"https://{PLATFORM}/health")
 check("platform health endpoint 200", s5 == 200, f"status={s5}")
 
-# 5. product-event webhook fail-closed when unsigned
+# 5. product-event webhook fail-closed when unsigned.
+#    The assertion requires the APPLICATION's rejection, not an edge block: a Cloudflare
+#    `error code: 1010` body means the request never reached the Worker and is not evidence.
 s6, body6 = post_json(f"https://{PLATFORM}/api/webhooks/product-events", {"event": "product.installation.changed"})
-check("unsigned product-event webhook rejected (fail-closed)", s6 in (401, 400, 403), f"status={s6} body={body6[:120]!r}")
+app_level6 = s6 in (400, 401, 403) and b"error code: 1010" not in body6
+check("unsigned product-event webhook rejected by the application", app_level6, f"status={s6} body={body6[:120]!r}")
 
 # 6. agent-event webhook fail-closed when unsigned
 s7, body7 = post_json(f"https://{PLATFORM}/api/webhooks/agent-events", {"event": "agent.activity"})
-check("unsigned agent-event webhook rejected (fail-closed)", s7 in (401, 400, 403), f"status={s7} body={body7[:120]!r}")
+app_level7 = s7 in (400, 401, 403) and b"error code: 1010" not in body7
+check("unsigned agent-event webhook rejected by the application", app_level7, f"status={s7} body={body7[:120]!r}")
 
 # 7. Billing Core read path should be unconfigured/inert BEFORE activation.
 #    It is a tRPC route, so probe it unauthenticated: a 4xx is expected either way; we record

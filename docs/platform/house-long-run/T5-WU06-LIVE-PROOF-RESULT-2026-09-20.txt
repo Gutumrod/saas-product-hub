@@ -1,0 +1,21 @@
+CHECK                                                      RESULT DETAIL
+--------------------------------------------------------------------------------------------------------------
+apex over HTTPS returns 200                                PASS   status=200
+platform over HTTPS returns 200                            PASS   status=200
+http apex redirects to HTTPS                               PASS   status=301 location=https://wstera.com/
+http platform redirects to HTTPS                           PASS   status=301
+HSTS present (apex)                                        PASS   max-age=63072000; includeSubDomains
+X-Content-Type-Options nosniff (apex)                      PASS   
+X-Frame-Options present (apex)                             PASS   
+CSP present (apex)                                         PASS   
+HSTS present (platform)                                    PASS   max-age=63072000; includeSubDomains
+X-Content-Type-Options nosniff (platform)                  PASS   
+X-Frame-Options present (platform)                         PASS   
+CSP present (platform)                                     PASS   
+platform health endpoint 200                               PASS   status=200
+unsigned product-event webhook rejected by the application PASS   status=401 body=b'{"error":"invalid signature"}'
+unsigned agent-event webhook rejected by the application   PASS   status=401 body=b'{"error":"invalid signature"}'
+billing read route does not 500 (fails closed)             PASS   status=403
+
+TOTAL 16  PASS 16  FAIL 0
+ALL LIVE PROOF CHECKS PASS
