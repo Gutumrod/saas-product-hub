@@ -97,15 +97,17 @@ s5, _, _ = head(f"https://{PLATFORM}/health")
 check("platform health endpoint 200", s5 == 200, f"status={s5}")
 
 # 5. product-event webhook fail-closed when unsigned.
-#    The assertion requires the APPLICATION's rejection, not an edge block: a Cloudflare
-#    `error code: 1010` body means the request never reached the Worker and is not evidence.
+#    The assertion requires the APPLICATION's OWN rejection, not an edge block. A Cloudflare
+#    `error code: 1010` body means the request never reached the Worker. This is deliberately
+#    strict: the probe requires the application's signature-rejection response, not merely any
+#    4xx that happens not to be an edge block.
 s6, body6 = post_json(f"https://{PLATFORM}/api/webhooks/product-events", {"event": "product.installation.changed"})
-app_level6 = s6 in (400, 401, 403) and b"error code: 1010" not in body6
+app_level6 = s6 == 401 and b"invalid signature" in body6.lower()
 check("unsigned product-event webhook rejected by the application", app_level6, f"status={s6} body={body6[:120]!r}")
 
 # 6. agent-event webhook fail-closed when unsigned
 s7, body7 = post_json(f"https://{PLATFORM}/api/webhooks/agent-events", {"event": "agent.activity"})
-app_level7 = s7 in (400, 401, 403) and b"error code: 1010" not in body7
+app_level7 = s7 == 401 and b"invalid signature" in body7.lower()
 check("unsigned agent-event webhook rejected by the application", app_level7, f"status={s7} body={body7[:120]!r}")
 
 # 7. Billing Core read path should be unconfigured/inert BEFORE activation.
