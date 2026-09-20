@@ -9,7 +9,7 @@ Review Batch: B5 (pre-deploy) · Recorded: 2026-09-20 (Asia/Bangkok) · Orchestr
 |---|---|
 | Repository | `Gutumrod/hub-web` |
 | Branch | `work/house-platform-closure-20260919` |
-| **Frozen candidate revision** | **`15b1579040724cd8430041527aedb5fa8b0b7275`** |
+| **Frozen candidate revision** | **`61acf52c6ecb5995f7ae67b7885f4548f40ebaef`** |
 | Base before T5 | `381fef3f639f1b6da225c217ce6ddd3e0f29cd61` (B4-approved) |
 | Remote parity | verified equal to `origin/work/house-platform-closure-20260919` |
 | Coordination repo revision | `Gutumrod/saas-product-hub` `work/house-production-closure-longrun-20260919` |
@@ -83,7 +83,7 @@ it must be sequenced so each can be verified and, if needed, reverted independen
 
 ## Pre-deploy checklist for B5
 
-- [ ] Exact candidate SHA frozen — **`15b1579`**
+- [ ] Exact candidate SHA frozen — **`the frozen candidate`**
 - [ ] Production Readiness Record exists — `T5-PRODUCTION-READINESS-RECORD-2026-09-20.md`
 - [ ] Applicable G1–G10 evidence PASS or explicit N/A WITH EVIDENCE — recorded, with remaining gaps listed
 - [ ] Canonical build-time environment delivery verified without printing secrets — mechanism recorded

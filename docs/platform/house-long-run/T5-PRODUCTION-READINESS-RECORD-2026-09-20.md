@@ -5,7 +5,7 @@ Standard: `Gutumrod/wstera-workflows:policies/PRODUCTION-READINESS-STANDARD.md` 
 Recorded: 2026-09-20 (Asia/Bangkok) · Orchestrator: Hermes
 
 **Candidate revision:** hub-web
-`0e4494d6f351b0967eb742e0a6ed34fdc3a6d470` on `work/house-platform-closure-20260919`
+`61acf52c6ecb5995f7ae67b7885f4548f40ebaef` on `work/house-platform-closure-20260919`
 Coordination revision: `Gutumrod/saas-product-hub` `work/house-production-closure-longrun-20260919`
 
 **Current production state claim: `BUILD_PASS` at most.** Per the standard,
@@ -13,10 +13,10 @@ Coordination revision: `Gutumrod/saas-product-hub` `work/house-production-closur
 production claim until the corresponding evidence exists.
 
 **Revision-consistency note:** every candidate reference in this record is bound to
-`0e4494d6f351b0967eb742e0a6ed34fdc3a6d470`, the frozen, committed and pushed candidate. The earlier
+`61acf52c6ecb5995f7ae67b7885f4548f40ebaef`, the frozen, committed and pushed candidate. The earlier
 `15b1579` figures described the pre-remediation candidate; they are retained only in the change-set
 history below, never as current evidence. All T5 remediation is committed, the `apps/hub-web` worktree
-is clean, and remote parity is verified. Exact-SHA gates at `0e4494d6`: `npx tsc --noEmit` exit 0;
+is clean, and remote parity is verified. Exact-SHA gates at `61acf52c`: `npx tsc --noEmit` exit 0;
 `npx vitest run` -> 25 files / 366 tests, all passing.
 
 ---
@@ -35,7 +35,7 @@ is clean, and remote parity is verified. Exact-SHA gates at `0e4494d6`: `npx tsc
 
 | Item | State | Evidence |
 |---|---|---|
-| Full relevant tests | **PASS (exact candidate)** | On `0e4494d6f351b0967eb742e0a6ed34fdc3a6d470`: `npx tsc --noEmit` exit 0; `npx vitest run` -> 25 files / 366 tests, all passing; no test removed |
+| Full relevant tests | **PASS (exact candidate)** | On `61acf52c6ecb5995f7ae67b7885f4548f40ebaef`: `npx tsc --noEmit` exit 0; `npx vitest run` -> 25 files / 366 tests, all passing; no test removed |
 | Negative auth/role/tenant tests | **PASS** | T4 transport suite: missing/unknown accountId, unresolvable productCode, no-enumeration, account assertion binding, unknown providerStatus rejection |
 | Negative event tests | **PASS** | T2 signer suite: wrong-signer, wrong-product, tamper, replay, version mismatch, over-limit, rate limit |
 | Negative fulfillment tests | **PASS** | T3 suite: partial revoke/reissue completion, duplicate suppression, failure durability, exactly-one-audit |
@@ -109,7 +109,7 @@ fixture-only.
 
 | Item | State |
 |---|---|
-| Exact candidate | hub-web `0e4494d6f351b0967eb742e0a6ed34fdc3a6d470` |
+| Exact candidate | hub-web `61acf52c6ecb5995f7ae67b7885f4548f40ebaef` |
 | Dependency/runtime/config changes | T2 added signer-registry env keys (`PRODUCT_EVENT_SIGNERS`, bounds); T4 added `BILLING_CORE_CONTROL_READ_BASE_URL` + `BILLING_CORE_CONTROL_READ_CREDENTIALS`. **Production currently has none of these configured** — see the live-config gap below. |
 | Invalidated evidence rerun | Every stage reran the full suite; counts recorded per stage |
 
