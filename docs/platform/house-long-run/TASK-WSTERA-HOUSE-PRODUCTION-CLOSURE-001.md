@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T4 APPROVED — T5 RELEASED (production readiness / controlled apply / deploy / live proof)
+Status: T5 PENDING / **OWNER_HOLD** — code-only deploy + live proof COMPLETE; R15 apply blocked on provisioning authority
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -9,14 +9,14 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: 381fef3f639f1b6da225c217ce6ddd3e0f29cd61 (T4, hub-web source revision; B4 APPROVED)
+Current Commit: house `db88bd22b5ca6db2a4940d0d1560ffca8180b18f` / hub-web `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (frozen candidate, deployed)
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: (none — T4 approved; T5 to be released)
-Current Checkpoint: CP-10 T5/B5
+Current Worker: `00bdb1b5-70d2-4e41-b97d-f1f238e9bf31` (LIVE) · rollback target `9db4fb70-a5e5-4989-94b5-1d271ab10055`
+Current Checkpoint: CP-10 T5/B5 closure — OWNER_HOLD
 Current Stage: T5
-Current Work Unit: T5-WU01 (READINESS RECORD + EVIDENCE GAP CHECK)
+Current Work Unit: T5-WU05/WU06 COMPLETE · B5 closure = OWNER_DECISION_REQUIRED (awaiting Owner R15 decision)
 Current Review Batch: B5
 Current State: READY
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
@@ -24,7 +24,7 @@ Latest Dispatch: B4 R5 -> agent-codex BATCH_APPROVED at hub-web 381fef3
 Dispatch Revision: docs/platform/house-long-run/B4-R5-REVIEW-REPORT-CODEX-2026-09-20.md
 Latest Reviewer Packet: docs/platform/house-long-run/B4-REVIEW-CLOSURE-2026-09-20.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: Release T5-WU01 — create the Production Readiness Record and close non-live evidence gaps. No production mutation before the B5 pre-deploy review approves the frozen exact candidate.
+Next Allowed Action: STOP — Owner decision required on the R15 provisioning authority. See OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md. No T6/B6 entry, and no further production mutation, until resolved.
 
 ## Objective
 
