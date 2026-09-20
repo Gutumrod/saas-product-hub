@@ -27,7 +27,7 @@ Latest Dispatch: B5 closure -> agent-codex OWNER_DECISION_REQUIRED at hub-web 67
 Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
 Latest Reviewer Packet: docs/platform/house-long-run/R15-D0-PREFLIGHT-OUTCOME-2026-09-20.md (current) · OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md (SUPERSEDED — R15 was authorized; retained as history)
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: STOP — Owner decision required on the D0 topology finding (billing deny-target schemas live in WSTERA_LAB, not Project A; product_installations absent). See R15-D0-PREFLIGHT-OUTCOME-2026-09-20.md. No T6/B6 entry, and no further production mutation, until resolved.
+Next Allowed Action: STOP — Codex returned OWNER_DECISION_REQUIRED. A bounded Owner authorization for schema remediation is prepared and ready to approve in R15-D0-DECISION-OUTCOME-2026-09-20.md §5 (target Project A only; apply 0007 + create/apply additive 0008; no db:push; no 0002-0006; no billing/roles/RLS/secrets/Worker changes). No execution until approved.
 
 ## Objective
 
