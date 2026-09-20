@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T1 GATE PASS — AWAITING B1 INDEPENDENT REVIEW
+Status: T3 DELIVERED — AWAITING B3 INDEPENDENT REVIEW
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -9,22 +9,22 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: 6a9ca6ca724f817b322a8d83dcb540d97e7077fa (T1 content revision; B1 pending)
+Current Commit: ae29d202c7ee60a579e85209ec6575fdd357c060 (T3, hub-web source revision; B3 pending)
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: (none — T1 write-only lanes complete; B1 reviewer next)
-Current Checkpoint: CP-06 T1/B1
-Current Stage: T1
-Current Work Unit: T1-WU01..06 COMPLETE (4 artifacts on disk; WU-05 needed one re-dispatch)
-Current Review Batch: B1
+Current Worker: (none — T3 delivered; B3 reviewer next)
+Current Checkpoint: CP-08 T3/B3
+Current Stage: T3
+Current Work Unit: T3-WU01..06 COMPLETE (delivered over six bounded lanes)
+Current Review Batch: B3
 Current State: REVIEW_REQUIRED
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: T1 review packet -> agent-codex B1 (independent)
-Dispatch Revision: docs/platform/house-long-run/DISPATCH-B1-CODEX-2026-09-20.md
-Latest Reviewer Packet: docs/platform/house-long-run/T1-R15-* artifacts + T1-RLS-DECISION-RECORD + T1-CITATION-PACK
+Latest Dispatch: T3 review packet -> agent-codex B3 (independent) on hub-web ae29d20
+Dispatch Revision: docs/platform/house-long-run/DISPATCH-T3-FULFILLMENT-2026-09-20.md
+Latest Reviewer Packet: docs/platform/house-long-run/T3-CLOSURE-2026-09-20.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: Codex independent B1 review of the T1 R15 package on exact revision 6a9ca6c. On BATCH_APPROVED -> release T2 (product-event signer hardening).
+Next Allowed Action: Codex independent B3 review of the T3 fulfillment capability bound to hub-web ae29d20. On BATCH_APPROVED -> T4 (SB01 LR-2F dependency gate; currently DEPENDENCY_WAIT) and T5 preparation.
 
 ## Objective
 
@@ -80,10 +80,10 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 | CP-04 PRE-01 | PASS | Hermes | EVIDENCE-PRE01-T0... §1 | PASS — 1 runtime repair (`RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS`), opencode UNAVAILABLE (deviation D-1) |
 | CP-05 T0/B0 | **PASS / B0 BATCH_APPROVED** | Hermes / Codex | B0-REVIEW-CLOSURE-2026-09-19.md | T0 reconciled at `a502421`; B0 approved at `28f571d`, 0 blocking |
 | CP-06 T1/B1 | **T1 GATE PASS / B1 PENDING** | swarm lanes 03–06 / Codex | T1-R15-* artifacts | 4/4 artifacts on disk; Owner RLS ruling applied |
-| CP-07 T2/B2 | READY after B1 | (T2 workers TBD) / Codex | pending | signer boundary approval required |
-| CP-08 T3/B3 | PENDING | OpenCode/Qwen/Codex | pending | fulfillment approved |
-| CP-09 T4/B4 | PENDING_DEPENDENCY | OpenCode/Qwen/Codex | waits for accepted SB01 LR-2F | Control read boundary approved |
-| CP-10 T5/B5 | PENDING | workers/Codex | pending | production/live evidence approved |
+| CP-07 T2/B2 | **PASS / B2 BATCH_APPROVED** | swarm-builder lanes / Codex | B2-REVIEW-CLOSURE-2026-09-20.md | Signer contract delivered at hub-web `e24d5a9`; 0 blocking |
+| CP-08 T3/B3 | **T3 DELIVERED / B3 PENDING** | swarm-builder lanes / Codex | T3-CLOSURE-2026-09-20.md | Fulfillment at hub-web `ae29d20`; 272/272 tests |
+| CP-09 T4/B4 | PENDING_DEPENDENCY | — | SB01 LR-2F-A Stage B 16 Decision Gaps | waits for accepted SB01 LR-2F contract |
+| CP-10 T5/B5 | PENDING | (T5 workers TBD) / Codex | pending | production/live evidence approval required |
 | CP-11 T6/B6 | PENDING | OpenCode/Hermes/Codex | pending | final House closure packet |
 | CP-12 Owner Closure | PENDING | Owner | final packet | final authority |
 
@@ -91,12 +91,12 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 
 ```text
 Manifest Revision: f84a59c5d602ca37c95727997a0d63a709ddd63e
-Stage State: REVIEW_REQUIRED (B1)
-Issue Fingerprint: SWARM_WORKER_TURN_BUDGET_EXHAUSTED_BEFORE_DELIVERABLE_WRITE (closed by packet split; WU-05 needed 1 re-dispatch for a packet-provenance defect)
-Local Fix Attempts: 1/2 (T1 packet-provenance fix; prior 2/2 applied to the oversized packets)
-Reviewer Remediation Attempts: 0/2
+Stage State: REVIEW_REQUIRED (B3)
+Issue Fingerprint: closed — T3_IMPLEMENTATION_TURN_BUDGET_EXHAUSTED_BEFORE_CORE_SERVICE, then six mechanical defects, all fixed across six bounded lanes
+Local Fix Attempts: 1/2 (T3 scope bug)
+Reviewer Remediation Attempts: 0/2 (this cycle)
 Senior Escalations: 0/1
-Primary Reviewer Status: Codex — B0 BATCH_APPROVED; B1 review pending on 6a9ca6c
+Primary Reviewer Status: Codex — B0 BATCH_APPROVED, B1 BATCH_APPROVED (2 rounds), B2 BATCH_APPROVED (2 rounds); B3 pending on hub-web ae29d20
 Active Independent Reviewer: NONE
 ```
 
