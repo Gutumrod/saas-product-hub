@@ -5,7 +5,7 @@ Review Batch: B5 (pre-deploy) · Recorded: 2026-09-20 (Asia/Bangkok) · Orchestr
 
 ## Candidate freeze
 
-> **Revision authority:** the frozen candidate revision for T5 is stated in exactly one place —
+> **Revision authority:** the frozen candidate `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` revision for T5 is stated in exactly one place —
 > `T5-CANDIDATE-FREEZE-2026-09-20.md`. The SHA repeated in this document is a convenience copy;
 > if the two ever disagree, that file wins and this document is stale.
 
@@ -35,7 +35,7 @@ npm audit          -> 14 findings (1 critical, 4 high, 9 moderate)
 | Gate | Result |
 |---|---|
 | Typecheck | PASS (production source; note `tsconfig.json` excludes `**/*.test.ts`) |
-| Full test suite | PASS 25/358 |
+| Full test suite | PASS 25/366 (re-measured at the frozen revision `679ff27`) |
 | Dependency audit | 1 critical + 4 high remain, **all dev/build tooling**; every finding has a recorded disposition |
 | `drizzle-orm` HIGH advisory | **FIXED** — `0.44.7` -> `^0.45.2`, closing GHSA-gpj5-g38j-94v9 on the live server path |
 | Build-env gate | PASS — `check:build-env` runs ahead of `build` and `cf:deploy`; verified to abort with a MISSING message when a required value is absent |
@@ -87,15 +87,21 @@ it must be sequenced so each can be verified and, if needed, reverted independen
 
 ## Pre-deploy checklist for B5
 
-- [ ] Exact candidate SHA frozen — **`the frozen candidate`**
-- [ ] Production Readiness Record exists — `T5-PRODUCTION-READINESS-RECORD-2026-09-20.md`
-- [ ] Applicable G1–G10 evidence PASS or explicit N/A WITH EVIDENCE — recorded, with remaining gaps listed
-- [ ] Canonical build-time environment delivery verified without printing secrets — mechanism recorded
-- [ ] Rollback target/procedure recorded — above
-- [ ] No destructive/irreversible action introduced
-- [ ] No new paid dependency introduced
-- [ ] Live commands materially identical to the approved operator contract
-- [ ] R15 operation is the approved non-destructive role/grant package
+Each line states its own evidence state. Items that depend on WU05 are deliberately NOT ticked —
+they cannot be asserted before the deploy runs.
+
+- [x] Exact candidate SHA frozen — `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (freeze record verified)
+- [x] Production Readiness Record exists — `T5-PRODUCTION-READINESS-RECORD-2026-09-20.md`
+- [ ] Applicable G1–G10 evidence PASS or explicit N/A WITH EVIDENCE — **PARTIAL**: recorded, with the
+      remaining gaps enumerated below and the live items untested until WU06
+- [ ] Canonical build-time environment delivery verified without printing secrets — **mechanism verified**
+      (build-env gate aborts on a MISSING value); the **live delivery** is a WU05 action and is not done
+- [x] Rollback target/procedure recorded — production deployment id captured, rollback path documented
+- [x] No destructive/irreversible action introduced
+- [x] No new paid dependency introduced
+- [ ] Live commands materially identical to the approved operator contract — **NOT YET EXECUTED**; WU05
+- [ ] R15 operation is the approved non-destructive role/grant package — **R15 is PREPARED, NOT APPLIED**;
+      the apply is a WU05 step and has not run
 
 ## Open G-gaps that B5 must rule on (from the readiness record)
 
