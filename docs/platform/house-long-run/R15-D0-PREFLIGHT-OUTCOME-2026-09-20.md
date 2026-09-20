@@ -114,6 +114,42 @@ role/grant/deny transition and states explicitly that **no redesign or expansion
 Applying an unapplied product-schema migration is a different action that this authorization does not
 cover, so it was **not** performed.
 
+## Third finding — REVENUE IMPACT: the production fulfillment path has no tables
+
+Measured on Project A (the project the live Worker connects to for the direct-Postgres path):
+
+| Table | State |
+|---|---|
+| `products` | PRESENT |
+| `product_assets` | PRESENT |
+| `profiles` | PRESENT |
+| **`product_installations`** | **ABSENT** |
+| **`fulfillment_records`** | **ABSENT** |
+| **`fulfillment_recipients`** | **ABSENT** |
+| **`fulfillment_deliveries`** | **ABSENT** |
+| **`fulfillment_lifecycle_operations`** | **ABSENT** |
+| **`fulfillment_audit`** | **ABSENT** |
+| `work_queue_items` | ABSENT |
+| `owner_inbox_items` | ABSENT |
+| `portfolio_gates` | ABSENT |
+| `agent_activity_events` | ABSENT |
+
+The runtime credential does hold `SELECT`/`INSERT` on `products` and `USAGE` on `public` — so it is not
+a permission problem. The objects simply **do not exist**.
+
+**Why this matters beyond R15.** `fulfillment_*` is the delivery/revocation truth that T3 built and
+B3 approved. `product_installations` is what the product-event webhook records an installation into.
+Neither exists on the database the deployed Worker actually uses. Migrations `0002` and `0007` exist in
+the repository but **no migration in `drizzle/migrations/` creates `products`, `product_assets` or
+`profiles` at all** — those three were created outside the migration system, and the rest were never
+applied here.
+
+So the live deploy is proven to serve HTTPS, security headers, health and fail-closed rejection — but
+the **product/fulfillment write path has no tables to write to** in production. This is a House-side
+blocker on the product lanes' ability to fulfil anything, and it is exactly the kind of item the CEO
+revenue mandate ranks above polish. It is reported here, not fixed, because applying migrations is
+outside the granted R15 authorization.
+
 ## What was NOT done, and why
 
 | Step | Status | Reason |
