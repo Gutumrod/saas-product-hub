@@ -1,0 +1,21 @@
+CHECK                                                      RESULT DETAIL
+--------------------------------------------------------------------------------------------------------------
+apex over HTTPS returns 200                                PASS   status=200
+platform over HTTPS returns 200                            PASS   status=200
+http apex redirects to HTTPS                               FAIL   status=200 location=
+http platform redirects to HTTPS                           FAIL   status=200
+HSTS present (apex)                                        FAIL   None
+X-Content-Type-Options nosniff (apex)                      FAIL   
+X-Frame-Options present (apex)                             FAIL   
+CSP present (apex)                                         FAIL   
+HSTS present (platform)                                    FAIL   None
+X-Content-Type-Options nosniff (platform)                  FAIL   
+X-Frame-Options present (platform)                         FAIL   
+CSP present (platform)                                     FAIL   
+platform health endpoint 200                               PASS   status=200
+unsigned product-event webhook rejected (fail-closed)      PASS   status=403 body=b'error code: 1010\n'
+unsigned agent-event webhook rejected (fail-closed)        PASS   status=403 body=b'error code: 1010\n'
+billing read route does not 500 (fails closed)             PASS   status=404
+
+TOTAL 16  PASS 6  FAIL 10
+FAILED: http apex redirects to HTTPS, http platform redirects to HTTPS, HSTS present (apex), X-Content-Type-Options nosniff (apex), X-Frame-Options present (apex), CSP present (apex), HSTS present (platform), X-Content-Type-Options nosniff (platform), X-Frame-Options present (platform), CSP present (platform)
