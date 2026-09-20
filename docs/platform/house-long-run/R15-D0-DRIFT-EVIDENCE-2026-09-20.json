@@ -1,0 +1,38 @@
+{
+  "captured_at": "2026-09-20T15:06:26.994Z",
+  "declared_tables": [
+    "profiles",
+    "products",
+    "product_assets",
+    "product_installations",
+    "fulfillment_records",
+    "fulfillment_recipients",
+    "fulfillment_deliveries",
+    "fulfillment_lifecycle_operations",
+    "fulfillment_audit"
+  ],
+  "present": [
+    "profiles",
+    "products",
+    "product_assets"
+  ],
+  "absent": [
+    "product_installations",
+    "fulfillment_records",
+    "fulfillment_recipients",
+    "fulfillment_deliveries",
+    "fulfillment_lifecycle_operations",
+    "fulfillment_audit"
+  ],
+  "enums": [
+    "user_role",
+    "product_status",
+    "asset_type",
+    "installation_status",
+    "installation_source",
+    "fulfillment_status",
+    "fulfillment_artifact_kind",
+    "fulfillment_delivery_status",
+    "fulfillment_lifecycle_operation"
+  ]
+}
