@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T3 DELIVERED — AWAITING B3 INDEPENDENT REVIEW
+Status: T4 APPROVED — T5 RELEASED (production readiness / controlled apply / deploy / live proof)
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -9,22 +9,22 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: ae29d202c7ee60a579e85209ec6575fdd357c060 (T3, hub-web source revision; B3 pending)
+Current Commit: 381fef3f639f1b6da225c217ce6ddd3e0f29cd61 (T4, hub-web source revision; B4 APPROVED)
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: (none — T3 delivered; B3 reviewer next)
-Current Checkpoint: CP-08 T3/B3
-Current Stage: T3
-Current Work Unit: T3-WU01..06 COMPLETE (delivered over six bounded lanes)
-Current Review Batch: B3
-Current State: REVIEW_REQUIRED
+Current Worker: (none — T4 approved; T5 to be released)
+Current Checkpoint: CP-10 T5/B5
+Current Stage: T5
+Current Work Unit: T5-WU01 (READINESS RECORD + EVIDENCE GAP CHECK)
+Current Review Batch: B5
+Current State: READY
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: T3 review packet -> agent-codex B3 (independent) on hub-web ae29d20
-Dispatch Revision: docs/platform/house-long-run/DISPATCH-T3-FULFILLMENT-2026-09-20.md
-Latest Reviewer Packet: docs/platform/house-long-run/T3-CLOSURE-2026-09-20.md
+Latest Dispatch: B4 R5 -> agent-codex BATCH_APPROVED at hub-web 381fef3
+Dispatch Revision: docs/platform/house-long-run/B4-R5-REVIEW-REPORT-CODEX-2026-09-20.md
+Latest Reviewer Packet: docs/platform/house-long-run/B4-REVIEW-CLOSURE-2026-09-20.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: Codex independent B3 review of the T3 fulfillment capability bound to hub-web ae29d20. On BATCH_APPROVED -> T4 (SB01 LR-2F dependency gate; currently DEPENDENCY_WAIT) and T5 preparation.
+Next Allowed Action: Release T5-WU01 — create the Production Readiness Record and close non-live evidence gaps. No production mutation before the B5 pre-deploy review approves the frozen exact candidate.
 
 ## Objective
 
@@ -82,8 +82,8 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 | CP-06 T1/B1 | **T1 GATE PASS / B1 PENDING** | swarm lanes 03–06 / Codex | T1-R15-* artifacts | 4/4 artifacts on disk; Owner RLS ruling applied |
 | CP-07 T2/B2 | **PASS / B2 BATCH_APPROVED** | swarm-builder lanes / Codex | B2-REVIEW-CLOSURE-2026-09-20.md | Signer contract delivered at hub-web `e24d5a9`; 0 blocking |
 | CP-08 T3/B3 | **T3 DELIVERED / B3 PENDING** | swarm-builder lanes / Codex | T3-CLOSURE-2026-09-20.md | Fulfillment at hub-web `ae29d20`; 272/272 tests |
-| CP-09 T4/B4 | PENDING_DEPENDENCY | — | SB01 LR-2F-A Stage B 16 Decision Gaps | waits for accepted SB01 LR-2F contract |
-| CP-10 T5/B5 | PENDING | (T5 workers TBD) / Codex | pending | production/live evidence approval required |
+| CP-09 T4/B4 | **PASS / B4 BATCH_APPROVED** | Claude lanes / Codex | B4-REVIEW-CLOSURE-2026-09-20.md | Control read projection at hub-web `381fef3` (5 review rounds, 0 blocking final) |
+| CP-10 T5/B5 | READY | (T5 workers TBD) / Codex | pending | production/live evidence approval required |
 | CP-11 T6/B6 | PENDING | OpenCode/Hermes/Codex | pending | final House closure packet |
 | CP-12 Owner Closure | PENDING | Owner | final packet | final authority |
 
