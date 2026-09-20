@@ -1,0 +1,56 @@
+=== R15 D3.1/D3.2/D3.3 OUTCOME ===
+
+D3.1 SET WORKER SECRET (Owner U3 command form, value never printed)
+  secret NAME      : DATABASE_URL
+  target Worker    : hub-web
+  new role         : hub_web_app (same host/params as the owner URL; project ref matched)
+  value length     : 144 (length only - value never printed, never written to repo/evidence)
+  operation result : SUCCESS
+  temp file        : deleted immediately after the operation
+
+D3.2 DEPLOY (new secret takes effect)
+  command          : npm run cf:deploy (check:build-env -> vite build -> wrangler deploy)
+  HEAD             : 407130718646d13630b9789f68522a521fc74483 (clean, upstream parity)
+  deployed version : 9a004fa9-53be-400b-a1ea-c52263faacbc  2026-09-20T23:53:01Z
+  previous (rollback-addressable): 00bdb1b5-70d2-4e41-b97d-f1f238e9bf31
+  capability config at deploy time: PRODUCT_EVENT_SIGNERS absent, BILLING_CORE_CONTROL_READ absent
+
+D3.3 RUNTIME VERIFICATION
+  credential bound to the Worker: current_user = hub_web_app, session_user = hub_web_app
+    -> is hub_web_app: PASS   |   is NOT the owner identity 'postgres': PASS
+  direct-Postgres path present (not the absent-URL null state): PASS
+  required operations through the bound credential: SELECT products / product_assets /
+    product_installations all OK
+  privilege reduction vs the owner identity (the point of R15), each denied 42501:
+    UPDATE public.products, DELETE public.products, SELECT public.profiles,
+    CREATE TABLE in public, CREATE SCHEMA, DROP TABLE public.products,
+    ALTER TABLE public.products, TRUNCATE public.products   -> ALL PASS
+  leftover r15 probe objects: 0
+
+WU06 LIVE PROOF AFTER THE SWITCH: 16/16 PASS
+  (HTTPS on both hosts, HTTP->HTTPS 301 both hosts, HSTS/XCTO/XFO/CSP on both routes,
+   health 200, both unsigned webhooks rejected by the APPLICATION with 401 invalid signature,
+   billing read route fails closed)
+
+=== CORRECTIONS MADE DURING D3.3 (both were defects in my checks, not in the change) ===
+1. "DROP anything ALLOWED" was a checker bug. DROP TABLE IF EXISTS on a non-existent table
+   SUCCEEDS with a NOTICE under IF EXISTS semantics, which the test read as "allowed". Re-tested
+   correctly, the role has no DDL: CREATE TABLE / CREATE SCHEMA / DROP TABLE on an existing table /
+   ALTER TABLE / TRUNCATE on an existing table were ALL denied 42501.
+2. A test statement ("ALTER ROLE hub_web_app SET search_path TO public") SUCCEEDED, because
+   PostgreSQL permits a role to change its OWN role-level defaults - it is not privilege
+   escalation, but it is a state change my read-only test should never have made and it was outside
+   the reviewed matrix. It was reverted immediately with ALTER ROLE hub_web_app RESET search_path,
+   and pg_roles.rolconfig was confirmed back to null (its original value). No other role attribute
+   was modified: rolsuper/rolcreatedb/rolcreaterole/rolbypassrls/rolreplication all false,
+   rolcanlogin true, rolinherit false. No leftover probe objects exist.
+
+=== BILLING DENY (disposition A) ===
+  billing_core / billing_core_staging do not exist in Project A (42P01).
+  Recorded as ABSENCE-INVARIANT with a mandatory re-verification trigger when they are created
+  in Project A. This is explicitly NOT a DENY PASS.
+
+=== ROLLBACK STATE ===
+  Owner credential retained out-of-band and still valid (P3). Rollback available:
+    wrangler rollback 00bdb1b5-...  (or re-set DATABASE_URL to the owner value and redeploy)
+  Not triggered: every D3.3 check passed.
