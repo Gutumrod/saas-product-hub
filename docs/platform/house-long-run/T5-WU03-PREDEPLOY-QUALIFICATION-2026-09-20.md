@@ -26,8 +26,8 @@ invalidates this qualification and requires a fresh B5 review.
 ```
 cd apps/hub-web
 npx tsc --noEmit   -> exit 0
-npx vitest run     -> 25 files, 358 tests, all passing
-                      (pre-T5 baseline 23 files / 347 tests; no test removed)
+npx vitest run     -> 25 files, 366 tests, all passing
+                      (pre-T5 baseline 23 files / 347 tests; no test removed; re-measured at the frozen revision)
 npm audit          -> 14 findings (1 critical, 4 high, 9 moderate)
                       (was 15; the fixed one was drizzle-orm, on the live path)
 ```
@@ -99,13 +99,16 @@ it must be sequenced so each can be verified and, if needed, reverted independen
 
 ## Open G-gaps that B5 must rule on (from the readiness record)
 
-1. HTTP→HTTPS enforcement — **fixable at WU05** via the zone setting (documented, reversible)
+1. HTTP→HTTPS enforcement — **fixable at WU05** via the zone setting (documented, reversible); still open
 2. Security headers — **closed by WU02**
 3. Dependency audit — **drizzle-orm fixed**; the remainder are dev/build tooling with recorded reasons
-4. Runbook — NOT YET WRITTEN
-5. Kill-switch / escalation — NOT YET RECORDED
-6. Control request correlation — NOT EVIDENCED
+4. Runbook — **CLOSED**: `docs/control-plane/BILLING-CORE-READ-FULFILLMENT-RUNBOOK-2026-09-20.md`
+5. Kill-switch / escalation — **CLOSED**: `docs/control-plane/CAPABILITY-KILL-SWITCH-ESCALATION-2026-09-20.md`
+6. Control request correlation — **DESIGN RECORDED, NOT IMPLEMENTED**: `docs/control-plane/CONTROL-READ-CORRELATION-DESIGN-2026-09-20.md`; the readiness record keeps this `PARTIAL`
 7. Live smoke — WU06
 
-Items 4–6 are the remaining non-live gaps. B5 must decide whether they block `PRODUCTION_READY`, and the
-Task must record that ruling either way.
+State of items 4–6 was corrected here after B5 R5 found this table stale: items 4 and 5 were written as
+NOT YET although both records had been created in the same remediation round. Only correlation remains
+open (design only, correctly marked PARTIAL), plus the live items. The B5 ruling on whether each gap
+blocks `PRODUCTION_READY` or the deploy window is recorded in the readiness record and the B5 review
+reports.
