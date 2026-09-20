@@ -1,5 +1,23 @@
 # OWNER_HOLD — WSTERA-HOUSE-PRODUCTION-CLOSURE-001 — T5 / B5 CLOSURE
 
+> ## ⚠️ SUPERSEDED — READ THIS FIRST
+>
+> **The R15-authority question in this document was ANSWERED by the Owner on 2026-09-20.**
+> The Owner issued an explicit bounded authorization for the R15 transition D0→D4 and delegated
+> Hermes as the deterministic provisioning operator. The statement below that "the authorization has
+> not been given" was true when written and is **no longer true**.
+>
+> R15 is now **authorized and D0 is COMPLETE**. D0 stopped the transition before D1 under the
+> Owner's own P4/U4 clause 3, and a **new** decision is required — a different one from the one in
+> this file. See:
+>
+> - **`R15-D0-PREFLIGHT-OUTCOME-2026-09-20.md`** ← the current, authoritative state and the new
+>   decision required (three options, plus the separate `product_installations` blocker)
+> - `R15-D0-BASELINE-EVIDENCE-2026-09-20.json`, `R15-D0-TOPOLOGY-EVIDENCE-2026-09-20.json`
+>
+> This file is retained for the historical record of the B5-closure OWNER_HOLD only. **Do not act on
+> the decision list below** — it is resolved.
+
 Task ID: `WSTERA-HOUSE-PRODUCTION-CLOSURE-001`
 Stage: **T5** (Production readiness / controlled apply / deploy / live proof) · Review Batch: **B5 closure**
 Hold type: **OWNER_DECISION_REQUIRED** (R15 provisioning authority) — stop condition per manifest

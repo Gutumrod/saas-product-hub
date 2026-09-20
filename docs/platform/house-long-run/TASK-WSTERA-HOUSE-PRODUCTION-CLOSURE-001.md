@@ -19,15 +19,15 @@ Coordinator: Hermes
 Current Worker: `00bdb1b5-70d2-4e41-b97d-f1f238e9bf31` (LIVE) · rollback target `9db4fb70-a5e5-4989-94b5-1d271ab10055`
 Current Checkpoint: CP-10 T5/B5 closure — OWNER_HOLD
 Current Stage: T5
-Current Work Unit: T5-WU05/WU06 COMPLETE · B5 closure = OWNER_DECISION_REQUIRED (awaiting Owner R15 decision)
+Current Work Unit: R15 D0 COMPLETE (read-only) · STOPPED before D1 by the Owner's P4/U4 clause 3 — Owner decision required on the corrected topology
 Current Review Batch: B5
 Current State: OWNER_HOLD
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
 Latest Dispatch: B5 closure -> agent-codex OWNER_DECISION_REQUIRED at hub-web 679ff27 (deployed)
 Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
-Latest Reviewer Packet: docs/platform/house-long-run/OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md
+Latest Reviewer Packet: docs/platform/house-long-run/R15-D0-PREFLIGHT-OUTCOME-2026-09-20.md (current) · OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md (SUPERSEDED — R15 was authorized; retained as history)
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: STOP — Owner decision required on the R15 provisioning authority. See OWNER-HOLD-T5-R15-AUTHORITY-2026-09-20.md. No T6/B6 entry, and no further production mutation, until resolved.
+Next Allowed Action: STOP — Owner decision required on the D0 topology finding (billing deny-target schemas live in WSTERA_LAB, not Project A; product_installations absent). See R15-D0-PREFLIGHT-OUTCOME-2026-09-20.md. No T6/B6 entry, and no further production mutation, until resolved.
 
 ## Objective
 
