@@ -1,0 +1,68 @@
+=== D1.0 BASELINE RECHECK ===
+  hub_web_app exists before: false (expect false)
+
+=== D1.1 CREATE ROLE (R15 posture) ===
+  created hub_web_app: LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOINHERIT, NOREPLICATION, NOBYPASSRLS
+  verify posture: super=false createdb=false createrole=false bypassrls=false login=true -> PASS
+  membership rows (expect 0): 0 -> PASS
+
+=== D1.2 GRANT (matrix §4.1/§6, exactly - nothing more) ===
+  OK   GRANT USAGE ON SCHEMA public
+  OK   GRANT SELECT, INSERT ON public.products
+  OK   GRANT SELECT, INSERT ON public.product_assets
+  OK   GRANT SELECT, INSERT, UPDATE ON public.product_installations
+  OK   GRANT USAGE ON SEQUENCE public.products_id_seq
+  OK   GRANT USAGE ON SEQUENCE public.product_assets_id_seq
+  OK   GRANT USAGE ON SEQUENCE public.product_installations_id_seq
+  OK   GRANT USAGE ON TYPE public.product_status
+  OK   GRANT USAGE ON TYPE public.asset_type
+  OK   GRANT USAGE ON TYPE public.installation_status
+  OK   GRANT USAGE ON TYPE public.installation_source
+
+=== D1.2 VERIFY: table privileges ===
+  products                 SELECT     expected=Y actual=Y ok
+  products                 INSERT     expected=Y actual=Y ok
+  products                 UPDATE     expected=n actual=n ok
+  products                 DELETE     expected=n actual=n ok
+  products                 TRUNCATE   expected=n actual=n ok
+  products                 REFERENCES expected=n actual=n ok
+  products                 TRIGGER    expected=n actual=n ok
+  product_assets           SELECT     expected=Y actual=Y ok
+  product_assets           INSERT     expected=Y actual=Y ok
+  product_assets           UPDATE     expected=n actual=n ok
+  product_assets           DELETE     expected=n actual=n ok
+  product_assets           TRUNCATE   expected=n actual=n ok
+  product_assets           REFERENCES expected=n actual=n ok
+  product_assets           TRIGGER    expected=n actual=n ok
+  product_installations    SELECT     expected=Y actual=Y ok
+  product_installations    INSERT     expected=Y actual=Y ok
+  product_installations    UPDATE     expected=Y actual=Y ok
+  product_installations    DELETE     expected=n actual=n ok
+  product_installations    TRUNCATE   expected=n actual=n ok
+  product_installations    REFERENCES expected=n actual=n ok
+  product_installations    TRIGGER    expected=n actual=n ok
+
+=== D1.2 VERIFY: excluded privileges must be ABSENT ===
+  public.profiles SELECT             must be false -> false PASS
+  public.profiles INSERT             must be false -> false PASS
+  public.profiles UPDATE             must be false -> false PASS
+  USAGE on user_role enum            must be false -> true FAIL
+  public schema CREATE               must be false -> false PASS
+  BYPASSRLS                          must be false -> false PASS
+
+=== D1.4 public.profiles BOUNDARY (must be untouched) ===
+  RLS still enabled: true (expect true)
+  hub_web_app policies on profiles: 0 (expect 0)
+
+=== D1.3 BILLING DENY (disposition A: absence-invariant, NOT a DENY PASS) ===
+  billing schemas present in Project A: 0
+  -> recorded as absence-invariant: hub_web_app cannot hold privileges on a schema that
+     does not exist in this project. This is NOT a DENY PASS.
+  -> mandatory re-verification when billing_core/billing_core_staging are created in Project A.
+
+=== OV-1 FK BEHAVIOUR (product_installations.recordedBy -> profiles.id, no profiles priv) ===
+  deferred to D2.2: it must be observed with the hub_web_app credential itself, not inferred.
+
+  credential generated and written to the private handoff file (mode 600). Value never printed.
+
+=== RESULT: FAIL ===
