@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T1 READY — B0 BATCH_APPROVED (0 blocking findings)
+Status: OWNER_HOLD — T1 RLS/architecture decision required
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -13,18 +13,18 @@ Current Commit: 28f571de053c6a7433268e707fe9b9244162d31a (T0 content revision; B
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: (none — T1 to be released)
+Current Worker: (none — T1 held)
 Current Checkpoint: CP-06 T1/B1
 Current Stage: T1
-Current Work Unit: T1-WU01 (PRIVILEGE INVENTORY)
+Current Work Unit: T1-WU01 DONE (inspection) · T1-WU02 FAIL (2/2 budget) · T1-WU03..06 BLOCKED on Owner ruling
 Current Review Batch: B1
-Current State: READY
+Current State: OWNER_HOLD
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B0 R2 -> agent-codex BATCH_APPROVED at 28f571d
-Dispatch Revision: docs/platform/house-long-run/DISPATCH-B0-R2-CODEX-2026-09-19.md
-Latest Reviewer Packet: docs/platform/house-long-run/B0-REVIEW-CLOSURE-2026-09-19.md
+Latest Dispatch: T1 failure classification -> agent-codex OWNER_DECISION_REQUIRED
+Dispatch Revision: docs/platform/house-long-run/CHAIN-FAILURE-T1-SWARM-BUDGET-2026-09-20.md
+Latest Reviewer Packet: docs/platform/house-long-run/OWNER-HOLD-T1-RLS-DECISION-2026-09-20.md
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: Release T1-WU01 (privilege inventory: inspect actual hub-web DB access code/config/migrations, write exact required privilege matrix + implementation plan). No production mutation.
+Next Allowed Action: Owner rules on the public.profiles RLS / hub_web_app mechanism decision (add RLS policy vs BYPASSRLS vs path re-scoping). On ruling, T1 resumes with the four-lane write-only remedy shape, then B1 review.
 
 ## Objective
 
@@ -79,7 +79,7 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 | CP-03 Manifest Lock | PASS | Owner | RUN-MANIFEST... @ f84a59c5 | APPROVED |
 | CP-04 PRE-01 | PASS | Hermes | EVIDENCE-PRE01-T0... §1 | PASS — 1 runtime repair (`RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS`), opencode UNAVAILABLE (deviation D-1) |
 | CP-05 T0/B0 | **PASS / B0 BATCH_APPROVED** | Hermes / Codex | B0-REVIEW-CLOSURE-2026-09-19.md | T0 reconciled at `a502421`; B0 approved at `28f571d`, 0 blocking |
-| CP-06 T1/B1 | READY | (T1 workers TBD) / Codex | pending | R15 package approval required |
+| CP-06 T1/B1 | **OWNER_HOLD** | swarm-inspector / swarm-evidence / Codex | OWNER-HOLD-T1-RLS-DECISION-2026-09-20.md | RLS/architecture decision required |
 | CP-07 T2/B2 | PENDING | OpenCode/Qwen/Codex | pending | signer boundary approved |
 | CP-08 T3/B3 | PENDING | OpenCode/Qwen/Codex | pending | fulfillment approved |
 | CP-09 T4/B4 | PENDING_DEPENDENCY | OpenCode/Qwen/Codex | waits for accepted SB01 LR-2F | Control read boundary approved |
@@ -91,12 +91,12 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 
 ```text
 Manifest Revision: f84a59c5d602ca37c95727997a0d63a709ddd63e
-Stage State: READY (T1)
-Issue Fingerprint: RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS (repaired, 1/2)
-Local Fix Attempts: 0/2 (T1)
+Stage State: OWNER_HOLD (T1)
+Issue Fingerprint: SWARM_WORKER_TURN_BUDGET_EXHAUSTED_BEFORE_DELIVERABLE_WRITE (confirmed correct by Codex)
+Local Fix Attempts: 2/2 (PERMITTED BUDGET EXHAUSTED — no attempt 3 permitted)
 Reviewer Remediation Attempts: 0/2
-Senior Escalations: 0/1 per authorized escalation decision
-Primary Reviewer Status: Codex — B0 BATCH_APPROVED at 28f571d; next required at B1
+Senior Escalations: 0/1 (not warranted — blocker is an authority decision, not difficult remediation)
+Primary Reviewer Status: Codex — B0 BATCH_APPROVED at 28f571d; B1 not reached; T1 classifier returned OWNER_DECISION_REQUIRED
 Active Independent Reviewer: NONE
 ```
 
