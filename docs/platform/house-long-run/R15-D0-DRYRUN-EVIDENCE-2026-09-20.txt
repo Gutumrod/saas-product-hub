@@ -1,0 +1,35 @@
+
+=== DRY RUN: 0007_shared_one_time_fulfillment.sql ===
+  DDL accepted by PostgreSQL inside one transaction: YES
+  table fulfillment_records                created
+     cols=27 -> id, productRef, grantKey, bindingKey, generation, entitlementSource, entitlementRef, entitlementDigest, entitlementReceivedAt, entitlementSnapshot, immutableVersion, artifactKind, artifactRef, status, deliveryAttemptCount, lastDeliveryId, deliveredAt, failureCode, failureMessage, failureDetail, revokedAt, revokeReason, supersedesFulfillmentId, supersededByFulfillmentId, createdByRef, createdAt, updatedAt
+  table fulfillment_recipients             created
+     cols=8 -> id, fulfillmentId, recipientKind, recipientRef, recipientDigest, deliveryChannel, boundAt, revokedAt
+  table fulfillment_deliveries             created
+     cols=16 -> id, fulfillmentId, attemptNumber, status, attemptKey, artifactKey, leaseExpiresAt, startedAt, finishedAt, errorCode, errorMessage, errorDetail, retryable, nextRetryAt, createdAt, updatedAt
+  table fulfillment_lifecycle_operations   created
+     cols=9 -> id, fulfillmentId, operation, operationKey, reason, actorRef, actorType, supersedingFulfillmentId, occurredAt
+  table fulfillment_audit                  created
+     cols=13 -> id, fulfillmentId, actorType, actorId, action, entityType, entityId, immutableVersion, recipientDigest, before, after, metadata, timestamp
+  enum  fulfillment_status                 pending|delivering|delivered|failed|revoked
+  enum  fulfillment_artifact_kind          artifact|repository
+  enum  fulfillment_delivery_status        pending|in_progress|succeeded|failed|abandoned
+  enum  fulfillment_lifecycle_operation    revoke|reissue
+  transaction rolled back deliberately — nothing persisted
+  RESULT: PASS
+
+=== DRY RUN: 0008_product_installations.sql ===
+  DDL accepted by PostgreSQL inside one transaction: YES
+  table product_installations              created
+     cols=13 -> id, productId, customerEmail, customerName, externalCustomerId, status, planLabel, source, notes, recordedBy, externalEventId, installedAt, updatedAt
+  enum  installation_status                trial|active|cancelled|suspended
+  enum  installation_source                manual|webhook
+  FK    product_installations_productId_fkey: FOREIGN KEY ("productId") REFERENCES products(id) ON DELETE CASCADE
+  FK    product_installations_recordedBy_fkey: FOREIGN KEY ("recordedBy") REFERENCES profiles(id) ON DELETE SET NULL
+  indexes: product_installations_pkey, product_installations_event_unique
+  current_user can INSERT (for D1.2 grant planning): true
+  transaction rolled back deliberately — nothing persisted
+  RESULT: PASS
+
+=== DRY RUN TOTAL: ALL PASS ===
+Nothing was applied. Applying requires the bounded Owner authorization.
