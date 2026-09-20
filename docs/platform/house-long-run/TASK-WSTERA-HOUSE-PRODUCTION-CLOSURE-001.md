@@ -9,7 +9,10 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: house `34400c2ad7557050865b614fcdc613b33d3de498` / hub-web `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (frozen candidate, deployed)
+Current Commit: hub-web `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (frozen candidate, deployed at `00bdb1b5`)
+House Records Revision: `34400c2ad7557050865b614fcdc613b33d3de498` (evidence set at the stop), then `b8c6a20` (this checkpoint update)
+Note: House HEAD moves whenever this checkpoint file is updated, so it is deliberately not asserted as a single
+  scalar; the authoritative frozen revision for the candidate lives in `T5-CANDIDATE-FREEZE-2026-09-20.md`.
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
