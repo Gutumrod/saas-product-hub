@@ -13,11 +13,11 @@ Status: **PREPARED — entered only on B5 `BATCH_APPROVED`**
 
 | Field | Value |
 |---|---|
-| Exact House commit | `Gutumrod/saas-product-hub` branch `work/house-production-closure-longrun-20260919` @ `35d1d6c69e6f05f3654965d6917e11d6b5ff8bb1` (+ subsequent T6 commits) |
+| Exact House commit | `Gutumrod/saas-product-hub` branch `work/house-production-closure-longrun-20260919` — see the latest commit on the branch at review time; the T6 entry commit was `59656d9`, preceded by `573c893` (T6-WU01 CURRENT_STATUS) |
 | Exact hub-web commit | `Gutumrod/hub-web` branch `work/house-platform-closure-20260919` @ `407130718646d13630b9789f68522a521fc74483` |
 | Default-branch disposition | **Explicitly dispositioned, not silently left** — see `T6-WU01-REPO-PR-RECONCILE-2026-09-21.md` §2. Closure branch is **45 commits ahead of `main`**; draft PR #1 targets `feature/platform-control-plane`, a different line. Three disposition options are stated; **the choice is an Owner/repo-governance decision and is NOT taken here.** |
-| Deployed artifact / Worker identity | Worker `hub-web`, version **`9a004fa9-53be-400b-a1ea-c52263faacbc`** (2026-09-20T23:53:01Z) built from `4071307` |
-| Rollback-addressable versions | `00bdb1b5-70d2-4e41-b97d-f1f238e9bf31` → `9db4fb70-a5e5-4989-94b5-1d271ab10055` |
+| Deployed artifact / Worker identity | Worker `hub-web`, version **`5dc81232-c116-4722-a6c1-74c15ad50385`** live, built from `4071307`. Earlier versions `9a004fa9`, `00bdb1b5`, `9db4fb70` remain rollback-addressable. The credential was re-issued on 2026-09-21 (`R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md`); post-repair verification in `R15-POST-CREDENTIAL-REPAIR-VERIFY-2026-09-21.txt`. |
+| Rollback-addressable versions | `9a004fa9` → `00bdb1b5` → `9db4fb70` (all three verified present in the deployment history) |
 | Production Readiness state | **`BUILD_PASS` and `LIVE_PROVEN` (code-only deploy scope only).** Not `PRODUCTION_READY` (capabilities inert, correlation design-only). Not `OPERATED_STABLE` (no stability window). |
 | R15 state | **APPLIED AND VERIFIED.** `hub_web_app` exists with the exact reviewed grants; `DATABASE_URL` switched; runtime identity confirmed `hub_web_app`; every owner-only privilege denied `42501` |
 | Signer state | **absent / inert** — `PRODUCT_EVENT_SIGNERS` does not exist in this environment |
