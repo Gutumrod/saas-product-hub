@@ -96,3 +96,29 @@ fulfillment E2E · the billing re-verification trigger · stability evidence. **
 
 Worker `9a004fa9` live · runtime identity `hub_web_app` · schema 9/9 tables and 9/9 enums · both
 capabilities inert · owner credential retained and valid · rollback available and not triggered.
+
+## 8. Disposition of the review's remaining item: the root-worktree untracked files
+
+Codex asked that the untracked `docs/platform/shared-runtime/` documents be reconciled before final
+reconciliation. Verified rather than assumed:
+
+| File | Status |
+|---|---|
+| `docs/platform/shared-runtime/BRIEF-HOUSE-SELL-READY-LONG-RUN-2026-09-16.md` | untracked |
+| `docs/platform/shared-runtime/RUN-MANIFEST-HOUSE-SELL-READY-LONG-RUN-2026-09-16.md` | untracked |
+| `docs/platform/shared-runtime/TASK-HOUSE-SHARED-RUNTIME-ISOLATION-001.md` | untracked |
+
+They are **not this task's files and were not created by it.** My own T1 record already captured them
+in the session-start snapshot and labelled them explicitly: *"The 3 untracked files are the pre-existing
+untracked set recorded in the session-start workspace snapshot (`Status: 3 untracked`); they are not
+mine."* (`T1-WU01-CARRYFORWARD-FINDINGS.md:32-36`). They belong to a different workstream
+(`HOUSE-SELL-READY-LONG-RUN` / `TASK-HOUSE-SHARED-RUNTIME-ISOLATION-001`) that is not part of
+`WSTERA-HOUSE-PRODUCTION-CLOSURE-001`.
+
+**Disposition: left untouched.** Committing another workstream's uncommitted drafts into this branch
+would be an unauthorised scope expansion, and deleting them would destroy another task's work. They are
+recorded here so the final reconciliation has an explicit statement rather than an unexplained dirty
+tree. Any decision to commit or remove them belongs to that workstream's owner.
+
+Both repositories are otherwise at clean parity with their remotes at the time of this record:
+House `c56682c` (= origin), hub-web `4071307` (= origin, clean worktree).
