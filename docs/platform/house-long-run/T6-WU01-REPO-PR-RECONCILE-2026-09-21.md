@@ -55,6 +55,33 @@ It is deployed and live, but it is not merged to `main` and is not proposed by a
 | 2 | Retarget/close PR #1 and replace it with the closure branch | One PR representing the deployed state; the demo-V2 work must be dealt with separately |
 | 3 | Explicitly accept the branch as canonical without merging | Requires a recorded ruling, because "no stale unmerged production-only code is silently left as canonical" is an acceptance-contract line |
 
+## 2.1 DISPOSITION RECORDED — Owner decision 2026-09-21 (Option 1)
+
+**Owner chose Option 1** and it has been executed:
+
+| Item | Value |
+|---|---|
+| PR | **#2** — https://github.com/Gutumrod/hub-web/pull/2 |
+| Base | `main` @ `8a3e49330e6cc1d52d6ad3d96fd0d291a66b4f56` |
+| Head | `work/house-platform-closure-20260919` |
+| **Exact head SHA** | **`407130718646d13630b9789f68522a521fc74483`** |
+| Commits covered | **45** above `origin/main` |
+| Draft | **yes** (opened as Draft per the Owner's requirement) |
+| Mergeable | MERGEABLE (not merged — Owner holds the merge decision) |
+| PR #1 | **left untouched** — still OPEN/Draft on `feature/platform-control-plane`, a different development line |
+
+Opened without rebase, rewrite or history surgery; the exact current closure branch was used. The PR body
+states that the production Worker was built from this line, limits claims to `BUILD_PASS` and code-only
+`LIVE_PROVEN` (explicitly not `PRODUCTION_READY`, not `OPERATED_STABLE`), lists the inert capabilities and
+the known limitations from the T6 evidence, and notes that this branch's history already contains PR #1's
+head (`125af843`) as an ancestor so the relationship is not discovered later.
+
+**Verified from GitHub, not asserted:** head SHA, base, draft status and commit count were read back via
+the API after creation, and PR #1's state was re-checked to confirm it was untouched.
+
+No merge was performed and none is proposed. The earlier "three options" text below is retained as the
+context in which the decision was made.
+
 **Hermes does not choose.** The contract requires that this be *explicitly dispositioned*; the
 disposition itself is an Owner/repo-governance decision. What must not happen is the current state being
 left unstated — a deployed production line with no PR and no ruling.
