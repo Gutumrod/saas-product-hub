@@ -50,8 +50,8 @@ This task must make `platform.wstera.com` an Owner-visible projection of validat
 - Installed `SKILL.md`, `EVENT-CONTRACT.md`, and `control_sync.py` are byte-identical to that source worktree.
 - Control Sync tests: 7/7 PASS.
 - Canonical policy is repository-level `policies/CONTROL-SYNC-POLICY.md`; it is not packaged inside the installed skill tree.
-- Current `control_sync.py doctor`: local skill/outbox OK, secret configured from canonical secret file without exposure, but `WSTERA_CONTROL_AGENT_EVENTS_URL` is NOT configured in the current environment.
-- Mac device was offline during this verification; Mac skill parity is therefore UNVERIFIED. This blocks Mac execution, not the Windows-only run.
+- Effective Hermes-loaded environment verified with the same Hermes env loader used by the CLI: endpoint_configured=true, endpoint_https=true, secret configured from canonical secret source, secret_value_exposed=false. The earlier direct-shell doctor result was non-authoritative because that shell bypassed Hermes .env loading.
+- Mac skill parity remains UNVERIFIED for this task. This does not block the Windows-only run.
 
 ## 3. Verified gaps
 
@@ -76,8 +76,8 @@ Verified production-reachable paths include:
 ### GAP-C — Owner decision round-trip is incomplete
 Current Owner Inbox `decide` writes `status=decided`, `selected_option`, `decision_note`, and timestamps to Control DB. No verified command/API exists in `wstera-control-sync` for Hermes to poll/consume/acknowledge those decisions. A DB-only button is therefore not yet run control.
 
-### GAP-D — live Control sender endpoint is not configured
-`wstera-control-sync doctor` reports `endpoint_configured=false`. No live task projection may be claimed until the endpoint is provisioned in the Hermes runtime environment and doctor/transport checks pass.
+### GAP-D — direct-shell environment probe mismatch — RESOLVED
+A direct PowerShell invocation initially reported endpoint_configured=false because it did not load Hermes .env. Re-running through the actual Hermes environment loader proved the canonical endpoint is already configured and HTTPS-valid. T0 must still re-run doctor through the Hermes-loaded environment before live sync, but no endpoint provisioning blocker remains on Windows.
 
 ## 4. Locked truth architecture
 

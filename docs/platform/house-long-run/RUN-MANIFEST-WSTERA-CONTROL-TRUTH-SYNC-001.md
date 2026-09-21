@@ -91,7 +91,7 @@ Required:
 B0 acceptance:
 - no unknown drift affecting the contract.
 - Windows runtime preflight passes.
-- `WSTERA_CONTROL_AGENT_EVENTS_URL` configured before any live sync. If not, BLOCK live sync and require configuration; do not fake success.
+- Re-run Control Sync doctor through the Hermes-loaded environment before live sync. Planning-time verification is PASS: endpoint configured + HTTPS-valid, secret configured without exposure. If this regresses, BLOCK live sync; do not fake success.
 - no source mutation.
 
 ## 6. T1 — Scope contract + dependency closure

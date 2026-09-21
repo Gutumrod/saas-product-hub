@@ -32,21 +32,22 @@ Make WSTERA Control show truthful Owner-visible House/Platform work state, remov
 - Swarm: v0.1.1, tests PASS.
 - Control Sync: v0.1.0, 7/7 tests PASS, installed/source byte parity PASS.
 - Windows Hermes discovery: both required skills enabled.
-- Mac parity: UNVERIFIED because Mac device offline.
+- Mac parity: UNVERIFIED for this task; not a Windows blocker.
 
-## Pre-Hermes blockers
+## Pre-Hermes readiness
 
-### BLOCKER-01 — live Control endpoint configuration
-Current `control_sync.py doctor` reports:
-- local/outbox OK;
-- secret configured through canonical secret source;
-- secret value not exposed;
-- `endpoint_configured=false`.
+### Windows — READY
+Verified through the actual Hermes environment loader:
+- WSTERA_CONTROL_AGENT_EVENTS_URL is already present in canonical Hermes .env;
+- canonical endpoint matches https://platform.wstera.com/api/webhooks/agent-events;
+- control_sync.py doctor reports endpoint_configured=true and endpoint_https=true;
+- secret is available through the canonical secret source and is not exposed.
 
-Before the first live Control event, provision `WSTERA_CONTROL_AGENT_EVENTS_URL` in the Hermes runtime environment using the approved configuration path and rerun doctor. Do not write endpoint/secret configuration into source code or evidence.
+The earlier endpoint_configured=false result came from a direct PowerShell invocation that bypassed Hermes .env loading. No Windows endpoint provisioning is required before Hermes starts.
 
-### CONDITIONAL-BLOCKER-02 — Mac execution
-Do not execute this run on Mac until Mac skill/version/hash parity is re-verified. Windows execution is not blocked by Mac being offline.
+### Conditional — Mac execution
+Mac skill parity remains UNVERIFIED for this task. Do not move execution to Mac until version/hash parity is rechecked. This does not block the Windows run.
+
 ## Required outcomes
 
 1. Explicit scope identity supports Product and non-product work without fake Product codes.
@@ -74,6 +75,7 @@ Do not execute this run on Mac until Mac skill/version/hash parity is re-verifie
 - `runtime-skills/devops/wstera-control-sync` contract/script/tests.
 - `policies/CONTROL-SYNC-POLICY.md` only if required to reflect the implemented contract.
 - task-specific evidence/implementation record required by that repo's governance.
+
 ## Prohibited scope
 
 - Product feature implementation.
