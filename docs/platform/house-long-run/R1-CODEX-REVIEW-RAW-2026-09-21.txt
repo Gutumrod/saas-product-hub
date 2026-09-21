@@ -1,0 +1,94 @@
+R1_VERDICT=BATCH_APPROVED
+
+ตรวจ exact revisions แล้ว:
+
+1. Scope identity contract — PASS
+
+- Vocabulary ตรงครบ 5 ค่าใน [identity.ts:58-69](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/control-plane/identity.ts:58)
+- Product scope สร้าง `productCode + productId` จาก canonical registry และ fail closed เมื่อขาด/ไม่รู้จัก identity [identity.ts:145-192](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/control-plane/identity.ts:145)
+- Non-product scope บังคับ `scopeType + scopeKey` และล้าง Product identity เป็น `null` [identity.ts:160-175](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/control-plane/identity.ts:160)
+- Normalizer ใช้ scope แบบ additive และไม่ repurpose `productCode` [work-event-schema.ts:194-222](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/control-plane/work-event-schema.ts:194)
+- RPC ตรวจ canonical product ID/code ที่ payload และ reject non-product ที่มี Product identity [0009_work_scope_identity.sql:274-308](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:274)
+
+หลักฐาน: `work-scope-contract.test.ts` ผ่าน 35/35 assertions
+
+2. API / ingestion gate — PASS
+
+- HMAC verification อยู่ก่อน JSON parse, normalization และ scope gate [agentEvents.ts:113-165](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/webhooks/agentEvents.ts:113)
+- rejected scope คืน 422 ก่อน RPC/durable write [agentEvents.ts:151-165](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/webhooks/agentEvents.ts:151)
+- `p_product_code` และ `p_identity_state` คงชื่อ/ความหมายเดิม; scope ถูกส่ง additive เป็น `p_scope_type/p_scope_key` [agentEvents.ts:219-245](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/webhooks/agentEvents.ts:219)
+- error tags ตรงกันระหว่าง RPC กับ handler [agentEvents.ts:83-96](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/server/webhooks/agentEvents.ts:83)
+
+3. Migration / RPC — PASS ที่ระดับ source qualification
+
+- columns nullable, ไม่มี `DEFAULT` [0009_work_scope_identity.sql:99-107](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:99)
+- backfill จำกัดเฉพาะ canonical Product identity [0009_work_scope_identity.sql:148-164](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:148)
+- CHECK เป็น NULL-tolerant, จำกัด vocabulary 5 ค่า, `NOT VALID` แล้ว `VALIDATE` แยกกัน [0009_work_scope_identity.sql:167-214](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:167)
+- RPC มี 19 arguments, `SECURITY DEFINER`, explicit `search_path` [0009_work_scope_identity.sql:233-256](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:233)
+- event idempotency, payload conflict, revision N→N+1, CAS และ Owner Inbox `source_event_id` ยังอยู่ [0009_work_scope_identity.sql:311-345](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:311)
+- privilege block ครบ 4 statements ด้วย full 19-type signature และ grant เฉพาะ `service_role` [0009_work_scope_identity.sql:531-555](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:531)
+
+4. F1 closure — GENUINELY CLOSED ใน source
+
+หลัง strip SQL comments แล้วตรวจ executable references ได้:
+
+```text
+CREATE ... args=19
+REVOKE ... args=19
+REVOKE ... args=19
+REVOKE ... args=19
+GRANT ... args=19
+DROP FUNCTION IF EXISTS ... args=17
+```
+
+- DROP อยู่หลัง CREATE และ GRANT [0009_work_scope_identity.sql:557-576](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:557)
+- 17-argument signature ปรากฏเฉพาะใน DROP executable statement
+- ไม่มี legacy CREATE/GRANT/REVOKE path เหลือ
+- migration test ผ่าน 17/17 tests และ full suite ยืนยัน 430/430
+
+5. Test evidence — REPRODUCED
+
+คำสั่งและผล:
+
+- `npx vitest run ...` — 5 files, 95/95 PASS
+- `npm test -- --reporter=verbose` — 26 files, 430/430 PASS
+- `npm run check` — `tsc --noEmit` PASS
+- `git diff ... --check` — CLEAN
+- Git object/worktree binding — Repo A 9/9 และ Repo B 8/8 ตรงกัน
+- Exact SHA/branch/remote:
+  - Repo A `fbd3a627...` ตรง `origin`
+  - Repo B `443e8492...` ตรง `origin`
+
+Secret scan แบบ pattern ไม่พบ credential จริง; พบเฉพาะ test HMAC constants ใน `agentEvents.test.ts` ซึ่งเป็น fixture:
+
+```text
+test-agent-hmac-secret-32bytes!!
+some-other-hmac-secret-32-bytes!!
+```
+
+ดังนั้นคำว่า “secret scan CLEAN” reproduce ได้ในความหมาย production-secret scan แต่ไม่ใช่ zero-match scan แบบหยาบ
+
+6. Scope discipline — PASS
+
+Repo A เปลี่ยน exactly 9 files ตาม commit stat:
+
+- 3 implementation
+- 4 existing tests
+- 1 migration
+- 1 new contract test
+
+Repo B เปลี่ยนเฉพาะ 8 planning/evidence documents ไม่มี source หรือ unrelated runtime change
+
+Counter-evidence / สิ่งที่ reproduce ไม่ได้
+
+- T2-WU04 ยังบันทึก F1 เป็น “confirmed” ที่ [T2-WU04:226-268](D:/AI-Workspace/runtime/worktrees/wstera-control-truth-sync-001/docs/platform/house-long-run/T2-WU04-REVISION-BOUND-EVIDENCE-PACKET-2026-09-21.md:226) แต่เป็น historical finding ก่อน commit นี้ ไม่ขัดกับ source ปัจจุบัน
+- ไม่ได้ติดต่อ database จึงยังยืนยันไม่ได้ว่า migration ถูก apply แล้ว, ACL จริงเป็นอย่างไร, function overload ใน live DB ถูกลบแล้วหรือไม่, หรือ Postgres transaction/concurrency ทำงานจริงใน applied state
+- ไม่ได้ reproduce live sender/outbox compatibility จาก `wstera-workflows`; นั่นอยู่นอก R1 source scope
+
+สิ่งที่ Owner ต้องรู้ก่อน production checkpoint
+
+- ห้าม apply migration โดยไม่มี client/deploy coupling: migration ลบ 17-argument overload หลังสร้างและ grant 19-argument function แล้ว [0009_work_scope_identity.sql:558-571](D:/AI-Workspace/runtime/worktrees/hub-web-cts001/drizzle/migrations/0009_work_scope_identity.sql:558)
+- ถ้า old client ยัง live ตอน DROP จะได้ `42883 undefined_function`
+- R1 นี้อนุมัติเฉพาะ source/revision qualification; live DB apply, deploy และ production mutation ยังต้องรอ Owner authority ตามที่ระบุ [OWNER-DECISION...:30-44](D:/AI-Workspace/runtime/worktrees/wstera-control-truth-sync-001/docs/platform/house-long-run/OWNER-DECISION-COMMIT-AUTHORITY-AND-F1-CLOSURE-2026-09-21.md:30)
+
+
