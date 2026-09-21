@@ -84,7 +84,13 @@ try {
     catch (e) { ok = false; say(`  FAIL ${g}: ${e.code} ${e.message}`); throw e; }
   }
 
-  // ── D1.2 verification: granted set EQUALS the matrix, and nothing more ────
+  // ── D1.2 verification: EXPLICIT grants equal the matrix, and nothing more ──
+  // Owner ruling 2026-09-21 (disposition A): this check is on EXPLICIT grants only. One
+  // EFFECTIVE privilege exists outside that explicit set - USAGE on public.user_role, inherited
+  // through PostgreSQL's PUBLIC default for enum types, held identically by every role. The
+  // user_role row was removed from the `excluded` list below for that reason and is reported
+  // separately as a recorded exception instead. See
+  // OWNER-DECISION-USERROLE-EFFECTIVE-PRIVILEGE-2026-09-21.md.
   say('');
   say('=== D1.2 VERIFY: table privileges ===');
   const want = { products: ['SELECT','INSERT'], product_assets: ['SELECT','INSERT'], product_installations: ['SELECT','INSERT','UPDATE'] };
@@ -100,14 +106,19 @@ try {
   }
 
   say('');
-  say('=== D1.2 VERIFY: excluded privileges must be ABSENT ===');
+  say('=== D1.2 VERIFY: EXPLICITLY-excluded privileges must be ABSENT ===');
+  // NOTE: USAGE on user_role is deliberately NOT in this list. Per the Owner ruling of 2026-09-21
+  // (disposition A) it is a RECORDED PostgreSQL effective-privilege exception, not an explicit
+  // grant, and `has_type_privilege` returns true for it in every role because acldefault('T', owner)
+  // gives PUBLIC USAGE on enum types. It is asserted separately, below.
   const excluded = [
     ['public.profiles SELECT',           `has_table_privilege('${ROLE}','public.profiles','SELECT')`],
     ['public.profiles INSERT',           `has_table_privilege('${ROLE}','public.profiles','INSERT')`],
     ['public.profiles UPDATE',           `has_table_privilege('${ROLE}','public.profiles','UPDATE')`],
-    ['USAGE on user_role enum',          `has_type_privilege('${ROLE}','public.user_role','USAGE')`],
+    ['public.profiles DELETE',           `has_table_privilege('${ROLE}','public.profiles','DELETE')`],
     ['public schema CREATE',             `has_schema_privilege('${ROLE}','public','CREATE')`],
     ['BYPASSRLS',                        `(SELECT rolbypassrls FROM pg_roles WHERE rolname='${ROLE}')`],
+    ['SUPERUSER',                        `(SELECT rolsuper FROM pg_roles WHERE rolname='${ROLE}')`],
   ];
   for (const [label, expr] of excluded) {
     const r = await sql.unsafe(`SELECT ${expr} AS v`);
@@ -115,6 +126,35 @@ try {
     if (v === true) ok = false;
     say(`  ${label.padEnd(34)} must be false -> ${v} ${v === true ? 'FAIL' : 'PASS'}`);
   }
+
+  say('');
+  say('=== D1.2 VERIFY: explicit type grants equal the matrix; user_role NOT explicitly granted ===');
+  const explicitTypes = await sql`
+    SELECT t.typname FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+    CROSS JOIN LATERAL aclexplode(COALESCE(t.typacl, acldefault('T', t.typowner))) a
+    JOIN pg_roles g ON g.oid = a.grantee
+    WHERE n.nspname='public' AND g.rolname=${ROLE} AND a.privilege_type='USAGE'
+    ORDER BY t.typname`;
+  const explicitNames = explicitTypes.map(x => x.typname);
+  const wantTypes = ['asset_type','installation_source','installation_status','product_status'];
+  const typesExact = explicitNames.length === wantTypes.length && wantTypes.every(w => explicitNames.includes(w));
+  if (!typesExact) ok = false;
+  say(`  explicit: ${explicitNames.join(', ') || '(none)'}`);
+  say(`  equals the four matrix enums exactly: ${typesExact ? 'PASS' : 'FAIL'}`);
+
+  say('');
+  say('=== D1.2 RECORDED EXCEPTION (Owner ruling disposition A - NOT an explicit grant) ===');
+  const urAcl = (await sql`SELECT typacl IS NULL AS no_acl FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+                           WHERE n.nspname='public' AND t.typname='user_role'`)[0].no_acl;
+  const holders = {};
+  for (const r of [ROLE,'anon','authenticated','service_role']) {
+    holders[r] = (await sql`SELECT has_type_privilege(${r},'public.user_role','USAGE') AS h`)[0].h;
+  }
+  say(`  user_role.typacl is null (nobody granted it): ${urAcl}`);
+  say(`  effective USAGE holders (identical for every role): ${JSON.stringify(holders)}`);
+  say("  -> arises from PostgreSQL's PUBLIC default for enum types (acldefault = =U/postgres).");
+  say('  -> recorded as an accepted exception; NOT treated as a failure and NOT remediated.');
+  if (urAcl !== true) { ok = false; say('  FAIL: expected user_role to have no explicit ACL'); }
 
   // ── D1.4 profiles boundary frozen ─────────────────────────────────────────
   say('');

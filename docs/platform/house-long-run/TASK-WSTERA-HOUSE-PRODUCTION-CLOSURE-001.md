@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T5 PENDING / **OWNER_HOLD** — code-only deploy + live proof COMPLETE; R15 apply blocked on provisioning authority
+Status: T5 — code-only deploy + live proof COMPLETE; **R15 D0-D4 EXECUTED AND VERIFIED**; Owner ruling A applied; B5 re-review #2 = WORKER_FIX (2 wording/checkpoint items, being fixed)
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -18,14 +18,15 @@ Owner: Free
 Commander: NONE
 Coordinator: Hermes
 Current Worker: `9a004fa9-53be-400b-a1ea-c52263faacbc` (LIVE, from `4071307`) · rollback-addressable: `00bdb1b5` then `9db4fb70`
-Current Checkpoint: CP-10 T5/B5 closure — OWNER_HOLD
+Current Checkpoint: CP-10 T5/B5 closure — post-R15 re-review
 Current Stage: T5
 Current Work Unit: R15 D0-D4 COMPLETE — schema remediated, hub_web_app live, DATABASE_URL switched, runtime verified
 Current Review Batch: B5
-Current State: OWNER_HOLD
+Current State: IN_PROGRESS
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B5 re-review (post-R15, Codex Windows Session-1) -> agent-codex OWNER_DECISION_REQUIRED at hub-web 4071307 / Worker 9a004fa9
-Next Allowed Action: STOP — Owner ruling required on the ONE open mismatch: hub_web_app has effective USAGE on the user_role enum via the PostgreSQL PUBLIC default, which the privilege matrix lists as excluded. See B5-RER15-OUTCOME-AND-USERROLE-DECISION-2026-09-21.md §3 for the three dispositions and the new evidence. No T6 until resolved.
+Latest Dispatch: B5 re-review #2 (post-R15 + Owner ruling A, Codex Windows Session-1) -> agent-codex WORKER_FIX at hub-web 4071307 / Worker 9a004fa9
+Next Allowed Action: fix the 2 B5 re-review #2 blocking items (D1 provision probe wording/logic; this checkpoint) then submit a short B5 re-review. T6 only on BATCH_APPROVED. Owner ruling A (accepted user_role exception, no DB mutation) is recorded in OWNER-DECISION-USERROLE-EFFECTIVE-PRIVILEGE-2026-09-21.md.
+R15 state: D0-D4 EXECUTED — schema 9/9 tables and 9/9 enums; hub_web_app live with the exact reviewed grants; DATABASE_URL switched; runtime identity verified hub_web_app. Precise privilege claim: explicit grants = exact matrix; effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on user_role (not granted by this task; does not confer access to public.profiles).
 Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
 Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current)
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
