@@ -26,6 +26,9 @@ const ROLE = 'hub_web_app';
 // Verify-only mode: when RELAY_D1_VERIFY_ONLY=1 the probe performs NO mutation and does NOT
 // write the credential handoff file. Added after a verify run overwrote the real handoff copy.
 const VERIFY_ONLY = process.env.RELAY_D1_VERIFY_ONLY === '1';
+// Declared here (not inside the mutation block) so the credential write below can still see it.
+// Empty in verify-only mode, where nothing is generated or written.
+let pw = '';
 const sql = postgres(url, { prepare: false, ssl: 'require', max: 1, idle_timeout: 5, connect_timeout: 25 });
 let ok = true;
 const log = [];
@@ -46,7 +49,7 @@ try {
   say('=== D1.1 CREATE ROLE (R15 posture) ===');
   // password is generated, used, and stored ONLY in the private handoff file for D2. It is never
   // printed and never committed.
-  const pw = crypto.randomBytes(32).toString('base64url');
+  pw = crypto.randomBytes(32).toString('base64url');
   await sql.unsafe(
     `CREATE ROLE ${ROLE} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD '${pw.replace(/'/g, "''")}'`
   );
@@ -200,6 +203,7 @@ try {
     say('');
     say('  VERIFY-ONLY: credential handoff file NOT written (no mutation, no side effect).');
   } else {
+    if (!pw) throw new Error('refusing to write an empty credential (verify-only guard leaked)');
     fs.writeFileSync(path.join(WS, 'hub_web_app.credential.private'),
       JSON.stringify({ role: ROLE, password: pw, created_at: new Date().toISOString() }, null, 2), { mode: 0o600 });
     say('');
