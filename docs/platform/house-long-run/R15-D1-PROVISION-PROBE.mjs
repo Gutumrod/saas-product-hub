@@ -61,7 +61,10 @@ try {
 
   // ── D1.2 exact grant scope (matrix §4.1 / §6) ─────────────────────────────
   say('');
-  say('=== D1.2 GRANT (matrix §4.1/§6, exactly - nothing more) ===');
+  // Owner ruling 2026-09-21: the grants applied here are the EXPLICIT grant set from the matrix.
+  // This step says nothing about EFFECTIVE privileges, which also include the recorded
+  // PostgreSQL PUBLIC-default exception on user_role (see the verification section below).
+  say('=== D1.2 GRANT (explicit grant set, matrix §4.1/§6 - nothing more than the matrix) ===');
   const grants = [
     `GRANT USAGE ON SCHEMA public TO ${ROLE}`,
     `GRANT SELECT, INSERT ON public.products TO ${ROLE}`,

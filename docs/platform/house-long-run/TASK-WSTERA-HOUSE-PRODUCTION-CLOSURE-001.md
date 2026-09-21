@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T5 — code-only deploy + live proof COMPLETE; **R15 D0-D4 EXECUTED AND VERIFIED**; Owner ruling A applied; B5 re-review #2 = WORKER_FIX (2 wording/checkpoint items, being fixed)
+Status: T5 — **R15 D0-D4 EXECUTED AND VERIFIED**; Owner ruling A applied; awaiting B5 re-review of the corrected exact state
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -9,29 +9,27 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: hub-web `407130718646d13630b9789f68522a521fc74483` (deployed at `9a004fa9`; schema remedy commit `0008` included)
-Frozen review candidate (pre-remedy): `679ff279e5ff2a9a3006bea79ccc6ccde90715ec`
-House Records Revision: `34400c2ad7557050865b614fcdc613b33d3de498` (evidence set at the stop), then `b8c6a20` (this checkpoint update)
-Note: House HEAD moves whenever this checkpoint file is updated, so it is deliberately not asserted as a single
-  scalar; the authoritative frozen revision for the candidate lives in `T5-CANDIDATE-FREEZE-2026-09-20.md`.
+Current Commit: hub-web `407130718646d13630b9789f68522a521fc74483` (includes schema remedy `0008`)
+Deployed Worker: `5dc81232-c116-4722-a6c1-74c15ad50385` (LIVE)
+Rollback-addressable: `9a004fa9` → `00bdb1b5` → `9db4fb70`
+Credential note: the `hub_web_app` password was re-issued on 2026-09-21; see `R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md` and `R15-POST-CREDENTIAL-REPAIR-VERIFY-2026-09-21.txt`
+Frozen review candidate (pre-remedy, historical): `679ff279e5ff2a9a3006bea79ccc6ccde90715ec`
+House Records Revision: moves with each commit; the authoritative frozen *candidate* revision is `T5-CANDIDATE-FREEZE-2026-09-20.md`
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: `5dc81232-c116-4722-a6c1-74c15ad50385` (LIVE) · rollback-addressable: `9a004fa9` then `00bdb1b5` then `9db4fb70`
-Credential note: the hub_web_app password was re-issued on 2026-09-21; see R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md
-Current Checkpoint: CP-10 T5/B5 closure — post-R15 re-review
+Current Checkpoint: CP-10 T5/B5 — post-R15 re-review
 Current Stage: T5
-Current Work Unit: R15 D0-D4 COMPLETE — schema remediated, hub_web_app live, DATABASE_URL switched, runtime verified
+Current Work Unit: R15 D0-D4 COMPLETE — schema remediated (9/9 tables, 9/9 enums), `hub_web_app` live with the exact reviewed grants, `DATABASE_URL` switched, runtime identity verified
 Current Review Batch: B5
 Current State: IN_PROGRESS
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B5 re-review #2 (post-R15 + Owner ruling A, Codex Windows Session-1) -> agent-codex WORKER_FIX at hub-web 4071307 / Worker 9a004fa9
-Next Allowed Action: fix the 2 B5 re-review #2 blocking items (D1 provision probe wording/logic; this checkpoint) then submit a short B5 re-review. T6 only on BATCH_APPROVED. Owner ruling A (accepted user_role exception, no DB mutation) is recorded in OWNER-DECISION-USERROLE-EFFECTIVE-PRIVILEGE-2026-09-21.md.
-R15 state: D0-D4 EXECUTED — schema 9/9 tables and 9/9 enums; hub_web_app live with the exact reviewed grants; DATABASE_URL switched; runtime identity verified hub_web_app. Precise privilege claim: explicit grants = exact matrix; effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on user_role (not granted by this task; does not confer access to public.profiles).
-Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
-Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current)
+Latest Dispatch: B5 re-review #3 (post-R15 + Owner ruling A, Codex Windows Session-1) -> agent-codex WORKER_FIX
+Dispatch Revision: docs/platform/house-long-run/B5-RER15-REVIEW-REPORT-CODEX-2026-09-21.md
+Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current) · `R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md` (credential re-issue)
+Next Allowed Action: fix the remaining B5 #3 items — the un-qualified header at `R15-D1-PROVISION-PROBE.mjs:64` and the stale state sections in this file — then submit a short B5 re-review. T6 only on `BATCH_APPROVED`.
+R15 state: D0-D4 EXECUTED — schema 9/9 tables and 9/9 enums; `hub_web_app` live with the exact reviewed grants; `DATABASE_URL` switched; runtime identity verified. Precise privilege claim: explicit grants = exact review matrix; effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on `user_role` (not granted by this task; does not confer access to `public.profiles`).
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
-Next Allowed Action: R15 D0-D4 COMPLETE (schema remediated 9/9, hub_web_app scoped role live, DATABASE_URL switched, runtime verified, Worker 9a004fa9). Per the manifest, a fresh B5 independent re-review of this exact deployed state is required next, then T6.
 
 ## Objective
 
@@ -66,16 +64,20 @@ SB01 implementation remains external. T4 waits for an exact accepted LR-2F contr
 
 ## Current Review
 
-No implementation/review round has started under this Task.
+B5 re-review, post-R15, on the corrected exact state.
 
-Known starting refs:
+- Reviewer route: Codex, Windows **Session-1** (readiness probe `CODEX_REVIEWER_READY`, `provenance_session = 1`) — evidence `B5-RER15-Codex-SESSION1-READINESS-2026-09-21.txt`
+- Review #1 (post-R15): `OWNER_DECISION_REQUIRED` on the `user_role` effective privilege → Owner ruled disposition A
+- Review #2 (post-ruling): `WORKER_FIX` — the D1 provision probe still carried pre-ruling wording/logic, and this checkpoint was stale
+- Review #3 (post-fix): `WORKER_FIX` — the probe's assertion logic is now correct, but its grant-step header at `:64` is still un-qualified, and this file still had stale state sections
+
+Known refs:
+
 - House prior coordination base: `01cfc28dbb9ea8081f389240d57797c70cda7d9b`
 - House `master` observed at brief creation: `1556d8a29ce5fa2f408bed981f26d9ef7d61aa33`
 - Hub/Control base branch: `Gutumrod/hub-web:feature/platform-control-plane @ 125af8435f4c80b9525c72405b44807206905fc5`
-- Hub/Control LONG_RUN branch: `work/house-platform-closure-20260919`
-- SB01 external state observed: LR-2E closed/PASS; LR-2F next.
-
-PRE-01 must reverify these before execution. If exact remote refs changed materially, persist the delta and apply manifest invalidation/hold rules; do not silently assume old refs.
+- Hub/Control LONG_RUN branch: `work/house-platform-closure-20260919 @ 4071307`
+- SB01 external state: LR-2F-A accepted @ `96abe08`; consumed by T4.
 
 ## Checkpoints
 
@@ -86,24 +88,27 @@ PRE-01 must reverify these before execution. If exact remote refs changed materi
 | CP-03 Manifest Lock | PASS | Owner | RUN-MANIFEST... @ f84a59c5 | APPROVED |
 | CP-04 PRE-01 | PASS | Hermes | EVIDENCE-PRE01-T0... §1 | PASS — 1 runtime repair (`RELAY_INSTALL_MANIFEST_MISSING_MODEL_PINS`), opencode UNAVAILABLE (deviation D-1) |
 | CP-05 T0/B0 | **PASS / B0 BATCH_APPROVED** | Hermes / Codex | B0-REVIEW-CLOSURE-2026-09-19.md | T0 reconciled at `a502421`; B0 approved at `28f571d`, 0 blocking |
-| CP-06 T1/B1 | **T1 GATE PASS / B1 PENDING** | swarm lanes 03–06 / Codex | T1-R15-* artifacts | 4/4 artifacts on disk; Owner RLS ruling applied |
-| CP-07 T2/B2 | **PASS / B2 BATCH_APPROVED** | swarm-builder lanes / Codex | B2-REVIEW-CLOSURE-2026-09-20.md | Signer contract delivered at hub-web `e24d5a9`; 0 blocking |
-| CP-08 T3/B3 | **T3 DELIVERED / B3 PENDING** | swarm-builder lanes / Codex | T3-CLOSURE-2026-09-20.md | Fulfillment at hub-web `ae29d20`; 272/272 tests |
+| CP-06 T1/B1 | **PASS / B1 BATCH_APPROVED** | swarm lanes 03–06 / Codex | T1-R15-* artifacts, B1-REVIEW-CLOSURE-2026-09-20.md | Owner RLS ruling OPTION 3 applied; 4/4 artifacts; 2 review rounds |
+| CP-07 T2/B2 | **PASS / B2 BATCH_APPROVED** | swarm-builder lanes / Codex | B2-REVIEW-CLOSURE-2026-09-20.md | Signer contract delivered; 2 review rounds |
+| CP-08 T3/B3 | **PASS / B3 BATCH_APPROVED** | swarm-builder lanes / Codex | T3-CLOSURE-2026-09-20.md, B3-REVIEW-OUTCOME-2026-09-20.md | Fulfillment hardened after senior remediation; 2 review rounds |
 | CP-09 T4/B4 | **PASS / B4 BATCH_APPROVED** | Claude lanes / Codex | B4-REVIEW-CLOSURE-2026-09-20.md | Control read projection at hub-web `381fef3` (5 review rounds, 0 blocking final) |
-| CP-10 T5/B5 | READY | (T5 workers TBD) / Codex | pending | production/live evidence approval required |
-| CP-11 T6/B6 | PENDING | OpenCode/Hermes/Codex | pending | final House closure packet |
+| CP-10 T5/B5 | **T5 WU01–WU06 DONE / R15 D0–D4 DONE / B5 predeploy BATCH_APPROVED (7 rounds) / B5 post-R15 re-review #3 = WORKER_FIX** | Hermes (operator) / Codex | B5-*-REVIEW-REPORT-CODEX-*, B5-RER15-*, R15-D0..D4 records | deploy live `5dc81232`; WU06 16/16; R15 applied and verified; 2 wording/checkpoint items outstanding |
+| CP-11 T6/B6 | PENDING — blocked on B5 `BATCH_APPROVED` | OpenCode/Hermes/Codex | T6-WU01..03 prepared | final House closure packet |
 | CP-12 Owner Closure | PENDING | Owner | final packet | final authority |
 
 ## LONG_RUN State
 
 ```text
 Manifest Revision: f84a59c5d602ca37c95727997a0d63a709ddd63e
-Stage State: REVIEW_REQUIRED (B3)
-Issue Fingerprint: closed — T3_IMPLEMENTATION_TURN_BUDGET_EXHAUSTED_BEFORE_CORE_SERVICE, then six mechanical defects, all fixed across six bounded lanes
-Local Fix Attempts: 1/2 (T3 scope bug)
+Stage State: T5 post-R15 B5 re-review (BATCH_APPROVED required to enter T6)
+Issue Fingerprint: open — B5 #3: R15-D1-PROVISION-PROBE.mjs:64 un-qualified header; TASK stale sections (this file)
+Local Fix Attempts: 3/3 on the wording sweep (sweep applied instance-by-instance; root cause = scripted
+  replace appended a duplicate field instead of replacing, so the file was never read whole)
 Reviewer Remediation Attempts: 0/2 (this cycle)
 Senior Escalations: 0/1
-Primary Reviewer Status: Codex — B0-B4 BATCH_APPROVED (B1 2 rounds, B2 2 rounds, B3 2 rounds, B4 5 rounds); B5 predeploy BATCH_APPROVED (7 rounds); B5 closure OWNER_DECISION_REQUIRED
+Primary Reviewer Status: Codex — B0–B4 BATCH_APPROVED; B5 predeploy BATCH_APPROVED (7 rounds);
+  B5 closure OWNER_DECISION_REQUIRED; B5 post-R15 #1 OWNER_DECISION_REQUIRED (ruled by Owner),
+  #2 WORKER_FIX (fixed), #3 WORKER_FIX (being fixed)
 Active Independent Reviewer: NONE
 ```
 
@@ -141,15 +146,23 @@ Initial evidence:
 - Use current role model: OpenCode ordinary builder, Qwen support/testing, AGY UI only, Codex reviewer, Claude difficult remediation only.
 - Do not pause for normal technical failures; use manifest/runtime auto-recovery.
 - Final House closure remains Owner authority.
+- **Owner ruling 2026-09-21 (disposition A):** the `user_role` effective `USAGE` is accepted as a recorded PostgreSQL effective-privilege exception; **no database mutation** for that item and `REVOKE USAGE ON TYPE user_role FROM PUBLIC` is **not authorised** under this task.
+- **Owner authorization 2026-09-21:** bounded schema remediation (Project A only; apply `0007` + additive `0008`; no `db:push`; no `0002`–`0006`; no billing/WSTERA_LAB change) — executed.
 
 ## Blockers
 
-Current expected external dependency only:
-- T4 waits for exact accepted SB01 LR-2F projection contract.
+Open:
+- Capability material absent (`PRODUCT_EVENT_SIGNERS`, `BILLING_CORE_CONTROL_READ_*`) → both inert
+- Control request correlation: design only
+- Owner-authenticated surfaces: pending Owner-visible verification
+- Synthetic fulfillment end-to-end path: not exercised
+- PR/default-branch disposition: pending Owner/governance decision (see `T6-WU01-REPO-PR-RECONCILE-DRAFT-2026-09-21.md`)
+- Billing-deny re-verification trigger: when `billing_core` is created in Project A
 
-This does not block T0-T3.
+Closed:
+- T4 external dependency (SB01 LR-2F-A accepted)
+- R15 schema gap (`product_installations` + fulfillment tables now exist)
 
 ## Next Action
 
-Hermes performs PRE-01 and, on PASS, starts T0-WU01.
-
+Fix `R15-D1-PROVISION-PROBE.mjs:64` and the stale sections of this file, then submit a short B5 re-review.
