@@ -17,7 +17,8 @@ Note: House HEAD moves whenever this checkpoint file is updated, so it is delibe
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: `9a004fa9-53be-400b-a1ea-c52263faacbc` (LIVE, from `4071307`) · rollback-addressable: `00bdb1b5` then `9db4fb70`
+Current Worker: `5dc81232-c116-4722-a6c1-74c15ad50385` (LIVE) · rollback-addressable: `9a004fa9` then `00bdb1b5` then `9db4fb70`
+Credential note: the hub_web_app password was re-issued on 2026-09-21; see R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md
 Current Checkpoint: CP-10 T5/B5 closure — post-R15 re-review
 Current Stage: T5
 Current Work Unit: R15 D0-D4 COMPLETE — schema remediated, hub_web_app live, DATABASE_URL switched, runtime verified
