@@ -1,0 +1,23 @@
+=== B5 RE-REVIEW PACKET: corrected exact state (re-verified after the Owner ruling) ===
+
+--- explicit type grants to hub_web_app (must be exactly the 4 matrix enums) ---
+  explicit: asset_type, installation_source, installation_status, product_status
+  equals the four matrix enums exactly, user_role NOT explicitly granted: PASS
+
+--- user_role: the recorded exception ---
+  user_role.typacl is null (nobody granted it): true
+  acldefault(T,owner) gives PUBLIC USAGE: =U/postgres  -> identical for every role
+  effective USAGE holders: {"hub_web_app":true,"anon":true,"authenticated":true,"service_role":true}
+
+--- preserved boundaries ---
+  profiles privileges (all must be false): profiles SELECT=false | profiles INSERT=false | profiles UPDATE=false | profiles DELETE=false | profiles TRUNCATE=false | profiles REFERENCES=false | profiles TRIGGER=false
+  RLS enabled on profiles: true (expect true) | hub_web_app policies: 0 (expect 0)
+  super=false bypassrls=false createdb=false createrole=false login=true
+  role memberships (expect 0): 0
+
+--- table privileges still exactly the matrix ---
+  products                 granted: SELECT,INSERT (expected SELECT,INSERT)
+  product_assets           granted: SELECT,INSERT (expected SELECT,INSERT)
+  product_installations    granted: SELECT,INSERT,UPDATE (expected SELECT,INSERT,UPDATE)
+
+=== RESULT: PASS ===

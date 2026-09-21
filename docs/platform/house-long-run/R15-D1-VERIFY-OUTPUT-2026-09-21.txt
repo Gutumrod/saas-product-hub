@@ -3,7 +3,10 @@
   R15 posture: PASS
   memberships (expect 0): 0 PASS
 
-=== D1.2 TABLE PRIVILEGES: exact matrix, nothing more ===
+=== D1.2 TABLE PRIVILEGES: explicit set equals the exact matrix; see the user_role note below ===
+    (Table privileges are exact. The single effective-privilege exception is on the user_role
+     ENUM, not on any table - recorded in the section below and accepted by the Owner ruling
+     2026-09-21: USAGE on public.user_role via the PostgreSQL PUBLIC enum default.)
   products                 SELECT      matrix=Y actual=Y ok
   products                 INSERT      matrix=Y actual=Y ok
   products                 UPDATE      matrix=- actual=- ok

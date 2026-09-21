@@ -178,7 +178,14 @@ must pass before the next step runs; **MUTATES** = whether the step changes prod
   `public.product_installations` SELECT+INSERT+UPDATE; supporting `USAGE` on the schema, the
   identity sequences, and the referenced enum types. `public.profiles` is **NOT GRANTED**.
 - Nothing here is re-derived by this lane: the matrix artifact owns the scope.
-- VERIFY: catalog check that the granted set equals the matrix **and nothing more**; in particular
+- VERIFY: catalog check that the **explicit** granted set equals the matrix **and nothing more**; in
+  particular zero explicit `hub_web_app` entries for `public.profiles`, and no DDL/`DELETE` privilege
+  present. NOTE (Owner ruling 2026-09-21): the check is on **explicit** grants. One effective
+  privilege exists outside that explicit set — `USAGE` on `public.user_role`, inherited through
+  PostgreSQL's PUBLIC default for enum types, held identically by every role. It is not an explicit
+  grant and is recorded as an accepted exception, not remediated. See
+  `B5-RER15-OUTCOME-AND-USERROLE-DECISION-2026-09-21.md` and
+  `OWNER-DECISION-USERROLE-EFFECTIVE-PRIVILEGE-2026-09-21.md`.
   zero `hub_web_app` entries for `public.profiles`, and no DDL/`DELETE` privilege present.
 - MUTATES: yes.
 

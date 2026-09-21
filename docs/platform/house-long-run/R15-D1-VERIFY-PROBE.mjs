@@ -38,7 +38,7 @@ try {
   if (mem !== 0) ok = false;
 
   say('');
-  say('=== D1.2 TABLE PRIVILEGES: exact matrix, nothing more ===');
+  say('=== D1.2 TABLE PRIVILEGES: explicit set equals the exact matrix (see user_role note below) ===');
   const want = { products: ['SELECT','INSERT'], product_assets: ['SELECT','INSERT'], product_installations: ['SELECT','INSERT','UPDATE'] };
   for (const [t, privs] of Object.entries(want)) {
     for (const p of ['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) {

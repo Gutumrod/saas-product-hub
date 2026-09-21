@@ -6,7 +6,10 @@
   verify posture: super=false createdb=false createrole=false bypassrls=false login=true -> PASS
   membership rows (expect 0): 0 -> PASS
 
-=== D1.2 GRANT (matrix §4.1/§6, exactly - nothing more) ===
+=== D1.2 GRANT (matrix §4.1/§6, explicit grants exactly - nothing more) ===
+    NOTE: explicit grants only. One EFFECTIVE privilege exists outside this set - USAGE on
+    public.user_role via the PostgreSQL PUBLIC enum default, held by every role, not granted
+    here. Accepted as a recorded exception per the Owner ruling 2026-09-21.
   OK   GRANT USAGE ON SCHEMA public
   OK   GRANT SELECT, INSERT ON public.products
   OK   GRANT SELECT, INSERT ON public.product_assets

@@ -61,6 +61,33 @@ Scope executed exactly as approved: **Project A only**, `0007` then `0008`, no `
 
 Post-apply: **9/9 tables, 9/9 enums, 0 absent**; live schema matches `schema.ts` exactly.
 
+## 5.1 PRECISE PRIVILEGE CLAIM (Owner ruling 2026-09-21 — disposition A)
+
+The earlier wording "grant set equals the matrix and nothing more" was overbroad: it is true of
+**explicit** grants but not of **effective** privileges. The Owner ruled the precise claim, and every
+statement in this evidence set has been corrected to match it:
+
+> "The explicit grant set for `hub_web_app` equals the reviewed R15 matrix exactly, with no explicit
+> grant beyond it. One effective privilege outside that explicit set exists: `USAGE` on
+> `public.user_role`, inherited through PostgreSQL's PUBLIC default for that enum type. It was not
+> granted by this task and does not confer access to `public.profiles`."
+
+The distinction is now stated everywhere as:
+
+- **explicit grants = exact matrix**
+- **effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on `user_role`**
+
+No database mutation was performed for this item. `REVOKE USAGE ON TYPE user_role FROM PUBLIC` was
+**not** executed and is **not authorised** under this task — it would be a new type-ACL change outside
+the reviewed matrix and would affect every role inheriting the PUBLIC default.
+
+Evidence that the exception is a PostgreSQL default and not a grant: `user_role.typacl` is `null`
+(nobody granted it), `acldefault('T', owner)` is `=U/postgres`, and `hub_web_app`, `anon`,
+`authenticated` and `service_role` all report effective `USAGE = true` identically. See
+`R15-D1D2D3-REVERIFY-AFTER-USERROLE-RULING-2026-09-21.txt`.
+
+Governing record: `OWNER-DECISION-USERROLE-EFFECTIVE-PRIVILEGE-2026-09-21.md`.
+
 ## 6. D1 — role and grants
 
 Created `hub_web_app` LOGIN, `NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`, zero role memberships.
