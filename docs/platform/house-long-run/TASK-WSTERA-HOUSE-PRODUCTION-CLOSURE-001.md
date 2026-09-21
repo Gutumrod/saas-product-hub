@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: **READY FOR OWNER HOUSE CLOSURE REVIEW** — all stages T0-T6 approved; B6 final review = BATCH_APPROVED. Awaiting the Owner's final closure decision (no automatic acceptance).
+Status: **CLOSED** — `HOUSE FOUNDATION CLOSED`. Owner accepted the B6 BATCH_APPROVED final state (2026-09-21). Claims preserved: BUILD_PASS, LIVE_PROVEN (code-only). NOT claimed: PRODUCTION_READY, OPERATED_STABLE.
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -18,16 +18,16 @@ House Records Revision: moves with each commit; the authoritative frozen *candid
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Checkpoint: CP-11 T6/B6 — CLOSED, READY FOR OWNER CLOSURE
+Current Checkpoint: CP-12 Owner Closure — CLOSED
 Current Stage: T5
 Current Work Unit: T6-WU01..WU03 COMPLETE; R15 D0-D4 EXECUTED AND VERIFIED; B5 BATCH_APPROVED; B6 BATCH_APPROVED
 Current Review Batch: B6 — BATCH_APPROVED
-Current State: READY_FOR_OWNER_CLOSURE
+Current State: CLOSED
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B6 final review round 2 -> agent-codex BATCH_APPROVED
-Dispatch Revision: docs/platform/house-long-run/B6-FINAL-REVIEW-REPORT-CODEX-2026-09-21-r2.md
+Latest Dispatch: B6 final review round 2 -> agent-codex BATCH_APPROVED; Owner final acceptance 2026-09-21
+Dispatch Revision: docs/platform/house-long-run/OWNER-FINAL-ACCEPTANCE-CLOSURE-2026-09-21.md
 Latest Reviewer Packet: docs/platform/house-long-run/T6-WU03-FINAL-EVIDENCE-PACKET-2026-09-21.md (final) · B6-FINAL-REVIEW-REPORT-CODEX-2026-09-21-r2.md (verdict)
-Next Allowed Action: STOP at `READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001`. Owner final closure decision required. PR #2 (Draft) must NOT be merged and House must NOT be closed automatically before that decision.
+Next Allowed Action: NONE — task CLOSED. Per the Owner's final decision: do not mutate production, do not merge PR #2, do not begin T7, do not begin product-lane implementation. Carried-forward items are listed in OWNER-FINAL-ACCEPTANCE-CLOSURE-2026-09-21.md section 5.
 R15 state: D0-D4 EXECUTED — schema 9/9 tables and 9/9 enums; `hub_web_app` live with the exact reviewed grants; `DATABASE_URL` switched; runtime identity verified. Precise privilege claim: explicit grants = exact review matrix; effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on `user_role` (not granted by this task; does not confer access to `public.profiles`).
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
@@ -93,8 +93,8 @@ Known refs:
 | CP-08 T3/B3 | **PASS / B3 BATCH_APPROVED** | swarm-builder lanes / Codex | T3-CLOSURE-2026-09-20.md, B3-REVIEW-OUTCOME-2026-09-20.md | Fulfillment hardened after senior remediation; 2 review rounds |
 | CP-09 T4/B4 | **PASS / B4 BATCH_APPROVED** | Claude lanes / Codex | B4-REVIEW-CLOSURE-2026-09-20.md | Control read projection at hub-web `381fef3` (5 review rounds, 0 blocking final) |
 | CP-10 T5/B5 | **T5 WU01–WU06 DONE / R15 D0–D4 DONE / B5 predeploy BATCH_APPROVED (7 rounds) / B5 post-R15 re-review #3 = WORKER_FIX** | Hermes (operator) / Codex | B5-*-REVIEW-REPORT-CODEX-*, B5-RER15-*, R15-D0..D4 records | deploy live `5dc81232`; WU06 16/16; R15 applied and verified; 2 wording/checkpoint items outstanding |
-| CP-11 T6/B6 | PENDING — blocked on B5 `BATCH_APPROVED` | OpenCode/Hermes/Codex | T6-WU01..03 prepared | final House closure packet |
-| CP-12 Owner Closure | PENDING | Owner | final packet | final authority |
+| CP-11 T6/B6 | **PASS / B6 BATCH_APPROVED** | Hermes/Codex | T6-WU01..03, B6-FINAL-REVIEW-REPORT-CODEX-2026-09-21-r2.md | T6 contract stands; Owner disposition Option 1 executed (Draft PR #2, not merged) |
+| CP-12 Owner Closure | **PASS — CLOSED** | Owner | OWNER-FINAL-ACCEPTANCE-CLOSURE-2026-09-21.md | `HOUSE FOUNDATION CLOSED`; claims bounded to BUILD_PASS + code-only LIVE_PROVEN |
 
 ## LONG_RUN State
 

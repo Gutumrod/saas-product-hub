@@ -1,6 +1,8 @@
 # SaaS Product Hub - Current Portfolio Status
 
-**Reconciled:** 2026-09-21 (Asia/Bangkok) — House LONG_RUN T5 closure overlay; see below.
+**Reconciled:** 2026-09-21 (Asia/Bangkok) — House LONG_RUN **CLOSED** (`HOUSE FOUNDATION CLOSED`); see below.
+**Task state:** `WSTERA-HOUSE-PRODUCTION-CLOSURE-001` = **CLOSED** (Owner final acceptance 2026-09-21).
+**Claims:** `BUILD_PASS` and `LIVE_PROVEN` (code-only scope) only. **NOT** `PRODUCTION_READY`, **NOT** `OPERATED_STABLE`.
 **Parent repository:** `Gutumrod/saas-product-hub`
 **Parent branch/HEAD:** `work/house-production-closure-longrun-20260919 @ 59656d9` (T6 entry); governance base `master @ 1556d8a`
 **Execution authority:** `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md` revision 3 + later explicit owner decisions
@@ -26,7 +28,8 @@ Coordination branch: `work/house-production-closure-longrun-20260919`.
 | T4 Control read projection | B4 | **PASS / BATCH_APPROVED** (consumes SB01 LR-2F-A @ `96abe08`) |
 | T5 readiness / apply / deploy / live proof | B5 | **PASS / BATCH_APPROVED** — predeploy 7 rounds; post-R15 re-review 6 rounds, final `BATCH_APPROVED` |
 | R15 D0–D4 least-privilege transition | within T5 | **EXECUTED AND VERIFIED** |
-| T6 final reconciliation + dependency matrix | B6 | **ENTERED — WU01..WU03 in progress** |
+| T6 final reconciliation + dependency matrix | B6 | **PASS / BATCH_APPROVED — CLOSED** |
+| Owner final closure | — | **CLOSED — `HOUSE FOUNDATION CLOSED`** |
 
 ### Verified production state (measured, not asserted)
 
