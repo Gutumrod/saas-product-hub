@@ -1,0 +1,13 @@
+ROUTE: {"allowed": true, "code": "CODEX_SESSION_1_SELECTED", "session": 1}
+verdict: CODEX_REVIEWER_READY
+provenance_session: 1
+host_child_launch: True
+temp_directory: True
+repo_read: True
+bounded_read_only_subprocess: True
+codex_sandbox_temp_directory: False
+create_exit: 0
+run_exit: 0
+task_name: relay-s3-s1-a98c38c2c4a8
+LIMITATIONS:
+  - recorded limitation, not a readiness failure (Owner DP-1): inside the Codex read-only sandbox, creating a directory under %TEMP% is ACCESS DENIED (SBX_TEMPDIR_FAIL) even in Session 1; this is a sandbox restriction and does not affect the Session-1 route verdict

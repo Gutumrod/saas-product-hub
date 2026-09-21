@@ -9,21 +9,23 @@ Repository: Gutumrod/saas-product-hub
 Workspace: D:\AI-Workspace\projects\saas-product-hub
 Branch / Worktree: work/house-production-closure-longrun-20260919 / D:\AI-Workspace\projects\saas-product-hub
 Base Commit: 01cfc28dbb9ea8081f389240d57797c70cda7d9b
-Current Commit: hub-web `679ff279e5ff2a9a3006bea79ccc6ccde90715ec` (frozen candidate, deployed at `00bdb1b5`)
+Current Commit: hub-web `407130718646d13630b9789f68522a521fc74483` (deployed at `9a004fa9`; schema remedy commit `0008` included)
+Frozen review candidate (pre-remedy): `679ff279e5ff2a9a3006bea79ccc6ccde90715ec`
 House Records Revision: `34400c2ad7557050865b614fcdc613b33d3de498` (evidence set at the stop), then `b8c6a20` (this checkpoint update)
 Note: House HEAD moves whenever this checkpoint file is updated, so it is deliberately not asserted as a single
   scalar; the authoritative frozen revision for the candidate lives in `T5-CANDIDATE-FREEZE-2026-09-20.md`.
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Worker: `00bdb1b5-70d2-4e41-b97d-f1f238e9bf31` (LIVE) · rollback target `9db4fb70-a5e5-4989-94b5-1d271ab10055`
+Current Worker: `9a004fa9-53be-400b-a1ea-c52263faacbc` (LIVE, from `4071307`) · rollback-addressable: `00bdb1b5` then `9db4fb70`
 Current Checkpoint: CP-10 T5/B5 closure — OWNER_HOLD
 Current Stage: T5
 Current Work Unit: R15 D0-D4 COMPLETE — schema remediated, hub_web_app live, DATABASE_URL switched, runtime verified
 Current Review Batch: B5
 Current State: OWNER_HOLD
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B5 closure -> agent-codex OWNER_DECISION_REQUIRED at hub-web 679ff27 (deployed)
+Latest Dispatch: B5 re-review (post-R15, Codex Windows Session-1) -> agent-codex OWNER_DECISION_REQUIRED at hub-web 4071307 / Worker 9a004fa9
+Next Allowed Action: STOP — Owner ruling required on the ONE open mismatch: hub_web_app has effective USAGE on the user_role enum via the PostgreSQL PUBLIC default, which the privilege matrix lists as excluded. See B5-RER15-OUTCOME-AND-USERROLE-DECISION-2026-09-21.md §3 for the three dispositions and the new evidence. No T6 until resolved.
 Dispatch Revision: docs/platform/house-long-run/B5-CLOSURE-REVIEW-REPORT-CODEX-2026-09-20.md
 Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current)
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
