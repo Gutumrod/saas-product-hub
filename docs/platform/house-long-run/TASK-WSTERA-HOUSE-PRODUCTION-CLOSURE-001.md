@@ -1,6 +1,6 @@
 # TASK — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
-Status: T5 — **R15 D0-D4 EXECUTED AND VERIFIED**; Owner ruling A applied; awaiting B5 re-review of the corrected exact state
+Status: **READY FOR OWNER HOUSE CLOSURE REVIEW** — all stages T0-T6 approved; B6 final review = BATCH_APPROVED. Awaiting the Owner's final closure decision (no automatic acceptance).
 Workflow ID: WF-DEV-01
 Workflow Spec Version: 1.3.0
 Execution Mode: LONG_RUN
@@ -18,16 +18,16 @@ House Records Revision: moves with each commit; the authoritative frozen *candid
 Owner: Free
 Commander: NONE
 Coordinator: Hermes
-Current Checkpoint: CP-10 T5/B5 — post-R15 re-review
+Current Checkpoint: CP-11 T6/B6 — CLOSED, READY FOR OWNER CLOSURE
 Current Stage: T5
-Current Work Unit: R15 D0-D4 COMPLETE — schema remediated (9/9 tables, 9/9 enums), `hub_web_app` live with the exact reviewed grants, `DATABASE_URL` switched, runtime identity verified
-Current Review Batch: B5
-Current State: IN_PROGRESS
+Current Work Unit: T6-WU01..WU03 COMPLETE; R15 D0-D4 EXECUTED AND VERIFIED; B5 BATCH_APPROVED; B6 BATCH_APPROVED
+Current Review Batch: B6 — BATCH_APPROVED
+Current State: READY_FOR_OWNER_CLOSURE
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B5 re-review #4 (post-R15 + Owner ruling A, Codex Windows Session-1) -> agent-codex WORKER_FIX (item 1 resolved; fresh D1 evidence produced)
-Dispatch Revision: docs/platform/house-long-run/B5-RER15-REVIEW-REPORT-CODEX-2026-09-21.md
-Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current) · `R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md` (credential re-issue)
-Next Allowed Action: submit a short B5 re-review of the current state. Latest evidence: `R15-D1-FRESH-EVIDENCE-2026-09-21.txt` (PASS, from the corrected probe). T6 only on `BATCH_APPROVED`.
+Latest Dispatch: B6 final review round 2 -> agent-codex BATCH_APPROVED
+Dispatch Revision: docs/platform/house-long-run/B6-FINAL-REVIEW-REPORT-CODEX-2026-09-21-r2.md
+Latest Reviewer Packet: docs/platform/house-long-run/T6-WU03-FINAL-EVIDENCE-PACKET-2026-09-21.md (final) · B6-FINAL-REVIEW-REPORT-CODEX-2026-09-21-r2.md (verdict)
+Next Allowed Action: STOP at `READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001`. Owner final closure decision required. PR #2 (Draft) must NOT be merged and House must NOT be closed automatically before that decision.
 R15 state: D0-D4 EXECUTED — schema 9/9 tables and 9/9 enums; `hub_web_app` live with the exact reviewed grants; `DATABASE_URL` switched; runtime identity verified. Precise privilege claim: explicit grants = exact review matrix; effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on `user_role` (not granted by this task; does not confer access to `public.profiles`).
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
