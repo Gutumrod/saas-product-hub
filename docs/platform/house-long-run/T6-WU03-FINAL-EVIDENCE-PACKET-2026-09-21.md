@@ -24,6 +24,7 @@ Status: **PREPARED — entered only on B5 `BATCH_APPROVED`**
 | Fulfillment state | Tables **live and reachable** (5 `fulfillment_*` + `product_installations`); **end-to-end path not exercised**; runbook `BILLING-CORE-READ-FULFILLMENT-RUNBOOK-2026-09-20.md` |
 | Control / SB01 read boundary state | Narrow billing-action path proven fixture-scoped; **no whole-Control-surface claim** (the pre-existing admin `customersTree` still enumerates demo fixtures). T4 consumes SB01's accepted LR-2F-A projection over HTTP. |
 | Billing deny (Project A) | **absence-invariant**, explicitly **NOT** a DENY PASS; mandatory re-verification when `billing_core` is created in Project A (Owner disposition A) |
+| **Current House worktree state** | **NOT fully clean — 3 untracked files** under `docs/platform/shared-runtime/`: `BRIEF-HOUSE-SELL-READY-LONG-RUN-2026-09-16.md`, `RUN-MANIFEST-HOUSE-SELL-READY-LONG-RUN-2026-09-16.md`, `TASK-HOUSE-SHARED-RUNTIME-ISOLATION-001.md`. They are **not this task's files and were not created by it** — captured as pre-existing in the session-start snapshot and labelled "not mine" at `T1-WU01-CARRYFORWARD-FINDINGS.md:32-36`. They belong to a different workstream. All **tracked** revisions are at parity with their remotes and `git diff --check` is clean. Disposition: left untouched; committing another workstream's drafts would be an unauthorised scope expansion and deleting them would destroy that workstream's work. **An Owner/workstream decision is required** if the final state must be a fully clean worktree. |
 | Remaining House blockers | (1) capability material absent — signer + billing-read; (2) Control request correlation design-only; (3) Owner-authenticated surfaces unverified; (4) synthetic fulfillment E2E not exercised; (5) PR/default-branch disposition pending Owner/governance; (6) stability evidence absent |
 
 ## B. Claim discipline B6 will check
@@ -33,7 +34,10 @@ Status: **PREPARED — entered only on B5 `BATCH_APPROVED`**
 - The reachability claim is bounded to the **static import closure** of the billing-action path; dynamic
   imports, runtime DI and bundler substitution are outside it.
 - A fail-closed scanner run is **not** a clean PASS. Latest scan: **official relay scanner, 0 findings
-  across 26 R15 files**; no committed file contains a credential literal.
+  across every R15 evidence file**; no committed file contains a credential literal.
+- **Clean-state precision:** *tracked* revisions are at parity and `git diff --check` is clean, but the House
+  worktree is **not fully clean** — three untracked files from an unrelated workstream remain (see the row above).
+  Any claim of a fully clean worktree would be inaccurate and is not made.
 - **Precise privilege claim** (Owner ruling 2026-09-21): *explicit grants = exact matrix; effective
   privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on `user_role`. The
   exception was not granted by this task and does not confer access to `public.profiles`.*
