@@ -1,33 +1,7 @@
-=== SUPERSEDED (historical) ===
-This transcript is from the FIRST D1 provisioning run. It contains a FAIL on
-"USAGE on user_role" which was a CHECKER DEFECT, not a state defect: the privilege is a
-PostgreSQL PUBLIC-default exception on enum types, accepted by the Owner on 2026-09-21
-(disposition A). For current evidence use R15-D1-FRESH-EVIDENCE-2026-09-21.txt, produced by
-the corrected probe R15-D1-PROVISION-PROBE.mjs. Kept as history.
-
 === D1.0 BASELINE RECHECK ===
-  hub_web_app exists before: false (expect false)
-
-=== D1.1 CREATE ROLE (R15 posture) ===
-  created hub_web_app: LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOINHERIT, NOREPLICATION, NOBYPASSRLS
-  verify posture: super=false createdb=false createrole=false bypassrls=false login=true -> PASS
-  membership rows (expect 0): 0 -> PASS
-
-=== D1.2 GRANT (matrix §4.1/§6, explicit grants exactly - nothing more) ===
-    NOTE: explicit grants only. One EFFECTIVE privilege exists outside this set - USAGE on
-    public.user_role via the PostgreSQL PUBLIC enum default, held by every role, not granted
-    here. Accepted as a recorded exception per the Owner ruling 2026-09-21.
-  OK   GRANT USAGE ON SCHEMA public
-  OK   GRANT SELECT, INSERT ON public.products
-  OK   GRANT SELECT, INSERT ON public.product_assets
-  OK   GRANT SELECT, INSERT, UPDATE ON public.product_installations
-  OK   GRANT USAGE ON SEQUENCE public.products_id_seq
-  OK   GRANT USAGE ON SEQUENCE public.product_assets_id_seq
-  OK   GRANT USAGE ON SEQUENCE public.product_installations_id_seq
-  OK   GRANT USAGE ON TYPE public.product_status
-  OK   GRANT USAGE ON TYPE public.asset_type
-  OK   GRANT USAGE ON TYPE public.installation_status
-  OK   GRANT USAGE ON TYPE public.installation_source
+  hub_web_app exists before: true (expect false)
+  VERIFY-ONLY: role exists - proceeding to verification without mutation
+  VERIFY-ONLY: skipping role creation and all grants
 
 === D1.2 VERIFY: table privileges ===
   products                 SELECT     expected=Y actual=Y ok
@@ -52,13 +26,24 @@ the corrected probe R15-D1-PROVISION-PROBE.mjs. Kept as history.
   product_installations    REFERENCES expected=n actual=n ok
   product_installations    TRIGGER    expected=n actual=n ok
 
-=== D1.2 VERIFY: excluded privileges must be ABSENT ===
+=== D1.2 VERIFY: EXPLICITLY-excluded privileges must be ABSENT ===
   public.profiles SELECT             must be false -> false PASS
   public.profiles INSERT             must be false -> false PASS
   public.profiles UPDATE             must be false -> false PASS
-  USAGE on user_role enum            must be false -> true FAIL
+  public.profiles DELETE             must be false -> false PASS
   public schema CREATE               must be false -> false PASS
   BYPASSRLS                          must be false -> false PASS
+  SUPERUSER                          must be false -> false PASS
+
+=== D1.2 VERIFY: explicit type grants equal the matrix; user_role NOT explicitly granted ===
+  explicit: asset_type, installation_source, installation_status, product_status
+  equals the four matrix enums exactly: PASS
+
+=== D1.2 RECORDED EXCEPTION (Owner ruling disposition A - NOT an explicit grant) ===
+  user_role.typacl is null (nobody granted it): true
+  effective USAGE holders (identical for every role): {"hub_web_app":true,"anon":true,"authenticated":true,"service_role":true}
+  -> arises from PostgreSQL's PUBLIC default for enum types (acldefault = =U/postgres).
+  -> recorded as an accepted exception; NOT treated as a failure and NOT remediated.
 
 === D1.4 public.profiles BOUNDARY (must be untouched) ===
   RLS still enabled: true (expect true)
@@ -73,6 +58,6 @@ the corrected probe R15-D1-PROVISION-PROBE.mjs. Kept as history.
 === OV-1 FK BEHAVIOUR (product_installations.recordedBy -> profiles.id, no profiles priv) ===
   deferred to D2.2: it must be observed with the hub_web_app credential itself, not inferred.
 
-  credential generated and written to the private handoff file (mode 600). Value never printed.
+  VERIFY-ONLY: credential handoff file NOT written (no mutation, no side effect).
 
-=== RESULT: FAIL ===
+=== RESULT: PASS ===

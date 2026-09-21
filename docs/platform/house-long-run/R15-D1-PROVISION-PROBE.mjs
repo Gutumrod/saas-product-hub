@@ -23,6 +23,9 @@ const url = fs.readFileSync(path.join(HUB, '.env'), 'utf8').split(/\r?\n/)
 if (!url) { console.error('no DATABASE_URL'); process.exit(1); }
 
 const ROLE = 'hub_web_app';
+// Verify-only mode: when RELAY_D1_VERIFY_ONLY=1 the probe performs NO mutation and does NOT
+// write the credential handoff file. Added after a verify run overwrote the real handoff copy.
+const VERIFY_ONLY = process.env.RELAY_D1_VERIFY_ONLY === '1';
 const sql = postgres(url, { prepare: false, ssl: 'require', max: 1, idle_timeout: 5, connect_timeout: 25 });
 let ok = true;
 const log = [];
@@ -33,9 +36,12 @@ try {
   say('=== D1.0 BASELINE RECHECK ===');
   const pre = await sql`SELECT count(*)::int AS n FROM pg_roles WHERE rolname = ${ROLE}`;
   say(`  ${ROLE} exists before: ${pre[0].n !== 0} (expect false)`);
-  if (pre[0].n !== 0) { say('  ABORT: role already exists - refusing to modify an existing role'); throw new Error('ROLE_EXISTS'); }
+  if (pre[0].n !== 0 && !VERIFY_ONLY) { say('  ABORT: role already exists - refusing to modify an existing role'); throw new Error('ROLE_EXISTS'); }
+  if (pre[0].n !== 0 && VERIFY_ONLY) { say('  VERIFY-ONLY: role exists - proceeding to verification without mutation'); }
 
   // ── D1.1 create the login role with the exact R15 posture ─────────────────
+  if (VERIFY_ONLY) { say('  VERIFY-ONLY: skipping role creation and all grants'); }
+  else {
   say('');
   say('=== D1.1 CREATE ROLE (R15 posture) ===');
   // password is generated, used, and stored ONLY in the private handoff file for D2. It is never
@@ -85,6 +91,8 @@ try {
   for (const g of grants) {
     try { await sql.unsafe(g); say(`  OK   ${g.replace(/ TO .*/, '')}`); }
     catch (e) { ok = false; say(`  FAIL ${g}: ${e.code} ${e.message}`); throw e; }
+  }
+
   }
 
   // ── D1.2 verification: EXPLICIT grants equal the matrix, and nothing more ──
@@ -186,11 +194,17 @@ try {
   say('=== OV-1 FK BEHAVIOUR (product_installations.recordedBy -> profiles.id, no profiles priv) ===');
   say(`  deferred to D2.2: it must be observed with the hub_web_app credential itself, not inferred.`);
 
-  // persist the password ONLY to the private handoff file (never printed, never committed)
-  fs.writeFileSync(path.join(WS, 'hub_web_app.credential.private'),
-    JSON.stringify({ role: ROLE, password: pw, created_at: new Date().toISOString() }, null, 2), { mode: 0o600 });
-  say('');
-  say(`  credential generated and written to the private handoff file (mode 600). Value never printed.`);
+  // persist the password ONLY to the private handoff file (never printed, never committed).
+  // NEVER in verify-only mode - that is what destroyed the real handoff copy once.
+  if (VERIFY_ONLY) {
+    say('');
+    say('  VERIFY-ONLY: credential handoff file NOT written (no mutation, no side effect).');
+  } else {
+    fs.writeFileSync(path.join(WS, 'hub_web_app.credential.private'),
+      JSON.stringify({ role: ROLE, password: pw, created_at: new Date().toISOString() }, null, 2), { mode: 0o600 });
+    say('');
+    say(`  credential generated and written to the private handoff file (mode 600). Value never printed.`);
+  }
 
   say('');
   say(`=== RESULT: ${ok ? 'PASS' : 'FAIL'} ===`);

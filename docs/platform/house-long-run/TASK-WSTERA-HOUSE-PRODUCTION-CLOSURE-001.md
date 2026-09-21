@@ -24,10 +24,10 @@ Current Work Unit: R15 D0-D4 COMPLETE — schema remediated (9/9 tables, 9/9 enu
 Current Review Batch: B5
 Current State: IN_PROGRESS
 Run Manifest: docs/platform/house-long-run/RUN-MANIFEST-WSTERA-HOUSE-PRODUCTION-CLOSURE-001.md @ f84a59c5d602ca37c95727997a0d63a709ddd63e
-Latest Dispatch: B5 re-review #3 (post-R15 + Owner ruling A, Codex Windows Session-1) -> agent-codex WORKER_FIX
+Latest Dispatch: B5 re-review #4 (post-R15 + Owner ruling A, Codex Windows Session-1) -> agent-codex WORKER_FIX (item 1 resolved; fresh D1 evidence produced)
 Dispatch Revision: docs/platform/house-long-run/B5-RER15-REVIEW-REPORT-CODEX-2026-09-21.md
 Latest Reviewer Packet: docs/platform/house-long-run/R15-D4-EVIDENCE-CLOSURE-2026-09-21.md (current) · `R15-CREDENTIAL-REPAIR-INCIDENT-2026-09-21.md` (credential re-issue)
-Next Allowed Action: fix the remaining B5 #3 items — the un-qualified header at `R15-D1-PROVISION-PROBE.mjs:64` and the stale state sections in this file — then submit a short B5 re-review. T6 only on `BATCH_APPROVED`.
+Next Allowed Action: submit a short B5 re-review of the current state. Latest evidence: `R15-D1-FRESH-EVIDENCE-2026-09-21.txt` (PASS, from the corrected probe). T6 only on `BATCH_APPROVED`.
 R15 state: D0-D4 EXECUTED — schema 9/9 tables and 9/9 enums; `hub_web_app` live with the exact reviewed grants; `DATABASE_URL` switched; runtime identity verified. Precise privilege claim: explicit grants = exact review matrix; effective privileges = exact matrix plus the recorded PostgreSQL PUBLIC-default exception on `user_role` (not granted by this task; does not confer access to `public.profiles`).
 Expected Stop: READY FOR OWNER HOUSE CLOSURE REVIEW — WSTERA-HOUSE-PRODUCTION-CLOSURE-001
 
@@ -101,14 +101,14 @@ Known refs:
 ```text
 Manifest Revision: f84a59c5d602ca37c95727997a0d63a709ddd63e
 Stage State: T5 post-R15 B5 re-review (BATCH_APPROVED required to enter T6)
-Issue Fingerprint: open — B5 #3: R15-D1-PROVISION-PROBE.mjs:64 un-qualified header; TASK stale sections (this file)
+Issue Fingerprint: open — B5 #4: fresh D1 evidence required from the corrected probe (now produced: R15-D1-FRESH-EVIDENCE-2026-09-21.txt)
 Local Fix Attempts: 3/3 on the wording sweep (sweep applied instance-by-instance; root cause = scripted
   replace appended a duplicate field instead of replacing, so the file was never read whole)
 Reviewer Remediation Attempts: 0/2 (this cycle)
 Senior Escalations: 0/1
 Primary Reviewer Status: Codex — B0–B4 BATCH_APPROVED; B5 predeploy BATCH_APPROVED (7 rounds);
   B5 closure OWNER_DECISION_REQUIRED; B5 post-R15 #1 OWNER_DECISION_REQUIRED (ruled by Owner),
-  #2 WORKER_FIX (fixed), #3 WORKER_FIX (being fixed)
+  #2 WORKER_FIX (fixed), #3 WORKER_FIX (fixed), #4 WORKER_FIX (fresh D1 evidence produced)
 Active Independent Reviewer: NONE
 ```
 
