@@ -114,6 +114,27 @@ My first two "isolated config" tests were **invalid evidence** and are retracted
 **Net:** the 401 cause is established beyond reasonable doubt (evidence 1–6 above). The
 *fix* is **not** verified. I am not claiming it is.
 
+### 4.1 Corrected-wrapper re-test (attempt 3b) — same sandbox limit
+
+A third test used a purpose-built temporary wrapper that redirects `XDG_*` to a fresh
+sandbox (copying the real wrapper's `SETLOCAL` behaviour so the redirect actually applies),
+with `settings.apiKey` removed entirely and `baseURL` pointed at the local gateway
+`http://127.0.0.1:11434/v1` — i.e. the config shape option A proposes. Result:
+
+```
+Error: Timed out waiting for the background service to start
+```
+
+Identical to §4. So even with the redirect working correctly, the sandbox cannot start
+opencode's background service, the auth path is never reached, and **the fix remains
+unproven**. The shared config was confirmed untouched afterwards (field still the literal
+placeholder; file mtime unchanged at Sep 15 20:53).
+
+**Consequence:** verifying option A end-to-end requires either applying it to the real
+config and re-running the readiness probe (a shared-runtime change needing authorization),
+or resolving why opencode's background service cannot start outside its normal `cli-v2`
+data/state paths. Neither is authorized or resolved here.
+
 ---
 
 ## 5. Shortest safe remediation path
