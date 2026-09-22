@@ -108,16 +108,24 @@ Consequence: on the deployed Worker the lookup falls through to `runtimeBindings
 
 ### 2.2 Blast radius — every production truth guard in this repository depends on that one flag
 
+> ⚠️ **CORRECTED 2026-09-22.** This table originally asserted the demo/fixture paths were generally
+> "reachable" on production. Re-measurement showed that was **overstated**, because production
+> **has** `WSTERA_CONTROL_SUPABASE_URL` + `WSTERA_CONTROL_SECRET_KEY` configured, so `getControlDb()`
+> returns a real client and the `!db` fixture branch is not the normal production path. The exposure
+> that is genuinely reachable today is the **datastore-error** branch. See
+> `CORRECTION-BLAST-RADIUS-NODE-ENV-2026-09-22.md` for the branch-by-branch correction. The flag
+> finding itself is unchanged.
+
 `grep -rn "isProduction"` over `server/` (excluding tests) shows it is the **sole** production
 discriminator on all of these paths:
 
 | File | Guard | Effect on live production today |
 |---|---|---|
-| `server/control-plane/owner-inbox-router.ts` | 5 guards | demo items + fabricated `decided`/`acknowledged` success reachable |
-| `server/control-plane/agent-activity-router.ts` | 4 guards | `simulation` / `demo_fallback` modes returned |
-| `server/control-plane/portfolio-gates-router.ts` | 2 guards | `simulation` / `demo_fallback` modes returned |
-| `server/control-plane/work-queue-router.ts` | 4 guards | **pre-existing** — "the model to preserve" in T1 §6.1 shares this flaw |
-| `server/webhooks/agentEvents.ts:171` | 1 guard | the 503 fail-closed on a missing Control datastore never fires |
+| `server/control-plane/owner-inbox-router.ts` | 5 guards | **error branch returns the demo inbox fixture set** with `mode:"demo_fallback"` on any Control datastore error — genuinely reachable; the `!db` branch needs the control-db vars to be absent |
+| `server/control-plane/agent-activity-router.ts` | 4 guards | error branch labelled `demo_fallback` (no fixture rows) — reachable, mislabels an error as demo |
+| `server/control-plane/portfolio-gates-router.ts` | 2 guards | error branch labelled `demo_fallback` (no fixture rows) — reachable, same mislabel |
+| `server/control-plane/work-queue-router.ts` | 4 guards | the `!db` guard is inert, **but its error branch returns `degraded` unconditionally with no flag test at all — already correct** |
+| `server/webhooks/agentEvents.ts:171` | 1 guard | the 503 fail-closed on a missing Control datastore never fires (latent, config-dependent) |
 | `server/control-plane/service.ts` | (T3-WU01) | its non-live paths are reached via the repository resolver, not this flag |
 
 This matters beyond this task: **the Work Queue "already strict in production" behaviour that T1
