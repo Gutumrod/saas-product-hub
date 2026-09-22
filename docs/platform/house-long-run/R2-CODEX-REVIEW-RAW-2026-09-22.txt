@@ -1,0 +1,59 @@
+REVIEWED_REVISIONS
+  hub-web          fde38f64e6bd72de9af549a88777bf276933c051  work/wstera-control-truth-sync-001
+  wstera-workflows 8afc8d7aac118f3e96c49e536e74f7de8010ac9d  work/wstera-control-truth-sync-001-t4
+
+FINDINGS_BY_SCOPE
+  1. Revision binding — PASS — `git rev-parse HEAD`, `git branch --show-current`, `git status --porcelain`, and `git rev-parse origin/<branch>` matched both requested SHAs/branches; both reviewed trees were clean before and after review.
+
+  2. Deterministic gates — UNVERIFIED — `npm run check`: exit 0. `git diff --check`: exit 0. `npx vitest run`: exit 1 before collection, 0 files/0 tests, because esbuild child-process creation failed with `spawn EPERM`. `python -m unittest discover -s tests`: exit 1, 21 tests discovered and all 21 errored because the restricted environment exposed no writable temporary directory. These are infrastructure failures, not reproduced passes.
+
+  3. Canonical production discriminator — PASS — `server/control-plane/runtime-mode.ts:14-15` imports nothing and directly compares literal `process.env.NODE_ENV === "production"`. `rg -n "ENV\.isProduction" server` returned no matches.
+
+  4. Closure-constrained command checks — PASS — identical literal checks are inlined at `command-service.ts:47-51` and `demo-command-executor.ts:30-40,243-247`. The closure allowlist remains `control-plane.test.ts:49-62`; `git log -- control-plane.test.ts` shows no change after T3-WU01, so it was not widened for the helper.
+
+  5. No-competing-discriminators judgment — PASS — one zero-import helper for ordinary production-truth readers plus the exact same literal in the import-constrained command closure is one semantic discriminator expressed through two mechanically necessary access forms. Since all sites compare the same literal and the closure prevents importing the helper, I do not regard this as competing production decisions.
+
+  6. Build-time discriminator claim — UNVERIFIED — `npx wrangler --version` and the attempted dry-run path failed at child-process creation with `spawn EPERM`. No bundle was emitted, so I did not reproduce either compiled `return true` or zero residual application `NODE_ENV` reads.
+
+  7. Cross-endpoint replay resistance and constant-time comparison — PASS — decision HMAC is `prefix || exact body` at `owner-decisions.ts:183-192`, while agent-events signs the bare body. Verification length-checks and then calls `timingSafeEqual` at `owner-decisions.ts:199-218`. An agent-events signature is therefore not reusable on either decision route by construction.
+
+  8. Raw body before parse on both runtime entry points — PASS — Worker routes call `request.arrayBuffer()` before handlers at `worker.ts:45-60`. Express mounts `express.raw()` before its global JSON parser at `_core/index.ts:39-57`. Parsing occurs only after authentication at `owner-decisions.ts:522-527,564-569`.
+
+  9. Refusal status mapping — PASS — the complete typed mapping at `owner-decisions-http.ts:52-66` maps every refusal to 400/401/403/404/409/422/503; none maps to 2xx.
+
+  10. Decision preservation and datastore ordering — PASS — acknowledgement payload contains only consumption columns and is checked against preserved columns at `owner-decisions.ts:600-619`; it cannot erase `status`, `selected_option`, `decision_note`, or `decided_at`. The CAS also requires decided and unconsumed state.
+
+  11. Decision scope enforcement — PASS — null item, unresolved relation, missing task/root identity, task mismatch, root mismatch, undecided state, consumed state, and unsupported option all fail closed at `owner-decisions.ts:356-401`. Polling only maps work items already loaded for and exactly matched to the signed scope at `owner-decisions.ts:533-551`.
+
+  12. Sender detail bound — PASS at source/test-contract level — constant is exactly 2000; tests pin the literal independently at `test_control_sync.py:203-226`, so raising the constant above 2000 fails. Mutation execution in a copy was impossible because this session has no writable scratch directory.
+
+  13. Existing activity/work signing behavior — PASS — diff from `e711b94` shows activity changed only by visible detail truncation; work payload/signing was not rewritten. The existing `_deliver` bare-body signature path remains separate. Decision signing independently prepends `OWNER_DECISIONS_DOMAIN_PREFIX` at `control_sync.py:43-50,495-499`.
+
+  14. Persist-before-ack and fingerprint conflict — PASS — `_record_decision` commits before `_acknowledge_decision` can send (`control_sync.py:547-587,716-726`); ack refuses absent evidence at `747-751`. Same-ID/different-fingerprint evidence is rejected without overwrite at `564-568,695-701`.
+
+  15. Consume-exactly-once across restart — FAIL — the ledger schema has no `applied_at`/application marker (`control_sync.py:127-139`). `_apply_decision_consumption()` performs no write and returns `applied: true` every time for the same acknowledged row (`623-641`). After restart—or simply a repeated command—the same decision can again be reported as newly applied, allowing orchestration to re-advance. No Python unit test covers any decision-ledger behavior; the 21 tests end at line 423 with T4 activity/outbox/scope coverage.
+
+  16. Scope discipline — PASS with baseline caveat — revision-specific commits match the packets: hub T5 logic/wiring/test commits modify their stated files; workflow T4/T5 commits modify `.gitignore`, contract, sender, and T4 test file as disclosed. Comparison to `origin/main` includes the much larger pre-existing control-plane feature branch, so this verdict does not certify that whole historical branch as an R2 change set.
+
+COUNTER_EVIDENCE_OR_NOT_REPRODUCED
+  - Hub’s claimed “28 files, 490 tests” was not reproduced: Vitest failed during configuration startup with `spawn EPERM`.
+  - Workflow’s claimed “21 tests, OK” was not reproduced: 21 tests were discovered, but all errored because `tempfile.TemporaryDirectory()` had no writable location.
+  - Wrangler dry-run bundle claims were not reproduced because Wrangler/esbuild could not spawn.
+  - The requested raised-limit mutation was not executable without a writable out-of-repository scratch area; the independent literal pin was confirmed by source inspection only.
+  - No live endpoint, database, secret, or reviewed-tree mutation was used.
+
+DOCUMENT_ACCURACY
+  - T5 packet §3 claims “repeated poll after acknowledged consumption cannot re-advance the run — PASS.” This is overstated: polling suppresses acknowledged rows, but the exposed `--apply-consumption` path has no durable applied-once state and returns `applied:true` repeatedly.
+  - T5 packet §5.2 describes the sender as a durable consumption ledger, but the documented 11 columns omit any application marker; acknowledgement durability is implemented, consumption/application exactly-once is not.
+  - T5 packet §2 says every worker PASS was independently reproduced. This review could not reproduce the gates, and the admitted test suite has no Python decision-ledger tests. The 37 TypeScript contract tests copy sender rules but are not a substitute for executing the Python ledger/application lifecycle.
+  - The disclosed orchestrator/commander failures in the T3 packet appear candid, but the missing applied-once state and missing Python decision tests are material omissions from the T5 accuracy narrative.
+
+RESIDUAL_RISK_FOR_OWNER
+  - Do not authorize production activation of the revised Control Sync decision consumer until durable application state and a restart/repeat regression test demonstrate exactly-once advancement.
+  - Re-run all deterministic gates and the Wrangler dry-run in an environment that permits child processes and writable scratch directories.
+  - The installed runtime skill remains explicitly unsynchronized; this source verdict must not be treated as installation or deployment authorization.
+
+BOUNDARY_OF_THIS_VERDICT
+  - This is a read-only source/revision verdict for the two exact SHAs above. It is not production approval, deployment approval, DB-migration approval, runtime-skill installation approval, or live-behavior evidence.
+
+R2_VERDICT=CHANGES_REQUIRED
