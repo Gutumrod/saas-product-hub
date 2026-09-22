@@ -4,7 +4,7 @@ Date: 2026-09-22
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Author: Claude (Windows) — Lane-B controller
 Authority: `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §3.A
-Status: `CONTROLLER DRAFT REV3 — CORRECTS NEW-DEFECT-01..05 FROM CODEX ROUND 2 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-ROUND2-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
+Status: `CONTROLLER DRAFT REV4 — CORRECTS NEW-DEFECT-05/06/07 FROM CODEX ROUND 3 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-ROUND3-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
 Execution baseline read: `work/house-h3d-h5-20260909 @ 2b1af861aa608f08abb0bd8224821b9ca5ac9981`
 
 This document **defines** roles and runbooks. It creates nothing. No LAB role,
@@ -260,10 +260,57 @@ Verification at window open, before any gate runs (all must pass or the window c
 | target | §5 provenance: measured ref = `ykxlqnshaaxmzzocpjlj`, both from the connection and from the database. |
 | identity | `current_user` = the planned role; `session_user` = same. |
 | visibility (M) | `SELECT count(*) FROM ps01.commercial_packages` = `3` (F12). A role that reads 0 is RLS-blind → window STOPs. |
-| no real-table write privilege (M, W) | **Corrected from Codex round 1 (DEFECT-04) and round 2 (NEW-DEFECT-03): no live lock, and every write privilege is checked, not only INSERT.** For every relation the role must not write — for M: every table in `ps01` and every relation in the base-reach list of §1a; for W: every table outside the stage's declared fixture set **and** outside that stage's §1a exception row — assert `has_table_privilege(current_user, t, p) = false` for **each** of `p ∈ {'INSERT','UPDATE','DELETE','TRUNCATE'}` (four checks per relation, not one), from `information_schema`/`pg_catalog`, queried directly — a metadata read, not a lock. Any `true` on any relation/privilege pair → window STOPs before any gate runs. |
+| no real-table write privilege (M, W) | **Corrected from Codex round 1 (DEFECT-04), round 2 (NEW-DEFECT-03), and round 3 (NEW-DEFECT-07): the forbidden set excludes the §1a-accepted managed exposure, so the check does not fail on privilege the policy already accepts.** Forbidden-write relation universe is **product/data relations only**: for M, every table in `ps01`; for W, every table in `ps01` outside the stage's declared fixture DML set. This universe explicitly **excludes** `cron`/`net` (accepted base exposure, §1a inv. 5, controlled by G-STATIC-NOSHARED + zero-delta re-measurement, not by this check) and, for W, excludes `ps01_internal` (accepted ownership reach, §1a, same controls) and the stage's named `wstera_platform_internal` exception row (§1a per-stage table). For every relation in the forbidden universe, assert `has_table_privilege(current_user, t, p) = false` for **each** of `p ∈ {'INSERT','UPDATE','DELETE','TRUNCATE'}`. Any `true` → window STOPs before any gate runs. **Separately** (not this check): assert the accepted-exposure relations are exactly the documented set — `net._http_response`, `net.http_request_queue`, `net.http_request_queue_id_seq`, `cron.job` (§1a) — via `SELECT relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname IN ('cron','net') AND c.relkind IN ('r','p','S')` (table/partition/sequence kinds only — omitting the `relkind` filter would also enumerate indexes and TOAST relations as false "new" surfaces); any relation beyond the documented set → window STOPs (new managed-ACL surface, not previously accepted). |
 | connection-level read-only behaviour (M only, where the tool still wants the compensating control of F11) | `CREATE TEMP TABLE lane_b_probe(x int); INSERT INTO lane_b_probe VALUES (1); DROP TABLE lane_b_probe;` — session-local, never touches shared storage, safe to succeed or fail either way. Its *purpose* is to distinguish "role genuinely cannot write" (real STOP above) from "pooler silently dropped a read-only setting" (F11) — it is diagnostic, not a gate, and its result is recorded, not enforced. |
-| forbidden reach (W) | **Corrected from Codex round 2 (NEW-DEFECT-02, NEW-DEFECT-04 disposition of DEFECT-04): metadata only, no live lock, and the forbidden set is the stage's §1a row, not one constant list.** For `H3D-A1`: assert `has_schema_privilege(current_user, s, 'USAGE') = false` for `s ∈ {'local_service','mt01','mt01_private','auth','vault','wstera_platform_internal'}`. For `H3D-LIVE`: same set, **except** assert `has_table_privilege(current_user, 'wstera_platform_internal.runtime_token_grants', p) = true` for exactly `p ∈ {'SELECT','INSERT','DELETE'}` (the one named exception) and `has_schema_privilege(current_user,'wstera_platform_internal','USAGE') = true` **only** via that table, with no privilege on any other object in that schema (`has_table_privilege` false for every other relation `information_schema.tables` lists under `wstera_platform_internal`). |
-| trigger-DDL capability (W, Codex round 1 DEFECT-05; bounded per Codex round 2 NEW-DEFECT-05) | **Required before any stage that uses F2 (fixture teardown) is allowed to proceed under class W.** In its own transaction, with explicit bounds matching the real teardown's own guard (`fixtures/h3d-authz-fixture-teardown.sql:21-23`) and a client-side guarantee that the session always terminates: `BEGIN; SET LOCAL lock_timeout = '4s'; SET LOCAL statement_timeout = '10s'; ALTER TABLE ps01.subscription_audit_log DISABLE TRIGGER trg_subscription_audit_immutable; ALTER TABLE ps01.subscription_audit_log ENABLE TRIGGER trg_subscription_audit_immutable; ROLLBACK;` run inside a try/finally that unconditionally issues `ROLLBACK` (or closes the connection) on every code path, including a driver-level timeout or disconnect — never left to an ambient transaction boundary. `ROLLBACK` means neither statement's effect persists even on success, and `lock_timeout` means a real contending lock aborts the probe within 4s rather than waiting — this is what makes it harmless, not the rollback alone. A `55P03`/`57014` timeout is reported as `UNMEASURED` (contention, not a capability answer), not as proof the role lacks the capability. If the statements raise `42501` (membership does not confer the capability the §8 assumption expects), the window STOPs: **do not fall back to class P**; this is exactly the "inability to prove a finding closed without a mutation belonging to a later checkpoint" stop condition in the Owner decision §5, and the new credential decision returns to the Owner. |
+| forbidden reach (W) | **Corrected from Codex round 2 (NEW-DEFECT-02) and round 3 (NEW-DEFECT-06): the relation universe is enumerated from `pg_catalog`, not `information_schema.tables`, because the latter is privilege-filtered and would silently omit a relation the role cannot see instead of asserting it cannot see it.** For each forbidden schema `s ∈ {'local_service','mt01','mt01_private','auth','vault'}` (always forbidden, every stage): assert `has_schema_privilege(current_user, s, 'USAGE') = false`. For `wstera_platform_internal`: enumerate every relation with `SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'wstera_platform_internal' AND c.relkind IN ('r','p','v','m')` (readable via the schema's catalog entries regardless of the caller's own table-level privilege — this is what makes the enumeration exhaustive rather than self-filtering). For `H3D-A1`: assert `has_table_privilege(current_user, r, p) = false` for every returned relation `r` and every `p ∈ {'SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER'}`. For `H3D-LIVE`: same, **except** for `r = 'wstera_platform_internal.runtime_token_grants'`, assert `p ∈ {'SELECT','INSERT','DELETE'} → true` and `p ∈ {'UPDATE','TRUNCATE','REFERENCES','TRIGGER'} → false` — every other enumerated relation still requires all seven `false`. |
+| trigger-DDL capability (W) | **Required before any stage that uses F2 (fixture teardown) is allowed to proceed under class W.** See §3a for the exact bounded, guaranteed-rollback execution contract (Codex round 1 DEFECT-05; round 2 NEW-DEFECT-05; round 3 timeout-value and execution-model correction). |
+
+### 3a. Trigger-DDL capability probe — exact execution contract (Codex round 3 correction)
+
+Round 2's fix stated bounds and a rollback requirement in prose; round 3 found the
+stated `statement_timeout` (10s) did not match the real teardown's bound (30s,
+`fixtures/h3d-authz-fixture-teardown.sql:20-22`, alongside `lock_timeout='4s'`) and
+that "run inside a try/finally" was an instruction, not a verifiable contract. Both
+are corrected here as the executable specification AGY implements:
+
+```js
+const client = new Client({ connectionString: wRoleUrl, statement_timeout: 30000 });
+await client.connect();
+let result;
+try {
+  await client.query('BEGIN');
+  await client.query(`SET LOCAL lock_timeout = '4s'`);
+  await client.query(`SET LOCAL statement_timeout = '30s'`);
+  await client.query('ALTER TABLE ps01.subscription_audit_log DISABLE TRIGGER trg_subscription_audit_immutable');
+  await client.query('ALTER TABLE ps01.subscription_audit_log ENABLE TRIGGER trg_subscription_audit_immutable');
+  result = { capable: true };
+} catch (e) {
+  result = /42501/.test(e.code) ? { capable: false, code: e.code }
+         : /55P03|57014/.test(e.code) ? { capable: 'UNMEASURED', code: e.code }
+         : (() => { throw e; })();
+} finally {
+  try { await client.query('ROLLBACK'); } catch { /* connection already gone —
+    PostgreSQL aborts the still-open server-side transaction on client
+    disconnect, so the DDL cannot persist even on a dead socket */ }
+  await client.end().catch(() => {});
+}
+```
+
+The `finally` block, not the `ROLLBACK` statement alone, is what makes the probe
+harmless: every exit path — success, `42501`, a `lock_timeout`/`statement_timeout`
+abort, or an unexpected error rethrown — reaches it, and the disconnect fallback
+covers the one path where the `ROLLBACK` call itself cannot run. `lock_timeout` bounds
+how long the probe can wait on contention (aborts within 4s rather than blocking
+indefinitely); `statement_timeout` matches the real teardown's own 30s bound so the
+probe's behaviour is directly comparable to production use, not merely "some bound".
+
+Result handling: `capable: 'UNMEASURED'` is recorded as lock contention, not as a
+capability answer, and does not STOP the window on its own (retry once outside the
+window-open gate, or treat as inconclusive for this window). `capable: false`
+(`42501`) STOPs the window: **do not fall back to class P**; this is the "inability to
+prove a finding closed without a mutation belonging to a later checkpoint" stop
+condition in the Owner decision §5, and the new credential decision returns to the
+Owner. `capable: true` allows the window to proceed to F1/F2 fixture work.
 
 Teardown verification: the closing assertion in the teardown file, **plus** an
 independent re-measure by the next M role or H3F inventory showing the role absent.
