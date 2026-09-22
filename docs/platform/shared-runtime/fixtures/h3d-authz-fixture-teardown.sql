@@ -11,7 +11,7 @@
 -- resources.
 --
 -- Before running this file the operator/runner MUST have run
--- tools/shared-runtime/h3d/catalog-manifest.mjs --verify and had it PASS
+-- node tools/shared-runtime/h3d/catalog-manifest.mjs --verify <expected-manifest.json> and had it PASS
 -- (STOP — CATALOG GRAPH CHANGED otherwise).
 
 \set ON_ERROR_STOP on
@@ -53,6 +53,17 @@ END $$;
 -- 3. lock the whole shop-rooted graph, parent-to-leaf. ACCESS EXCLUSIVE on the
 --    immutable-audit table (acquired directly, never upgraded), SHARE ROW
 --    EXCLUSIVE on the rest. Any wait -> lock_timeout -> ROLLBACK with no deletes.
+--
+-- Deterministic global lock order:
+--   1. subscription_audit_log (ACCESS EXCLUSIVE, acquired directly to avoid upgrade deadlock)
+--   2. shops (root)
+--   3. shop-rooted children parent-to-leaf: shop_subscriptions, staff_users,
+--      pet_owners, pets, rooms, room_rate_plans, bookings, booking_pets,
+--      booking_requests, daily_reports, google_sync_mappings, sync_queue
+--   4. camera tables: camera_settings, camera_visitor_credentials, camera_access_audit
+--      (camera_access_audit has shop_id but no FK to shops; locked in SHARE ROW
+--      EXCLUSIVE to prevent concurrent writes while verifying zero fixture rows)
+--   5. support tables: shop_commercial_assignments, import_batches
 LOCK TABLE ps01.subscription_audit_log IN ACCESS EXCLUSIVE MODE;
 LOCK TABLE ps01.shops                  IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.shop_subscriptions     IN SHARE ROW EXCLUSIVE MODE;
@@ -69,6 +80,7 @@ LOCK TABLE ps01.google_sync_mappings   IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.sync_queue             IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.camera_settings        IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.camera_visitor_credentials IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.camera_access_audit    IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.shop_commercial_assignments IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.import_batches         IN SHARE ROW EXCLUSIVE MODE;
 
@@ -131,9 +143,15 @@ BEGIN
      OR (SELECT count(*) FROM ps01.sync_queue WHERE shop_id IN (a,b)) <> 0
      OR (SELECT count(*) FROM ps01.camera_settings WHERE shop_id IN (a,b)) <> 0
      OR (SELECT count(*) FROM ps01.camera_visitor_credentials WHERE shop_id IN (a,b)) <> 0
+     OR (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN (a,b)) <> 0
      OR (SELECT count(*) FROM ps01.shop_commercial_assignments WHERE shop_id IN (a,b)) <> 0
      OR (SELECT count(*) FROM ps01.import_batches WHERE shop_id IN (a,b)) <> 0 THEN
     RAISE EXCEPTION 'H3D teardown: an unexpected child row exists for a fixture shop.';
+  END IF;
+
+  -- camera_access_audit has shop_id UUID but no FK to ps01.shops; assert zero fixture rows BEFORE first DELETE
+  IF (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN (a,b)) <> 0 THEN
+    RAISE EXCEPTION 'H3D teardown: camera_access_audit has rows for fixture Shop A/B before delete.';
   END IF;
 END $$;
 
@@ -205,9 +223,10 @@ BEGIN
                              + (SELECT count(*) FROM ps01.pet_owners WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'))
                              + (SELECT count(*) FROM ps01.pets WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'))
                              + (SELECT count(*) FROM ps01.rooms WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'))
-                             + (SELECT count(*) FROM ps01.room_rate_plans WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'))
+                             + (SELECT count(*) FROM ps01.room_rate_plans WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002')),
+    'camera_access_audit_fixture_count', (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'))
   );
-  IF (v->>'exact_ids')::int <> 0 OR (v->>'labels')::int <> 0 OR (v->>'fixture_shop_children')::int <> 0 THEN
+  IF (v->>'exact_ids')::int <> 0 OR (v->>'labels')::int <> 0 OR (v->>'fixture_shop_children')::int <> 0 OR (v->>'camera_access_audit_fixture_count')::int <> 0 THEN
     RAISE EXCEPTION 'H3D teardown: residue detected %.', v;
   END IF;
 
@@ -222,12 +241,13 @@ BEGIN
       WHEN 'room_rate_plans' THEN (SELECT count(*) FROM ps01.room_rate_plans)
       WHEN 'shop_subscriptions' THEN (SELECT count(*) FROM ps01.shop_subscriptions)
       WHEN 'subscription_audit_log' THEN (SELECT count(*) FROM ps01.subscription_audit_log)
+      WHEN 'camera_access_audit' THEN (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'))
     END
   ) THEN
     RAISE EXCEPTION 'H3D teardown: table counts not restored to the pre-seed baseline.';
   END IF;
 
-  RAISE NOTICE 'H3D teardown: residue zero, counts restored to pre-seed baseline.';
+  RAISE NOTICE 'H3D teardown: residue zero, counts restored to pre-seed baseline, camera_access_audit fixture count 0.';
 END $$;
 
 COMMIT;

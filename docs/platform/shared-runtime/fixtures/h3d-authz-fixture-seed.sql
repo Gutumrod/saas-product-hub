@@ -56,6 +56,7 @@ LOCK TABLE ps01.rooms                  IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.room_rate_plans        IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.shop_subscriptions     IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.subscription_audit_log IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.camera_access_audit    IN SHARE ROW EXCLUSIVE MODE;
 
 -- 4. commercial 'starter' package — pin the exact row, assert full semantics.
 DO $$
@@ -73,9 +74,8 @@ BEGIN
 END $$;
 
 -- 5. catalog manifest gate — the fixture depends on an exact trigger/FK graph.
---    The runner runs tools/shared-runtime/h3d/catalog-manifest.mjs --verify against
---    h3d-expected-catalog-manifest.json immediately before this seed and STOPs on
---    drift. This block re-asserts the minimum trigger set inline as defence in depth.
+--    The runner runs node tools/shared-runtime/h3d/catalog-manifest.mjs --verify <expected-manifest.json>
+--    immediately before this seed and STOPs on drift. This block re-asserts the minimum trigger set inline as defence in depth.
 DO $$
 DECLARE v_missing text;
 BEGIN
@@ -143,6 +143,11 @@ BEGIN
      OR EXISTS (SELECT 1 FROM ps01.room_rate_plans WHERE id = '0d15d05a-0000-4000-8000-000000000041') THEN
     RAISE EXCEPTION 'H3D seed: an exact fixture id already exists — run guarded teardown first.';
   END IF;
+
+  -- atomic precondition: zero camera_access_audit rows for fixture Shop A/B
+  IF EXISTS (SELECT 1 FROM ps01.camera_access_audit WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002')) THEN
+    RAISE EXCEPTION 'H3D seed: camera_access_audit already has rows for fixture Shop A/B — run guarded teardown first.';
+  END IF;
 END $$;
 
 -- 7. snapshot controlled-table counts inside the transaction.
@@ -153,7 +158,8 @@ SELECT 'pets', (SELECT count(*) FROM ps01.pets) UNION ALL
 SELECT 'rooms', (SELECT count(*) FROM ps01.rooms) UNION ALL
 SELECT 'room_rate_plans', (SELECT count(*) FROM ps01.room_rate_plans) UNION ALL
 SELECT 'shop_subscriptions', (SELECT count(*) FROM ps01.shop_subscriptions) UNION ALL
-SELECT 'subscription_audit_log', (SELECT count(*) FROM ps01.subscription_audit_log);
+SELECT 'subscription_audit_log', (SELECT count(*) FROM ps01.subscription_audit_log) UNION ALL
+SELECT 'camera_access_audit', (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002'));
 
 -- 8. inserts in dependency order. No ON CONFLICT, no rerun-as-success.
 INSERT INTO ps01.shops (id, name, slug) VALUES
@@ -197,7 +203,7 @@ BEGIN
       d_shops, d_owners, d_pets, d_rooms, d_plans, d_subs, d_audit;
   END IF;
 
-  -- every other shop-rooted table must be unchanged (still 0).
+  -- every other shop-rooted / monitored table must be unchanged (still 0).
   IF (SELECT count(*) FROM ps01.staff_users) <> 0
      OR (SELECT count(*) FROM ps01.bookings) <> 0
      OR (SELECT count(*) FROM ps01.booking_pets) <> 0
@@ -207,6 +213,7 @@ BEGIN
      OR (SELECT count(*) FROM ps01.sync_queue) <> 0
      OR (SELECT count(*) FROM ps01.camera_settings) <> 0
      OR (SELECT count(*) FROM ps01.camera_visitor_credentials) <> 0
+     OR (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002')) <> 0
      OR (SELECT count(*) FROM ps01.shop_commercial_assignments) <> 0
      OR (SELECT count(*) FROM ps01.import_batches) <> 0 THEN
     RAISE EXCEPTION 'H3D seed: an unrelated shop-rooted table gained rows.';
@@ -288,6 +295,8 @@ SELECT jsonb_build_object(
     'audit_b', (SELECT id FROM ps01.subscription_audit_log WHERE shop_id='0d15d05a-0000-4000-8000-00000000b002')
   ),
   'pre_seed_counts', (SELECT jsonb_object_agg(t, n) FROM _h3d_pre),
+  'camera_access_audit_baseline', 0,
+  'camera_access_audit_fixture_count', (SELECT count(*) FROM ps01.camera_access_audit WHERE shop_id IN ('0d15d05a-0000-4000-8000-00000000a001','0d15d05a-0000-4000-8000-00000000b002')),
   'expected_delta', jsonb_build_object('shops',2,'pet_owners',2,'pets',2,'rooms',1,'room_rate_plans',1,'shop_subscriptions',2,'subscription_audit_log',2)
 ) AS h3d_seed_manifest;
 

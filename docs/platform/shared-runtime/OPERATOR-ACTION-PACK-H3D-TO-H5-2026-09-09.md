@@ -14,7 +14,7 @@ package is prepared and static-verified but **NOT applied**:
 - `fixtures/h3d-authz-fixture-precheck.sql` (SELECT-only, EVIDENCE ONLY — never the guard)
 - `fixtures/h3d-authz-fixture-seed.sql` (§5: locks + 7 in-txn pre-DML assertions + exact +8/+4 delta + exact subscription/audit semantics + manifest)
 - `fixtures/h3d-authz-fixture-teardown.sql` (§6: ACCESS EXCLUSIVE audit lock + exact-id deletes with ROW_COUNT + residue zero + pre-seed count restoration)
-- `fixtures/h3d-expected-catalog-manifest.json` (version-controlled expected trigger/FK/function graph; `catalog-manifest.mjs --verify` STOPs on any drift)
+- `fixtures/h3d-expected-catalog-manifest.json` (version-controlled expected trigger/FK/function graph; `node tools/shared-runtime/h3d/catalog-manifest.mjs --verify <expected-manifest.json>` STOPs on any drift)
 
 **Live authorization boundary:** `IMPLEMENTED / REVIEW-READY` → Secretary/House
 review → the four **external authorization receipts** of §9 (issued per phase, per

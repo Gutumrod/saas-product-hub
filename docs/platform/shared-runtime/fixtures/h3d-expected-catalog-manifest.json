@@ -8,8 +8,6 @@
     "booking_pets",
     "booking_requests",
     "bookings",
-    "camera_access_audit",
-    "camera_rate_limit_buckets",
     "camera_settings",
     "camera_visitor_credentials",
     "daily_reports",
@@ -1543,5 +1541,33 @@
       "def": "CHECK (((transition_source)::text = ANY ((ARRAY['bootstrap'::character varying, 'migration'::character varying, 'manual_admin'::character varying, 'system'::character varying, 'future_billing_event'::character varying])::text[])))"
     }
   ],
-  "fingerprint": "001c2c213f4a7086704da1e56879b82bee88f6f6054bd66c316e1791369d0619"
+  "fingerprint": "3413b3494dfd3e1c264600c1cee5605f82c4c36ad8d9112156558a8202ecd806",
+  "fk_reachable_tables": [
+    "booking_pets",
+    "booking_requests",
+    "bookings",
+    "camera_settings",
+    "camera_visitor_credentials",
+    "daily_reports",
+    "google_sync_mappings",
+    "import_batches",
+    "pet_owners",
+    "pets",
+    "room_rate_plans",
+    "rooms",
+    "shop_commercial_assignments",
+    "shop_subscriptions",
+    "shops",
+    "staff_users",
+    "subscription_audit_log",
+    "sync_queue"
+  ],
+  "monitored_non_fk_surfaces": [
+    "camera_access_audit",
+    "camera_rate_limit_buckets"
+  ],
+  "monitored_non_fk_notes": {
+    "camera_access_audit": "shop-scoped (has shop_id UUID) but NO FK to ps01.shops; deleting fixture shops cannot cascade to audit rows",
+    "camera_rate_limit_buckets": "non-shop-scoped, no shop_id, no FK to ps01.shops; global bucket surface, not an FK child"
+  }
 }

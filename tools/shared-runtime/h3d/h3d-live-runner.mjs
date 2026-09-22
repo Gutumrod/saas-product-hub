@@ -46,9 +46,10 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import pg from "pg";
 
 const { Client } = pg;
@@ -59,6 +60,7 @@ const SNAPSHOT_SQL = path.join(HOUSE_ROOT, "tools/shared-runtime/h3c/h3c-privile
 const H3B_EVIDENCE = path.join(HOUSE_ROOT, "docs/platform/shared-runtime/evidence/H3B-POST-APPLY-RUNTIME-BOUNDARY-2026-09-08.md");
 const CATALOG_TOOL = path.join(HOUSE_ROOT, "tools/shared-runtime/h3d/catalog-manifest.mjs");
 const EXPECTED_CATALOG = path.join(HOUSE_ROOT, "docs/platform/shared-runtime/fixtures/h3d-expected-catalog-manifest.json");
+const TEARDOWN_SQL = path.join(HOUSE_ROOT, "docs/platform/shared-runtime/fixtures/h3d-authz-fixture-teardown.sql");
 
 const LAB_ORIGIN = "https://ykxlqnshaaxmzzocpjlj.supabase.co";
 const LAB_REF = "ykxlqnshaaxmzzocpjlj";
@@ -143,60 +145,157 @@ function writeEvidence(name, obj) {
   return p;
 }
 
-// ---- receipts (§7): durable, hash-linked, TTL --------------------------
-function receiptPath(state) { return path.join(CFG.receiptsDir, `receipt-${state}.json`); }
-function readReceipt(state) {
-  try { return JSON.parse(fs.readFileSync(receiptPath(state), "utf8")); } catch { return null; }
-}
-function receiptFresh(r, { commit, catalogFp, fixtureFp } = {}) {
-  if (!r) return { ok: false, why: "missing" };
-  if (r.run_id !== CFG.runId) return { ok: false, why: "run_id mismatch" };
-  if (Date.parse(r.expires_at) <= Date.now()) return { ok: false, why: "expired" };
-  if (commit && r.commit !== commit) return { ok: false, why: "commit drift" };
-  if (catalogFp && r.catalog_fingerprint !== catalogFp) return { ok: false, why: "catalog drift" };
-  if (fixtureFp && r.fixture_fingerprint && r.fixture_fingerprint !== fixtureFp) return { ok: false, why: "fixture drift" };
-  return { ok: true };
-}
-function writeReceipt(state, body) {
-  fs.mkdirSync(CFG.receiptsDir, { recursive: true });
-  const prev = fs.existsSync(receiptPath(prevState(state))) ? sha(fs.readFileSync(receiptPath(prevState(state)))) : null;
-  const rec = {
-    state, run_id: CFG.runId, at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + CFG.receiptTtlSec * 1000).toISOString(),
-    prev_receipt_sha256: prev, ...body,
-  };
-  rec.hash = sha(JSON.stringify({ ...rec, hash: undefined }));
-  assertNoPii(rec, `receipt-${state}`);
-  fs.writeFileSync(receiptPath(state), JSON.stringify(rec, null, 2) + "\n");
-  return rec;
-}
+// ---- receipts (§7): durable, append-only, hash-linked, TTL -------------
 const STATE_ORDER = [
   "REVIEWED", "FIXTURE_DML_AUTHORIZED", "SEEDED", "POST_SEED_VERIFIED",
   "HOOK_PROBE_AUTHORIZED", "HOOK_OFF_CONFIRMED", "HOOK_ENABLE_REQUESTED",
   "HOOK_ON_CONFIRMED", "RUN_AUTHORIZED", "RUN_COMPLETE", "HOOK_OFF_AFTER_RUN",
   "RESIDUAL_EXPIRED", "FIXTURE_TEARDOWN_AUTHORIZED", "RESTORED",
 ];
-function prevState(s) { const i = STATE_ORDER.indexOf(s); return i > 0 ? STATE_ORDER[i - 1] : s; }
-
-// external *_AUTHORIZED receipts the runner may READ but never MINT.
-function loadExternalAuthorization(file, expectState) {
-  let a;
-  try { a = JSON.parse(fs.readFileSync(file, "utf8")); }
-  catch (e) { throw new H3DError(`cannot read authorization receipt: ${e.message}`); }
-  if (a.kind !== "h3d-external-authorization" || a.state !== expectState) {
-    throw new H3DError(`authorization receipt is not a valid ${expectState} grant`);
+const CHAIN_ALLOWED = new Map([
+  ["REVIEWED", new Set(["FIXTURE_DML_AUTHORIZED"])],
+  ["FIXTURE_DML_AUTHORIZED", new Set(["SEEDED"])],
+  ["SEEDED", new Set(["POST_SEED_VERIFIED"])],
+  ["POST_SEED_VERIFIED", new Set(["HOOK_PROBE_AUTHORIZED"])],
+  ["HOOK_PROBE_AUTHORIZED", new Set(["HOOK_OFF_CONFIRMED", "HOOK_ON_CONFIRMED", "HOOK_OFF_AFTER_RUN"])],
+  ["HOOK_OFF_CONFIRMED", new Set(["HOOK_ENABLE_REQUESTED"])],
+  ["HOOK_ENABLE_REQUESTED", new Set(["HOOK_PROBE_AUTHORIZED"])],
+  ["HOOK_ON_CONFIRMED", new Set(["RUN_AUTHORIZED"])],
+  ["RUN_AUTHORIZED", new Set(["RUN_COMPLETE"])],
+  ["RUN_COMPLETE", new Set(["HOOK_PROBE_AUTHORIZED"])],
+  ["HOOK_OFF_AFTER_RUN", new Set(["HOOK_PROBE_AUTHORIZED", "RESIDUAL_EXPIRED"])],
+  ["RESIDUAL_EXPIRED", new Set(["FIXTURE_TEARDOWN_AUTHORIZED"])],
+  ["FIXTURE_TEARDOWN_AUTHORIZED", new Set(["RESTORED"])],
+]);
+function chainDir(base = CFG.receiptsDir) { return path.join(base, "chain"); }
+function chainFiles(base = CFG.receiptsDir) {
+  const d = chainDir(base);
+  if (!fs.existsSync(d)) return [];
+  return fs.readdirSync(d).filter((n) => /^\d{4}-[A-Z0-9_-]+\.json$/.test(n)).sort().map((n) => path.join(d, n));
+}
+function readReceipt(state, base = CFG.receiptsDir) {
+  const files = chainFiles(base);
+  for (let i = files.length - 1; i >= 0; i--) {
+    try {
+      const r = JSON.parse(fs.readFileSync(files[i], "utf8"));
+      if (r.state === state) return r;
+    } catch { /* chain verifier reports malformed files */ }
   }
+  return null;
+}
+function receiptFresh(r, {
+  commit, catalogFp, fixtureFp, seedManifestSha, postSeedReceiptSha, projectRef,
+} = {}) {
+  if (!r) return { ok: false, why: "missing" };
+  if (r.run_id !== CFG.runId) return { ok: false, why: "run_id mismatch" };
+  if (!r.expires_at || !Number.isFinite(Date.parse(r.expires_at)) || Date.parse(r.expires_at) <= Date.now()) return { ok: false, why: "expired" };
+  const required = [
+    ["commit", commit, "commit drift"],
+    ["catalog_fingerprint", catalogFp, "catalog drift"],
+    ["fixture_fingerprint", fixtureFp, "fixture drift"],
+    ["seed_manifest_sha256", seedManifestSha, "seed manifest drift"],
+    ["post_seed_receipt_sha256", postSeedReceiptSha, "POST_SEED receipt drift"],
+    ["project_ref", projectRef, "project drift"],
+  ];
+  for (const [field, expected, why] of required) {
+    if (expected !== undefined && expected !== null) {
+      if (r[field] === undefined || r[field] === null || r[field] === "") return { ok: false, why: `${field} missing` };
+      if (r[field] !== expected) return { ok: false, why };
+    }
+  }
+  return { ok: true };
+}
+function latestChain(base = CFG.receiptsDir) {
+  const files = chainFiles(base);
+  if (!files.length) return null;
+  const file = files[files.length - 1];
+  return { file, rec: JSON.parse(fs.readFileSync(file, "utf8")), bytes: fs.readFileSync(file) };
+}
+function assertChainTransition(prevStateName, nextState) {
+  if (!prevStateName) {
+    if (nextState !== "REVIEWED") throw new H3DError(`receipt chain must start at REVIEWED, not ${nextState}`);
+    return;
+  }
+  if (!CHAIN_ALLOWED.get(prevStateName)?.has(nextState)) throw new H3DError(`invalid receipt transition ${prevStateName} -> ${nextState}`);
+}
+function writeReceipt(state, body, { base = CFG.receiptsDir } = {}) {
+  fs.mkdirSync(chainDir(base), { recursive: true });
+  const prev = latestChain(base);
+  assertChainTransition(prev?.rec?.state || null, state);
+  const seq = (prev?.rec?.chain_seq || 0) + 1;
+  const rec = {
+    state, chain_seq: seq, run_id: CFG.runId, at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + CFG.receiptTtlSec * 1000).toISOString(),
+    prev_receipt_sha256: prev ? sha(prev.bytes) : null, ...body,
+  };
+  const noHash = { ...rec }; delete noHash.hash;
+  rec.hash = sha(JSON.stringify(noHash));
+  assertNoPii(rec, `receipt-${state}`);
+  const target = path.join(chainDir(base), `${String(seq).padStart(4, "0")}-${state}.json`);
+  fs.writeFileSync(target, JSON.stringify(rec, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+  return rec;
+}
+function receiptFileSha(state, base = CFG.receiptsDir) {
+  const files = chainFiles(base);
+  for (let i = files.length - 1; i >= 0; i--) {
+    const bytes = fs.readFileSync(files[i]);
+    try { if (JSON.parse(bytes).state === state) return sha(bytes); } catch { /* verifier handles */ }
+  }
+  return null;
+}
+function verifyReceiptChain(base = CFG.receiptsDir, expectedRunId = CFG.runId) {
+  const files = chainFiles(base);
+  if (!files.length) return { ok: false, why: "missing chain" };
+  let prevBytes = null; let prevStateName = null;
+  for (let i = 0; i < files.length; i++) {
+    let r; const bytes = fs.readFileSync(files[i]);
+    try { r = JSON.parse(bytes); } catch { return { ok: false, why: `malformed receipt ${path.basename(files[i])}` }; }
+    if (r.chain_seq !== i + 1) return { ok: false, why: `sequence mismatch at ${path.basename(files[i])}` };
+    if (r.run_id !== expectedRunId) return { ok: false, why: `run_id mismatch at ${r.state}` };
+    try { assertChainTransition(prevStateName, r.state); } catch (e) { return { ok: false, why: e.message }; }
+    const wantPrev = prevBytes ? sha(prevBytes) : null;
+    if (i === 0 ? r.prev_receipt_sha256 !== null : !r.prev_receipt_sha256 || r.prev_receipt_sha256 !== wantPrev) {
+      return { ok: false, why: `predecessor hash mismatch at ${r.state}` };
+    }
+    const noHash = { ...r }; delete noHash.hash;
+    if (r.hash !== sha(JSON.stringify(noHash))) return { ok: false, why: `receipt body hash mismatch at ${r.state}` };
+    prevBytes = bytes; prevStateName = r.state;
+  }
+  return { ok: true, count: files.length, head_state: prevStateName, head_sha256: sha(prevBytes) };
+}
+
+// external *_AUTHORIZED receipts are validated, then materialized as redacted
+// internal authorization-consumed markers. The runner never creates authority.
+function loadExternalAuthorization(file, expectState, bindings = {}, opts = {}) {
+  let a; let raw;
+  try { raw = fs.readFileSync(file); a = JSON.parse(raw); }
+  catch (e) { throw new H3DError(`cannot read authorization receipt: ${e.message}`); }
+  if (a.kind !== "h3d-external-authorization" || a.state !== expectState) throw new H3DError(`authorization receipt is not a valid ${expectState} grant`);
   if (a.run_id !== CFG.runId) throw new H3DError("authorization receipt run_id mismatch");
   if (!a.commit || a.commit !== houseCommit()) throw new H3DError("authorization receipt commit drift");
-  if (Date.parse(a.expires_at) <= Date.now()) throw new H3DError("authorization receipt expired");
-  return a;
+  if (a.project_ref !== LAB_REF) throw new H3DError("authorization receipt project_ref mismatch");
+  if (!a.expires_at || Date.parse(a.expires_at) <= Date.now()) throw new H3DError("authorization receipt expired");
+  const marker = writeReceipt(expectState, {
+    kind: "authorization-consumed", authorization_file_sha256: sha(raw),
+    commit: houseCommit(), project_ref: LAB_REF, authorization_expires_at: a.expires_at,
+    ...bindings,
+  }, opts);
+  return { authorization: a, marker };
 }
 function houseCommit() {
+  let resolved;
   try {
-    return fs.readFileSync(path.join(HOUSE_ROOT, ".git/HEAD"), "utf8").trim().startsWith("ref:")
-      ? fs.readFileSync(path.join(HOUSE_ROOT, ".git", fs.readFileSync(path.join(HOUSE_ROOT, ".git/HEAD"), "utf8").trim().slice(5)), "utf8").trim()
-      : fs.readFileSync(path.join(HOUSE_ROOT, ".git/HEAD"), "utf8").trim();
-  } catch { return process.env.H3D_HOUSE_COMMIT || "unknown"; }
+    resolved = execFileSync("git", ["-C", HOUSE_ROOT, "rev-parse", "--verify", "HEAD"], {
+      encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "pipe"],
+    }).trim().toLowerCase();
+  } catch (e) { throw new H3DError(`cannot resolve House HEAD with git: ${e.message}`); }
+  if (!/^[0-9a-f]{40}$/.test(resolved)) throw new H3DError("resolved House HEAD is not a full 40-hex SHA");
+  const envSha = (process.env.H3D_HOUSE_COMMIT || "").trim().toLowerCase();
+  if (envSha) {
+    if (!/^[0-9a-f]{40}$/.test(envSha)) throw new H3DError("H3D_HOUSE_COMMIT must be a full 40-hex SHA when set");
+    if (envSha !== resolved) throw new H3DError("H3D_HOUSE_COMMIT mismatch with checked-out House HEAD");
+  }
+  return resolved;
 }
 
 // ---- Auth Admin + DB (no PII returned) -------------------------------
@@ -361,6 +460,68 @@ function fixtureAssertion(f) {
     fixture_fingerprint: fixtureFingerprint(f),
   };
 }
+function readSeedManifestSnapshot() {
+  if (!CFG.seedManifest) throw new H3DError("H3D_SEED_MANIFEST is required");
+  let before; let bytes; let after;
+  try {
+    before = fs.statSync(CFG.seedManifest);
+    bytes = fs.readFileSync(CFG.seedManifest);
+    after = fs.statSync(CFG.seedManifest);
+  } catch (e) { throw new H3DError(`cannot read seed manifest: ${e.message}`); }
+  if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeMs !== after.mtimeMs) {
+    throw new H3DError("seed manifest changed while being read");
+  }
+  let manifest;
+  try { manifest = assertNoPii(JSON.parse(bytes), "seed-manifest"); }
+  catch (e) { throw new H3DError(`invalid seed manifest: ${e.message}`); }
+  if (manifest.kind !== "h3d-authz-fixture-seed-manifest" || manifest.project_ref !== LAB_REF) throw new H3DError("seed manifest kind/project mismatch");
+  return { bytes, sha256: sha(bytes), manifest, stat: after };
+}
+function verifyBoundSeedContext({ catalogFp, fixtureFp }) {
+  const snap = readSeedManifestSnapshot();
+  const psv = readReceipt("POST_SEED_VERIFIED");
+  const psvSha = receiptFileSha("POST_SEED_VERIFIED");
+  const chk = receiptFresh(psv, {
+    commit: houseCommit(), catalogFp, fixtureFp, seedManifestSha: snap.sha256, projectRef: LAB_REF,
+  });
+  if (!chk.ok) throw new H3DError(`POST_SEED_VERIFIED binding failed: ${chk.why}`);
+  if (!psvSha) throw new H3DError("POST_SEED_VERIFIED receipt file hash missing");
+  return { ...snap, psv, postSeedReceiptSha: psvSha };
+}
+function assertManifestUnchanged(snapshot, manifestPath = CFG.seedManifest) {
+  let current;
+  try { current = fs.readFileSync(manifestPath); }
+  catch (e) { throw new H3DError(`cannot re-read seed manifest before execute: ${e.message}`); }
+  if (sha(current) !== snapshot.sha256) throw new H3DError("seed manifest changed between verification and execution");
+}
+function psqlEnvFromConnectionString(raw) {
+  let u;
+  try { u = new URL(raw); } catch { throw new H3DError("invalid H3D_GRANTS_DB_URL"); }
+  if (!/^postgres(?:ql)?:$/.test(u.protocol)) throw new H3DError("H3D_GRANTS_DB_URL must be postgres/postgresql");
+  return {
+    PATH: process.env.PATH,
+    PGHOST: u.hostname,
+    PGPORT: u.port || "5432",
+    PGDATABASE: decodeURIComponent(u.pathname.replace(/^\//, "")) || "postgres",
+    PGUSER: decodeURIComponent(u.username),
+    PGPASSWORD: decodeURIComponent(u.password),
+    PGSSLMODE: "require",
+    PGCONNECT_TIMEOUT: "10",
+  };
+}
+function runPsqlFile(file, variables = {}) {
+  const args = ["-X", "-v", "ON_ERROR_STOP=1"];
+  for (const [k, v] of Object.entries(variables)) args.push("-v", `${k}=${v}`);
+  args.push("-f", file);
+  return new Promise((resolve, reject) => {
+    execFile("psql", args, {
+      env: psqlEnvFromConnectionString(CFG.grantsDbUrl), timeout: 60000, maxBuffer: 4 * 1024 * 1024,
+    }, (err, stdout, stderr) => {
+      if (err) return reject(new H3DError(`psql execution failed (${err.code || err.signal || "unknown"})`));
+      resolve({ stdout_sha256: sha(stdout), stderr_sha256: sha(stderr) });
+    });
+  });
+}
 
 // ---- ownership ledger (F05) -----------------------------------------
 class Ledger {
@@ -442,7 +603,9 @@ async function modeState() {
     const r = readReceipt(s);
     return { state: s, present: Boolean(r), fresh: r ? receiptFresh(r).ok : false, at: r?.at || null };
   });
-  process.stdout.write(JSON.stringify({ run_id: CFG.runId, commit: houseCommit(), states: rows }, null, 2) + "\n");
+  process.stdout.write(JSON.stringify({
+    run_id: CFG.runId, commit: houseCommit(), chain: verifyReceiptChain(), states: rows,
+  }, null, 2) + "\n");
 }
 
 async function modeReviewed() {
@@ -462,7 +625,7 @@ async function modeReviewed() {
       SELECT 'bookings', count(*) FROM ps01.bookings) s`)).rows[0].o);
   const body = {
     kind: "review",
-    commit: houseCommit(),
+    commit: houseCommit(), project_ref: LAB_REF,
     catalog_fingerprint: catalog.live_fingerprint,
     pre_seed_counts: pre,
     authz_fixture_discovery: disc.ok
@@ -504,11 +667,36 @@ async function modePreflightReadonly() {
   process.stderr.write("preflight-readonly: READY (no mutation performed)\n");
 }
 
+async function modeRecordFixtureAuthorization(authFile) {
+  requireEnv(["grantsDbUrl", "runId"]);
+  assertLabTarget();
+  const catalog = await verifyCatalog();
+  const reviewed = readReceipt("REVIEWED");
+  const chk = receiptFresh(reviewed, { commit: houseCommit(), catalogFp: catalog.live_fingerprint, projectRef: LAB_REF });
+  if (!chk.ok) throw new H3DError(`REVIEWED binding failed: ${chk.why}`);
+  const reviewedSha = receiptFileSha("REVIEWED");
+  if (!reviewedSha) throw new H3DError("REVIEWED receipt hash missing");
+  const { marker } = loadExternalAuthorization(authFile, "FIXTURE_DML_AUTHORIZED", {
+    catalog_fingerprint: catalog.live_fingerprint,
+    reviewed_receipt_sha256: reviewedSha,
+  });
+  writeEvidence(`H3D-FIXTURE-DML-AUTH-CONSUMED-${Date.now()}.json`, marker);
+  process.stderr.write("FIXTURE_DML_AUTHORIZED recorded — guarded seed may now execute within this authorization window.\n");
+}
+
 async function modeVerifyPostSeed() {
   requireEnv(["grantsDbUrl", "runId", "seedManifest"]);
-  const m = assertNoPii(JSON.parse(fs.readFileSync(CFG.seedManifest, "utf8")), "seed-manifest");
-  if (m.kind !== "h3d-authz-fixture-seed-manifest") throw new H3DError("not a seed manifest");
+  assertLabTarget();
+  const snap = readSeedManifestSnapshot();
+  const m = snap.manifest;
   const catalog = await verifyCatalog();
+  const seedAuth = readReceipt("FIXTURE_DML_AUTHORIZED");
+  const authCheck = receiptFresh(seedAuth, { commit: houseCommit(), catalogFp: catalog.live_fingerprint, projectRef: LAB_REF });
+  if (!authCheck.ok) throw new H3DError(`FIXTURE_DML_AUTHORIZED binding failed: ${authCheck.why}`);
+  const seededAt = Date.parse(m.seeded_at);
+  if (!Number.isFinite(seededAt) || seededAt < Date.parse(seedAuth.at) || seededAt > Date.parse(seedAuth.authorization_expires_at)) {
+    throw new H3DError("seed manifest timestamp is outside the consumed FIXTURE_DML authorization window");
+  }
   const disc = await discoverAuthzFixtures();
   if (!disc.ok) throw new H3DError(`post-seed: fixtures still not discoverable: ${disc.reason}`);
   const f = disc.fixtures;
@@ -529,13 +717,26 @@ async function modeVerifyPostSeed() {
     [JSON.stringify(m.pre_seed_counts)])).rows[0].d);
   const want = { shops: 2, pet_owners: 2, pets: 2, rooms: 1, room_rate_plans: 1, shop_subscriptions: 2, subscription_audit_log: 2 };
   if (JSON.stringify(delta) !== JSON.stringify(want)) throw new H3DError(`post-seed delta mismatch: ${JSON.stringify(delta)}`);
+  const cameraFixtureCount = await withDb(async (c) => Number((await c.query(
+    `SELECT count(*)::int n FROM ps01.camera_access_audit WHERE shop_id IN ($1::uuid,$2::uuid)`,
+    [m.fixture_ids.shop_a, m.fixture_ids.shop_b],
+  )).rows[0].n));
+  if (cameraFixtureCount !== 0) throw new H3DError("post-seed: camera_access_audit fixture-shop residue must be zero");
   const fp = fixtureFingerprint(f);
-  const rec = writeReceipt("POST_SEED_VERIFIED", {
-    kind: "post-seed-verification", commit: houseCommit(),
+  const seeded = writeReceipt("SEEDED", {
+    kind: "seed-observed-and-verified", commit: houseCommit(), project_ref: LAB_REF,
     catalog_fingerprint: catalog.live_fingerprint, fixture_fingerprint: fp,
-    seed_manifest_sha256: sha(fs.readFileSync(CFG.seedManifest)),
+    seed_manifest_sha256: snap.sha256,
+    fixture_dml_authorization_receipt_sha256: receiptFileSha("FIXTURE_DML_AUTHORIZED"),
+  });
+  const rec = writeReceipt("POST_SEED_VERIFIED", {
+    kind: "post-seed-verification", commit: houseCommit(), project_ref: LAB_REF,
+    catalog_fingerprint: catalog.live_fingerprint, fixture_fingerprint: fp,
+    seed_manifest_sha256: snap.sha256, seeded_receipt_sha256: receiptFileSha("SEEDED"),
+    camera_access_audit_fixture_count: cameraFixtureCount,
     expected_delta_match: true,
   });
+  writeEvidence(`H3D-SEEDED-${Date.now()}.json`, seeded);
   writeEvidence(`H3D-POST-SEED-VERIFIED-${Date.now()}.json`, rec);
   process.stderr.write("POST_SEED_VERIFIED — next: House issues a HOOK_PROBE_AUTHORIZED receipt.\n");
 }
@@ -551,12 +752,33 @@ async function runProbeIdentity(ledger, tag) {
 }
 
 async function modePreflightHookProbe(authFile, expect) {
-  requireEnv(["url", "anonKey", "serviceKey", "grantsDbUrl", "runId"]);
+  requireEnv(["url", "anonKey", "serviceKey", "grantsDbUrl", "runId", "seedManifest"]);
   assertLabTarget();
   await assertDbIdentity();
-  loadExternalAuthorization(authFile, "HOOK_PROBE_AUTHORIZED");
-  const psv = readReceipt("POST_SEED_VERIFIED");
-  if (!receiptFresh(psv, { commit: houseCommit() }).ok) throw new H3DError("no fresh POST_SEED_VERIFIED receipt");
+
+  // All binding checks occur before the first Auth/grant mutation.
+  const catalog = await verifyCatalog();
+  const disc = await discoverAuthzFixtures();
+  if (!disc.ok) throw new H3DError(`hook-probe: fixtures not discoverable: ${disc.reason}`);
+  const fp = fixtureFingerprint(disc.fixtures);
+  const seed = verifyBoundSeedContext({ catalogFp: catalog.live_fingerprint, fixtureFp: fp });
+  const bindings = {
+    catalog_fingerprint: catalog.live_fingerprint,
+    fixture_fingerprint: fp,
+    seed_manifest_sha256: seed.sha256,
+    post_seed_receipt_sha256: seed.postSeedReceiptSha,
+  };
+  const beforeState = latestChain()?.rec?.state || null;
+  if (expect === "on") {
+    if (beforeState === "HOOK_OFF_CONFIRMED") {
+      writeReceipt("HOOK_ENABLE_REQUESTED", { kind: "operator-hook-enable-requested", commit: houseCommit(), project_ref: LAB_REF, ...bindings });
+    } else if (beforeState !== "HOOK_ENABLE_REQUESTED") {
+      throw new H3DError(`hook-on probe requires HOOK_OFF_CONFIRMED/HOOK_ENABLE_REQUESTED, got ${beforeState}`);
+    }
+  } else if (beforeState !== "POST_SEED_VERIFIED" && beforeState !== "RUN_COMPLETE") {
+    throw new H3DError(`hook-off probe is not valid from chain state ${beforeState}`);
+  }
+  loadExternalAuthorization(authFile, "HOOK_PROBE_AUTHORIZED", bindings);
 
   const ledger = new Ledger();
   let cls = null;
@@ -571,18 +793,26 @@ async function modePreflightHookProbe(authFile, expect) {
   const tokenStaysAuth = cls?.role === "authenticated";
   const out = {
     kind: "preflight-hook-probe", expect,
-    probe_token: cls ? { role: cls.role, lifetimeSec: cls.lifetimeSec, projectOk: cls.projectOk } : null,
+    probe_token: cls ? { role: cls.role, lifetimeSec: cls.lifetimeSec, projectOk: cls.projectOk, expiresAt: new Date(cls.exp * 1000).toISOString() } : null,
     hook_active: hookActive, residual_resources: residual,
+    bindings,
   };
   writeEvidence(`H3D-HOOK-PROBE-${Date.now()}.json`, out);
   if (residual.length) throw new H3DError(`hook-probe cleanup incomplete: ${JSON.stringify(residual)}`);
   if (expect === "off") {
     if (!tokenStaysAuth) throw new H3DError(`expected hook OFF: probe token role=${cls?.role}`);
-    writeReceipt("HOOK_OFF_CONFIRMED", { kind: "hook-off", commit: houseCommit() });
-    process.stderr.write("HOOK_OFF_CONFIRMED — operator may now enable the hook.\n");
+    const state = beforeState === "RUN_COMPLETE" ? "HOOK_OFF_AFTER_RUN" : "HOOK_OFF_CONFIRMED";
+    writeReceipt(state, {
+      kind: state === "HOOK_OFF_AFTER_RUN" ? "hook-off-after-run" : "hook-off",
+      commit: houseCommit(), project_ref: LAB_REF, token_expires_at: new Date(cls.exp * 1000).toISOString(), ...bindings,
+    });
+    process.stderr.write(state === "HOOK_OFF_AFTER_RUN" ? "HOOK_OFF_AFTER_RUN confirmed.\n" : "HOOK_OFF_CONFIRMED — operator may now enable the hook.\n");
   } else if (expect === "on") {
     if (!hookActive || !cls.projectOk || !cls.lifetimeOk) throw new H3DError(`expected hook ON: role=${cls?.role} project=${cls?.projectOk} lifetimeOk=${cls?.lifetimeOk}`);
-    writeReceipt("HOOK_ON_CONFIRMED", { kind: "hook-on", commit: houseCommit(), token_lifetime_sec: cls.lifetimeSec });
+    writeReceipt("HOOK_ON_CONFIRMED", {
+      kind: "hook-on", commit: houseCommit(), project_ref: LAB_REF,
+      token_lifetime_sec: cls.lifetimeSec, token_expires_at: new Date(cls.exp * 1000).toISOString(), ...bindings,
+    });
     process.stderr.write("HOOK_ON_CONFIRMED — next: House issues RUN_AUTHORIZED.\n");
   }
 }
@@ -591,19 +821,28 @@ async function modeRun(authFile) {
   requireEnv(["url", "anonKey", "serviceKey", "grantsDbUrl", "runId", "seedManifest"]);
   assertLabTarget();
   await assertDbIdentity();
-  loadExternalAuthorization(authFile, "RUN_AUTHORIZED");
 
+  // Resolve every static/catalog/fixture/manifest binding before authorization
+  // consumption and before the first identity/grant mutation.
   const catalog = await verifyCatalog();
-  const hoc = readReceipt("HOOK_ON_CONFIRMED");
-  if (!receiptFresh(hoc, { commit: houseCommit(), catalogFp: catalog.live_fingerprint }).ok) {
-    throw new H3DError(`no fresh HOOK_ON_CONFIRMED receipt (${receiptFresh(hoc, { commit: houseCommit(), catalogFp: catalog.live_fingerprint }).why})`);
-  }
   const disc = await discoverAuthzFixtures();
   if (!disc.ok) throw new H3DError(`--run: fixtures not discoverable: ${disc.reason}`);
   const fx = disc.fixtures;
   const fp = fixtureFingerprint(fx);
-  const psv = readReceipt("POST_SEED_VERIFIED");
-  if (!receiptFresh(psv, { commit: houseCommit(), fixtureFp: fp }).ok) throw new H3DError("fixture fingerprint drift vs POST_SEED_VERIFIED");
+  const seed = verifyBoundSeedContext({ catalogFp: catalog.live_fingerprint, fixtureFp: fp });
+  const bindings = {
+    catalog_fingerprint: catalog.live_fingerprint,
+    fixture_fingerprint: fp,
+    seed_manifest_sha256: seed.sha256,
+    post_seed_receipt_sha256: seed.postSeedReceiptSha,
+  };
+  const hoc = readReceipt("HOOK_ON_CONFIRMED");
+  const hocCheck = receiptFresh(hoc, {
+    commit: houseCommit(), catalogFp: catalog.live_fingerprint, fixtureFp: fp,
+    seedManifestSha: seed.sha256, postSeedReceiptSha: seed.postSeedReceiptSha, projectRef: LAB_REF,
+  });
+  if (!hocCheck.ok) throw new H3DError(`no fresh HOOK_ON_CONFIRMED receipt (${hocCheck.why})`);
+  loadExternalAuthorization(authFile, "RUN_AUTHORIZED", bindings);
 
   const tableCol = await resolvePs01TableCol();
   if (!tableCol) throw new H3DError("could not resolve ps01.bookings column");
@@ -689,9 +928,54 @@ async function modeRun(authFile) {
   rec.verdict = pass ? "H3D LIVE PASS"
     : (rec.error || !cleanupOk ? "H3D RUN FAILED" : `H3D LIVE NOT PASS (harness ${rec.harness?.class}/${rec.harness?.verdict})`);
   writeEvidence(`H3D-RUN-${Date.now()}.json`, rec);
-  if (pass) writeReceipt("RUN_COMPLETE", { kind: "run-complete", commit: houseCommit(), max_residual_expiry: rec.residualNarrowAuthorityUntil });
+  if (pass) writeReceipt("RUN_COMPLETE", {
+    kind: "run-complete", commit: houseCommit(), project_ref: LAB_REF,
+    max_residual_expiry: rec.residualNarrowAuthorityUntil, ...bindings,
+  });
   process.stderr.write(`\n${rec.verdict}\ncleanup residual: ${JSON.stringify(residual)}\n`);
   if (!pass) throw new H3DError(rec.verdict, { stop: true });
+}
+
+async function modeFixtureTeardown(authFile) {
+  requireEnv(["grantsDbUrl", "runId", "seedManifest"]);
+  assertLabTarget();
+  await assertDbIdentity();
+  const catalog = await verifyCatalog();
+  const disc = await discoverAuthzFixtures();
+  if (!disc.ok) throw new H3DError(`fixture teardown: fixtures not discoverable: ${disc.reason}`);
+  const fp = fixtureFingerprint(disc.fixtures);
+  const seed = verifyBoundSeedContext({ catalogFp: catalog.live_fingerprint, fixtureFp: fp });
+  const bindings = {
+    catalog_fingerprint: catalog.live_fingerprint,
+    fixture_fingerprint: fp,
+    seed_manifest_sha256: seed.sha256,
+    post_seed_receipt_sha256: seed.postSeedReceiptSha,
+  };
+  const residual = readReceipt("RESIDUAL_EXPIRED");
+  const residualCheck = receiptFresh(residual, {
+    commit: houseCommit(), catalogFp: catalog.live_fingerprint, fixtureFp: fp,
+    seedManifestSha: seed.sha256, postSeedReceiptSha: seed.postSeedReceiptSha, projectRef: LAB_REF,
+  });
+  if (!residualCheck.ok) throw new H3DError(`RESIDUAL_EXPIRED binding failed: ${residualCheck.why}`);
+  assertManifestUnchanged(seed);
+  loadExternalAuthorization(authFile, "FIXTURE_TEARDOWN_AUTHORIZED", bindings);
+  assertManifestUnchanged(seed); // same captured bytes are passed below; file drift STOPs.
+  const result = await runPsqlFile(TEARDOWN_SQL, { manifest: seed.bytes.toString("utf8") });
+  const cameraFixtureCountAfterTeardown = await withDb(async (c) => Number((await c.query(
+    `SELECT count(*)::int n FROM ps01.camera_access_audit WHERE shop_id IN ($1::uuid,$2::uuid)`,
+    [seed.manifest.fixture_ids.shop_a, seed.manifest.fixture_ids.shop_b],
+  )).rows[0].n));
+  if (cameraFixtureCountAfterTeardown !== 0) {
+    throw new H3DError(`fixture teardown: camera_access_audit fixture-shop residue detected (${cameraFixtureCountAfterTeardown})`);
+  }
+  const evidence = {
+    kind: "fixture-teardown-executed", commit: houseCommit(), project_ref: LAB_REF,
+    ...bindings, teardown_sql_sha256: sha(fs.readFileSync(TEARDOWN_SQL)),
+    camera_access_audit_fixture_count: cameraFixtureCountAfterTeardown,
+    ...result,
+  };
+  writeEvidence(`H3D-FIXTURE-TEARDOWN-${Date.now()}.json`, evidence);
+  process.stderr.write("fixture teardown executed with the verified manifest bytes; RESTORED still requires post-teardown inventory/signature proof.\n");
 }
 
 async function modeTeardownOnly(csv) {
@@ -740,8 +1024,9 @@ function selftest() {
   }
   {
     const ext = src.slice(src.indexOf("function loadExternalAuthorization"), src.indexOf("function houseCommit"));
-    ok(src.includes("READ but never MINT") && ext.includes('a.kind !== "h3d-external-authorization"') && !ext.includes("writeReceipt("),
-      "external authorization receipts are read + validated, never written by the runner");
+    ok(ext.includes('a.kind !== "h3d-external-authorization"') && ext.includes("authorization_file_sha256")
+       && ext.includes("writeReceipt(expectState") && ext.includes("authorization-consumed"),
+      "external authority is validated then materialized only as a redacted consumed marker");
   }
   ok(src.indexOf("modePreflightReadonly") > 0 && src.includes(S("mutation_free", ": true"))
      && (src.slice(src.indexOf("async function modePreflightReadonly"), src.indexOf("async function modeVerifyPostSeed")).split("createIdentity").length - 1) === 0,
@@ -753,7 +1038,7 @@ function selftest() {
     ok(["timeout", "signal:", "nonzero_exit", "spawn_failure", "missing_evidence", "malformed_evidence", "stale_evidence"].every((c) => sh.includes(c)),
       "spawnHarness distinguishes every failure class");
   }
-  ok(src.includes("fixtureFingerprint") && src.includes("fixture_fingerprint") && src.includes("fixture fingerprint drift vs POST_SEED_VERIFIED"),
+  ok(src.includes("fixtureFingerprint") && src.includes("fixture_fingerprint") && src.includes("POST_SEED_VERIFIED binding failed"),
     "fixture fingerprint computed + bound across phases + drift is a STOP");
   for (const k of ["H3C_FIX_SHOP_ID", "H3C_FIX_LINE_USER_ID", "H3C_FIX_PET_IDS", "H3C_FIX_OTHER_SHOP_ID", "H3C_FIX_ROOM_ID", "H3C_FIX_RATE_PLAN_ID", "H3C_FIX_OTHER_PET_IDS"]) {
     const line = src.split("\n").find((l) => l.includes(`${k}: `)) || "";
@@ -765,6 +1050,110 @@ function selftest() {
   ok(/JOIN ps01\.pet_owners po2 ON po2\.id = p\.owner_id AND po2\.shop_id = p\.shop_id/.test(disc) && /p\.shop_id = \$1/.test(disc) && /po2\.id <> \$2/.test(disc), "Invariant B: same-shop distinct-owner foreign pet");
   ok(/foreignPets\.length !== 1/.test(disc), "Invariant B: exactly one foreign pet (capacity 2 cannot be the earlier failure)");
   ok(!MUTATING_SQL.test(disc.replace(/is not read-only|MUTATING_SQL/g, "")), "discovery body has no mutating SQL keyword");
+
+  // S1: actual worktree commit resolution + env cross-check.
+  const gitHead = execFileSync("git", ["-C", HOUSE_ROOT, "rev-parse", "--verify", "HEAD"], { encoding: "utf8" }).trim().toLowerCase();
+  ok(/^[0-9a-f]{40}$/.test(gitHead) && houseCommit() === gitHead, "houseCommit resolves the actual worktree HEAD");
+  const oldEnvCommit = process.env.H3D_HOUSE_COMMIT;
+  let envMismatchStopped = false;
+  try { process.env.H3D_HOUSE_COMMIT = "0".repeat(40); houseCommit(); } catch { envMismatchStopped = true; }
+  if (oldEnvCommit === undefined) delete process.env.H3D_HOUSE_COMMIT; else process.env.H3D_HOUSE_COMMIT = oldEnvCommit;
+  ok(envMismatchStopped, "houseCommit STOPs on env SHA mismatch");
+
+  // S2/S3: synthetic append-only chain reaches RUN_AUTHORIZED and rejects broken bindings/chain.
+  const chainBase = fs.mkdtempSync(path.join(os.tmpdir(), "h3d-chain-"));
+  const common = { commit: gitHead, project_ref: LAB_REF, catalog_fingerprint: "c".repeat(64) };
+  writeReceipt("REVIEWED", { kind: "review", ...common }, { base: chainBase });
+  writeReceipt("FIXTURE_DML_AUTHORIZED", { kind: "authorization-consumed", ...common, authorization_file_sha256: "a".repeat(64) }, { base: chainBase });
+  const bound = { ...common, fixture_fingerprint: "f".repeat(64), seed_manifest_sha256: "m".repeat(64) };
+  writeReceipt("SEEDED", { kind: "seeded", ...bound }, { base: chainBase });
+  writeReceipt("POST_SEED_VERIFIED", { kind: "post-seed", ...bound }, { base: chainBase });
+  const psvShaTest = receiptFileSha("POST_SEED_VERIFIED", chainBase);
+  const full = { ...bound, post_seed_receipt_sha256: psvShaTest };
+  writeReceipt("HOOK_PROBE_AUTHORIZED", { kind: "authorization-consumed", ...full, authorization_file_sha256: "b".repeat(64) }, { base: chainBase });
+  writeReceipt("HOOK_OFF_CONFIRMED", { kind: "hook-off", ...full }, { base: chainBase });
+  writeReceipt("HOOK_ENABLE_REQUESTED", { kind: "hook-enable", ...full }, { base: chainBase });
+  writeReceipt("HOOK_PROBE_AUTHORIZED", { kind: "authorization-consumed", ...full, authorization_file_sha256: "d".repeat(64) }, { base: chainBase });
+  writeReceipt("HOOK_ON_CONFIRMED", { kind: "hook-on", ...full }, { base: chainBase });
+  writeReceipt("RUN_AUTHORIZED", { kind: "authorization-consumed", ...full, authorization_file_sha256: "e".repeat(64) }, { base: chainBase });
+  ok(verifyReceiptChain(chainBase, CFG.runId).ok, "synthetic receipt chain reaches RUN_AUTHORIZED");
+  const hocTest = readReceipt("HOOK_ON_CONFIRMED", chainBase);
+  ok(receiptFresh(hocTest, { commit: gitHead, catalogFp: common.catalog_fingerprint, fixtureFp: bound.fixture_fingerprint,
+    seedManifestSha: bound.seed_manifest_sha256, postSeedReceiptSha: psvShaTest, projectRef: LAB_REF }).ok,
+    "HOOK_ON_CONFIRMED carries every pre-run binding");
+  const missingFixture = { ...hocTest }; delete missingFixture.fixture_fingerprint;
+  ok(!receiptFresh(missingFixture, { fixtureFp: bound.fixture_fingerprint }).ok, "missing expected fixture binding STOPs");
+  ok(!receiptFresh(hocTest, { seedManifestSha: "x".repeat(64) }).ok, "manifest binding mismatch STOPs");
+  ok(!receiptFresh({ ...hocTest, expires_at: new Date(Date.now() - 1000).toISOString() }).ok, "stale receipt STOPs");
+  const missingCommit = { ...hocTest }; delete missingCommit.commit;
+  ok(!receiptFresh(missingCommit, { commit: gitHead }).ok, "missing expected commit binding STOPs");
+  ok(!receiptFresh(hocTest, { commit: "0".repeat(40) }).ok, "commit mismatch STOPs");
+  const missingCat = { ...hocTest }; delete missingCat.catalog_fingerprint;
+  ok(!receiptFresh(missingCat, { catalogFp: common.catalog_fingerprint }).ok, "missing expected catalog binding STOPs");
+  ok(!receiptFresh(hocTest, { catalogFp: "0".repeat(64) }).ok, "catalog mismatch STOPs");
+  const missingPsv = { ...hocTest }; delete missingPsv.post_seed_receipt_sha256;
+  ok(!receiptFresh(missingPsv, { postSeedReceiptSha: psvShaTest }).ok, "missing expected post-seed receipt binding STOPs");
+  ok(!receiptFresh(hocTest, { postSeedReceiptSha: "0".repeat(64) }).ok, "post-seed receipt mismatch STOPs");
+  const missingProj = { ...hocTest }; delete missingProj.project_ref;
+  ok(!receiptFresh(missingProj, { projectRef: LAB_REF }).ok, "missing expected project_ref binding STOPs");
+  ok(!receiptFresh(hocTest, { projectRef: "other-project" }).ok, "project_ref mismatch STOPs");
+
+  // Pre-mutation gates: external authorization validation stops on invalid input
+  const makeAuthFile = (obj) => {
+    const p = path.join(os.tmpdir(), `h3d-auth-${crypto.randomUUID()}.json`);
+    fs.writeFileSync(p, JSON.stringify(obj, null, 2) + "\n");
+    return p;
+  };
+  const validAuth = {
+    kind: "h3d-external-authorization",
+    state: "RUN_AUTHORIZED",
+    run_id: CFG.runId,
+    commit: gitHead,
+    project_ref: LAB_REF,
+    expires_at: new Date(Date.now() + 600000).toISOString(),
+    signer: "owner-review",
+  };
+  for (const [desc, patch] of [
+    ["wrong state", { state: "HOOK_PROBE_AUTHORIZED" }],
+    ["wrong run_id", { run_id: "wrong-run-id" }],
+    ["commit drift", { commit: "0".repeat(40) }],
+    ["project_ref mismatch", { project_ref: "wrong-ref" }],
+    ["expired authorization", { expires_at: new Date(Date.now() - 1000).toISOString() }],
+    ["wrong kind", { kind: "wrong-kind" }],
+  ]) {
+    const badAuthTmp = makeAuthFile({ ...validAuth, ...patch });
+    let threw = false;
+    try {
+      loadExternalAuthorization(badAuthTmp, "RUN_AUTHORIZED", {
+        catalog_fingerprint: common.catalog_fingerprint,
+      }, { base: chainBase });
+    } catch { threw = true; }
+    ok(threw, `pre-mutation gate: ${desc} STOPs before mutation`);
+    fs.rmSync(badAuthTmp, { force: true });
+  }
+
+  const cloneChain = (label) => {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), `h3d-${label}-`));
+    fs.cpSync(chainBase, d, { recursive: true }); return d;
+  };
+  let d = cloneChain("missing"); fs.unlinkSync(chainFiles(d)[1]); ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches missing predecessor"); fs.rmSync(d, { recursive: true, force: true });
+  d = cloneChain("nullprev"); { const f = chainFiles(d)[1]; const r = JSON.parse(fs.readFileSync(f)); r.prev_receipt_sha256 = null; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches null predecessor hash"); fs.rmSync(d, { recursive: true, force: true });
+  d = cloneChain("altered"); { const f = chainFiles(d)[2]; const r = JSON.parse(fs.readFileSync(f)); r.kind = "tampered"; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches altered receipt"); fs.rmSync(d, { recursive: true, force: true });
+  d = cloneChain("runid"); { const f = chainFiles(d)[1]; const r = JSON.parse(fs.readFileSync(f)); r.run_id = "wrong-run"; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches wrong run_id"); fs.rmSync(d, { recursive: true, force: true });
+  d = cloneChain("order"); { const f = chainFiles(d)[1]; const r = JSON.parse(fs.readFileSync(f)); r.state = "RUN_AUTHORIZED"; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches invalid state order"); fs.rmSync(d, { recursive: true, force: true });
+  fs.rmSync(chainBase, { recursive: true, force: true });
+
+  // S4: execute path must reject a manifest changed after its accepted snapshot.
+  const manifestTmp = path.join(os.tmpdir(), `h3d-manifest-${process.pid}.json`);
+  fs.writeFileSync(manifestTmp, '{"kind":"h3d-authz-fixture-seed-manifest"}\n');
+  const manifestSnap = { sha256: sha(fs.readFileSync(manifestTmp)) };
+  let manifestTamperStopped = false;
+  fs.appendFileSync(manifestTmp, " ");
+  try { assertManifestUnchanged(manifestSnap, manifestTmp); } catch { manifestTamperStopped = true; }
+  ok(manifestTamperStopped, "manifest hash tamper STOPs before execute");
+  ok(!receiptFresh(readReceipt("POST_SEED_VERIFIED", chainBase), { seedManifestSha: "0".repeat(64) }).ok,
+    "manifest hash mismatch against POST_SEED_VERIFIED STOPs run/teardown");
+  fs.rmSync(manifestTmp, { force: true });
 
   process.stderr.write(bad ? `\nSELFTEST: ${bad} FAILURE(S)\n` : "\nSELFTEST PASS (state machine, ledger, PII, strict target, fixtures, spawn classes)\n");
   process.exit(bad ? 1 : 0);
@@ -779,6 +1168,11 @@ async function main() {
     case "--state": return modeState();
     case "--reviewed": return modeReviewed();
     case "--preflight-readonly": return modePreflightReadonly();
+    case "--record-fixture-authorization": {
+      const a = arg("--authorize-fixture-dml");
+      if (!a) throw new H3DError("--record-fixture-authorization requires --authorize-fixture-dml <receiptFile>");
+      return modeRecordFixtureAuthorization(a);
+    }
     case "--verify-post-seed": return modeVerifyPostSeed();
     case "--preflight-hook-probe": {
       const a = arg("--authorize-hook-probe");
@@ -791,16 +1185,25 @@ async function main() {
       if (!a) throw new H3DError("--run requires --authorize-run <receiptFile>");
       return modeRun(a);
     }
+    case "--fixture-teardown": {
+      const a = arg("--authorize-fixture-teardown");
+      if (!a) throw new H3DError("--fixture-teardown requires --authorize-fixture-teardown <receiptFile>");
+      return modeFixtureTeardown(a);
+    }
     case "--teardown-only": {
       if (!process.argv[3]) throw new H3DError("--teardown-only <uuid[,uuid...]>");
       return modeTeardownOnly(process.argv[3]);
     }
     default:
-      process.stderr.write("usage: h3d-live-runner.mjs --selftest | --state | --reviewed | --preflight-readonly | --verify-post-seed | --preflight-hook-probe --authorize-hook-probe <f> [--expect-hook-on] | --run --authorize-run <f> | --teardown-only <uuids>\n");
+      process.stderr.write("usage: h3d-live-runner.mjs --selftest | --state | --reviewed | --preflight-readonly | --record-fixture-authorization --authorize-fixture-dml <f> | --verify-post-seed | --preflight-hook-probe --authorize-hook-probe <f> [--expect-hook-on] | --run --authorize-run <f> | --fixture-teardown --authorize-fixture-teardown <f> | --teardown-only <uuids>\n");
       process.exit(2);
   }
 }
-main().catch((e) => {
-  process.stderr.write(`\n${e instanceof H3DError ? "STOP" : "ERROR"}: ${e.message}\n`);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    process.stderr.write(`\n${e instanceof H3DError ? "STOP" : "ERROR"}: ${e.message}\n`);
+    process.exit(1);
+  });
+}
+
+export { houseCommit, selftest };

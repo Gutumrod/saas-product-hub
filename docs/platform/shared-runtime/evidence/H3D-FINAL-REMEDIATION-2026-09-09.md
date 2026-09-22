@@ -15,7 +15,7 @@ catalog / RPC-signature reads.
 | File | Change |
 |---|---|
 | `tools/shared-runtime/h3d/catalog-manifest.mjs` | NEW — SELECT-only capture of the ps01.shops-rooted FK graph, all graph triggers (name/function/`tgenabled`/timing/events/function-def sha256), the control-function hashes, and `commercial_packages('starter')`. `--verify` STOPs (exit 3) on any FK / trigger / function / graph-table / starter drift. `--selftest` covers 8 drift classes. |
-| `docs/platform/shared-runtime/fixtures/h3d-expected-catalog-manifest.json` | NEW — the captured expected manifest (fingerprint `001c2c213f4a7086704da1e56879b82bee88f6f6054bd66c316e1791369d0619`). 20 shop-rooted tables, 30 FK edges, 21 triggers. |
+| `docs/platform/shared-runtime/fixtures/h3d-expected-catalog-manifest.json` | NEW — the captured expected manifest (fingerprint `3413b3494dfd3e1c264600c1cee5605f82c4c36ad8d9112156558a8202ecd806`). 18 shop-rooted FK tables, 2 monitored non-FK surfaces, 30 FK edges, 21 triggers. |
 | `docs/platform/shared-runtime/fixtures/h3d-authz-fixture-seed.sql` | REWRITTEN per §5 — `SET LOCAL` bounded timeouts, `SHARE ROW EXCLUSIVE` on the 7 controlled tables, `commercial_packages('starter') FOR SHARE` + semantic assertions, inline trigger gate, empty-baseline + case-normalised label + exact-id collision assertions, in-txn count snapshot, exact `+(2,2,2,1,1,2,2)` delta, every-other-graph-table `+0`, exact subscription semantics (`trial_ends_at = trial_started_at + 30d`, source `bootstrap`, no cancel/suspend, null period/grace) and exact audit semantics (`system` / `subscription.initialized` / `bootstrap` / expected reason / `previous_*` + `actor_id` + `idempotency_key` + `request_fingerprint` null), `SET CONSTRAINTS ALL IMMEDIATE`, redacted manifest with generated subscription/audit ids + `txid_current()` + pre-seed counts. No `ON CONFLICT`. |
 | `docs/platform/shared-runtime/fixtures/h3d-authz-fixture-teardown.sql` | REWRITTEN per §6 — manifest load + shape check, `ACCESS EXCLUSIVE` on `subscription_audit_log` acquired first (never upgraded), `SHARE ROW EXCLUSIVE` on every other shop-rooted graph table, exact trigger OID/function/`tgenabled='O'` verification, pre-delete assertions (exact fixture rows, exact generated subscription/audit ids, zero non-fixture child rows), leaf-first deletes by exact id each with `GET DIAGNOSTICS ROW_COUNT`, immutable-audit `DISABLE`/`ENABLE` of the exact named trigger scoped to the two exact audit ids, shop delete last must affect exactly 2, residue-zero + pre-seed-count-restoration + trigger-re-enabled post-checks. |
 | `docs/platform/shared-runtime/fixtures/h3d-authz-fixture-precheck.sql` | REWRITTEN — relabelled EVIDENCE ONLY / "NOT the seed guard"; SELECT-only; records the pre-seed state a human reviews before granting fixture-DML authorization. |
@@ -46,7 +46,7 @@ catalog / RPC-signature reads.
 ## Live SELECT-only proofs captured this pass
 
 - RPC rejection SQLSTATE: `ps01.get_customer_booking_context_v2_internal` and `quote_customer_booking_v2_internal` raise **`P0001`** for their guard branches (used by the strict AUTHZ classifier).
-- Catalog manifest fingerprint `001c2c21…` — 20 shop-rooted tables, 30 FK edges, 21 triggers; `subscription_audit_log <- shops` and `<- shop_subscriptions` both `ON DELETE CASCADE`; `commercial_packages('starter')` = room_limit 10 / pet_history_limit 300 (≫ the 1 room + 2 pets the fixture inserts).
+- Catalog manifest fingerprint `3413b349…` — 18 shop-rooted FK tables, 2 monitored non-FK surfaces (`camera_access_audit`, `camera_rate_limit_buckets`), 30 FK edges, 21 triggers; `subscription_audit_log <- shops` and `<- shop_subscriptions` both `ON DELETE CASCADE`; `commercial_packages('starter')` = room_limit 10 / pet_history_limit 300 (≫ the 1 room + 2 pets the fixture inserts).
 - `catalog-manifest.mjs --verify` against the captured expected manifest → **no drift**.
 - LAB still has 0 rows in `ps01.shops` / `pet_owners` / `pets` / `rooms` / `room_rate_plans`; `runtime_token_grants` = 0; `auth.users` = 5.
 
@@ -90,7 +90,7 @@ first authorized window before House considers a live-DML PASS:
 |---|---|---|
 | House offline suite | `npm run selftest` in `tools/shared-runtime` | PASS (h3c strict F07, h4, h3d runner, `h3d/tests.mjs` — catalog selftest + SQL static + drift scenarios) |
 | SQL static | `node tools/shared-runtime/h3d/sql-static-check.mjs` | PASS |
-| catalog verify | `catalog-manifest.mjs --verify h3d-expected-catalog-manifest.json` | no drift |
+| catalog verify | `node tools/shared-runtime/h3d/catalog-manifest.mjs --verify <expected-manifest.json>` | no drift |
 | PS01 (clean `4efee70` throwaway worktree) | focused H3D test, `tsc --noEmit`, `pnpm lint`, boundary verifier | PASS |
 | secret / PII scan of the full diff | grep + `assertNoPii` self-tests | clean |
 | `git diff --check` + diff review | only the H3D runner/harness/tools + 3 fixture SQL + catalog manifest + prep/final evidence + Operator Pack | confirmed |

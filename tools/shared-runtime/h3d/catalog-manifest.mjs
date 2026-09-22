@@ -25,15 +25,30 @@ import pg from "pg";
 const { Client } = pg;
 const sha = (s) => crypto.createHash("sha256").update(s == null ? "" : String(s)).digest("hex");
 
-const SHOP_ROOTED_TABLES = [
-  // discovered graph; --verify re-derives it live and flags additions
+// Discovered FK-reachable graph rooted at ps01.shops (18 tables):
+// ps01.shops and every table reachable from it via foreign keys.
+const FK_REACHABLE_TABLES = [
   "shops", "staff_users", "pet_owners", "pets", "rooms", "room_rate_plans",
   "bookings", "booking_pets", "booking_requests", "daily_reports",
   "google_sync_mappings", "sync_queue", "camera_settings",
-  "camera_visitor_credentials", "camera_rate_limit_buckets", "camera_access_audit",
-  "shop_commercial_assignments", "import_batches",
+  "camera_visitor_credentials", "shop_commercial_assignments", "import_batches",
   "shop_subscriptions", "subscription_audit_log",
 ];
+
+// Monitored non-FK surfaces outside the ps01.shops FK reachability graph:
+// - ps01.camera_access_audit: shop-scoped (has shop_id UUID column) but NO FK to ps01.shops.
+//   Deleting fixture Shop A/B cannot remove its rows; monitored for residue and triggers.
+// - ps01.camera_rate_limit_buckets: non-shop-scoped, no shop_id column, no FK to ps01.shops.
+//   Global rate-limit buckets; monitored non-FK surface, NOT an FK child.
+const MONITORED_NON_FK_SURFACES = [
+  "camera_access_audit",
+  "camera_rate_limit_buckets",
+];
+
+const MONITORED_NON_FK_NOTES = {
+  camera_access_audit: "shop-scoped (has shop_id UUID) but NO FK to ps01.shops; deleting fixture shops cannot cascade to audit rows",
+  camera_rate_limit_buckets: "non-shop-scoped, no shop_id, no FK to ps01.shops; global bucket surface, not an FK child",
+};
 
 const CONTROL_FUNCTIONS = [
   "initialize_shop_subscription_after_insert",
@@ -91,8 +106,8 @@ async function capture(client) {
       deferrable: fk.condeferrable, deferred: fk.condeferred,
     }));
 
-  // 2. triggers on every reachable table + the known fixture tables.
-  const tableList = [...new Set([...reachable, ...SHOP_ROOTED_TABLES])].sort();
+  // 2. triggers on every reachable table + extra monitored non-FK surfaces.
+  const allMonitoredTables = [...new Set([...reachable, ...MONITORED_NON_FK_SURFACES])].sort();
   const triggers = await q(`
     SELECT c.relname AS table, t.tgname,
            p.proname AS function,
@@ -114,7 +129,7 @@ async function capture(client) {
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE ns.nspname = 'ps01' AND NOT t.tgisinternal
       AND c.relname = ANY($1)
-    ORDER BY c.relname, t.tgname`, [tableList]);
+    ORDER BY c.relname, t.tgname`, [allMonitoredTables]);
   const triggerRows = triggers.map((t) => ({
     table: t.table, name: t.tgname, function: `${t.function_schema}.${t.function}`,
     enabled: t.tgenabled, is_row: t.is_row, timing: t.instead_of ? "instead" : (t.before ? "before" : "after"),
@@ -158,7 +173,10 @@ async function capture(client) {
     captured_at: new Date().toISOString(),
     project_ref: "ykxlqnshaaxmzzocpjlj",
     graph_root: "ps01.shops",
-    graph_tables: tableList,
+    graph_tables: [...reachable].sort(),
+    fk_reachable_tables: [...reachable].sort(),
+    monitored_non_fk_surfaces: [...MONITORED_NON_FK_SURFACES],
+    monitored_non_fk_notes: MONITORED_NON_FK_NOTES,
     graph_fks: graphFks,
     triggers: triggerRows,
     control_functions: controlFns,
@@ -175,6 +193,7 @@ async function capture(client) {
 function fingerprint(m) {
   const core = {
     graph_tables: m.graph_tables,
+    monitored_non_fk_surfaces: m.monitored_non_fk_surfaces,
     graph_fks: m.graph_fks,
     triggers: m.triggers,
     control_functions: m.control_functions,
@@ -186,6 +205,7 @@ function fingerprint(m) {
   return sha(stableJson(core));
 }
 function stableJson(v) {
+  if (v instanceof Date) return JSON.stringify(v.toISOString());
   if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
   if (v && typeof v === "object") {
     return `{${Object.keys(v).sort().map((k) => JSON.stringify(k) + ":" + stableJson(v[k])).join(",")}}`;
@@ -226,6 +246,12 @@ function diffManifest(expected, live) {
   const lGT = new Set(live.graph_tables || []);
   for (const t of lGT) if (!eGT.has(t)) drift.push(`NEW shop-rooted table: ${t}`);
   for (const t of eGT) if (!lGT.has(t)) drift.push(`REMOVED shop-rooted table: ${t}`);
+
+  const eNFK = new Set(expected.monitored_non_fk_surfaces || []);
+  const lNFK = new Set(live.monitored_non_fk_surfaces || []);
+  for (const t of lNFK) if (!eNFK.has(t)) drift.push(`NEW monitored non-FK surface: ${t}`);
+  for (const t of eNFK) if (!lNFK.has(t)) drift.push(`REMOVED monitored non-FK surface: ${t}`);
+
   if (stableJson(expected.fixture_table_columns) !== stableJson(live.fixture_table_columns)) drift.push("fixture table columns changed");
   if (stableJson(expected.fixture_table_constraints) !== stableJson(live.fixture_table_constraints)) drift.push("fixture table constraints changed");
   return { drift, fingerprint: lfp };
@@ -262,6 +288,7 @@ if (mode === "--capture") {
   const base = {
     fingerprint: "X",
     graph_tables: ["shops", "pets"],
+    monitored_non_fk_surfaces: ["camera_access_audit", "camera_rate_limit_buckets"],
     graph_fks: [{ constraint: "pets_shop_id_fkey", child: "pets", parent: "shops", on_delete: "c", child_cols: ["shop_id"], parent_cols: ["id"], deferrable: false, deferred: false }],
     triggers: [{ table: "shops", name: "trg_init", function: "ps01.f", enabled: "O", is_row: true, timing: "after", events: ["insert"], fdef_sha256: "h1" }],
     control_functions: { f: "h1" },
@@ -282,6 +309,8 @@ if (mode === "--capture") {
   ok(diffManifest(base, m).drift.some((d) => /control function f/.test(d)), "control fn hash -> drift");
   m = clone(); m.graph_tables.push("newchild");
   ok(diffManifest(base, m).drift.some((d) => /NEW shop-rooted table: newchild/.test(d)), "new graph table -> drift");
+  m = clone(); m.monitored_non_fk_surfaces.push("new_surface");
+  ok(diffManifest(base, m).drift.some((d) => /NEW monitored non-FK surface: new_surface/.test(d)), "new non-FK surface -> drift");
   m = clone(); m.starter_package.row.room_limit = 1;
   ok(diffManifest(base, m).drift.some((d) => /starter_package row changed/.test(d)), "starter row -> drift");
   console.error(bad ? `\nSELFTEST: ${bad} FAILURE(S)` : "\nSELFTEST PASS (catalog drift detection)");

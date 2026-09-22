@@ -74,6 +74,14 @@ ok(/immutable-audit trigger not re-enabled to state O/.test(TEARDOWN), "teardown
 // the shop DELETE must come after all children are proven zero
 ok(TEARDOWN.indexOf("an unexpected child row exists") < TEARDOWN.indexOf("DELETE FROM ps01.shops"), "teardown: child-zero assertion precedes shop delete");
 
+// ---- S5 / camera_access_audit scope checks ----
+ok(/LOCK TABLE ps01\.camera_access_audit\s+IN SHARE ROW EXCLUSIVE MODE/.test(SEED), "seed: SHARE ROW EXCLUSIVE on camera_access_audit");
+ok(/camera_access_audit.*WHERE shop_id IN/i.test(SEED), "seed: atomic precondition on camera_access_audit for fixture shops");
+ok(/camera_access_audit_baseline/.test(SEED) && /camera_access_audit_fixture_count/.test(SEED), "seed: records camera_access_audit baseline and count in manifest");
+ok(/LOCK TABLE ps01\.camera_access_audit\s+IN SHARE ROW EXCLUSIVE MODE/.test(TEARDOWN), "teardown: SHARE ROW EXCLUSIVE on camera_access_audit");
+ok(TEARDOWN.indexOf("camera_access_audit") < TEARDOWN.indexOf("DELETE FROM ps01.shops"), "teardown: camera_access_audit check precedes first DELETE");
+ok(/camera_access_audit_fixture_count/.test(TEARDOWN), "teardown: post-restoration asserts camera_access_audit residue is zero");
+
 // ---- precheck is evidence only ----
 ok(/EVIDENCE ONLY/.test(rawPrecheck) && /NOT the seed guard/i.test(rawPrecheck), "precheck: labelled evidence-only, not a guard");
 ok(!/\b(BEGIN|COMMIT|INSERT|DELETE|UPDATE|ALTER|LOCK|CREATE)\b/i.test(PRECHECK), "precheck: SELECT-only (no statement keyword outside comments)");

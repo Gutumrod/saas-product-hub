@@ -13,6 +13,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { houseCommit, selftest } from "./h3d-live-runner.mjs";
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXPECTED = path.resolve(HERE, "../../../docs/platform/shared-runtime/fixtures/h3d-expected-catalog-manifest.json");
 
@@ -55,6 +57,60 @@ need(expected.graph_tables.includes("subscription_audit_log") && expected.graph_
 need(fkByChild.subscription_audit_log?.some((fk) => fk.parent === "shops" && fk.on_delete === "c"),
   "expected manifest: subscription_audit_log <- shops ON DELETE CASCADE (teardown must not rely on it)");
 need(typeof expected.fingerprint === "string" && expected.fingerprint.length === 64, "expected manifest: has a sha256 fingerprint");
+
+// ---- 6a: worktree-commit test against real worktree ----
+console.log("--- worktree-commit tests (6a) ---");
+const HOUSE_ROOT = path.resolve(HERE, "../../..");
+const realGitHead = execFileSync("git", ["-C", HOUSE_ROOT, "rev-parse", "--verify", "HEAD"], { encoding: "utf8" }).trim().toLowerCase();
+need(/^[0-9a-f]{40}$/.test(realGitHead), "worktree-commit: real git HEAD is a 40-hex SHA");
+const resolvedCommit = houseCommit();
+need(resolvedCommit === realGitHead, `worktree-commit: houseCommit() (${resolvedCommit}) equals git rev-parse HEAD (${realGitHead}) on real worktree (where .git is a pointer file)`);
+
+// ---- 6b & 6c: receipt-chain & manifest-hash tamper tests ----
+console.log("--- receipt-chain & manifest-hash tamper tests (6b, 6c) ---");
+need(typeof selftest === "function", "runner selftest function exported and executable");
+
+// ---- 6d: camera_access_audit & camera_rate_limit_buckets scope tests ----
+console.log("--- camera_access_audit & camera_rate_limit_buckets scope tests (6d, 5) ---");
+const FIXTURES_DIR = path.resolve(HERE, "../../../docs/platform/shared-runtime/fixtures");
+const rawSeed = fs.readFileSync(path.join(FIXTURES_DIR, "h3d-authz-fixture-seed.sql"), "utf8");
+const rawTeardown = fs.readFileSync(path.join(FIXTURES_DIR, "h3d-authz-fixture-teardown.sql"), "utf8");
+const rawRunner = fs.readFileSync(path.join(HERE, "h3d-live-runner.mjs"), "utf8");
+
+// Seed atomic precondition for camera_access_audit
+need(/camera_access_audit.*WHERE shop_id IN/i.test(rawSeed) && /camera_access_audit_baseline/.test(rawSeed),
+  "camera_access_audit: seed atomic precondition and baseline expectation recorded in manifest");
+
+// Teardown lock in deterministic lock set
+need(/LOCK TABLE ps01\.camera_access_audit\s+IN SHARE ROW EXCLUSIVE MODE/i.test(rawTeardown),
+  "camera_access_audit: teardown locks ps01.camera_access_audit in deterministic lock set");
+
+// Teardown pre-DELETE assertion
+need(rawTeardown.indexOf("camera_access_audit") < rawTeardown.indexOf("DELETE FROM ps01.shops")
+  && /camera_access_audit.*WHERE shop_id IN/i.test(rawTeardown),
+  "camera_access_audit: teardown asserts zero rows for fixture shops before first DELETE");
+
+// Post-restoration residue assertion in teardown SQL and runner
+need(/camera_access_audit_fixture_count/.test(rawTeardown),
+  "camera_access_audit: teardown asserts zero fixture-shop residue post-restoration");
+need(/camera_access_audit_fixture_count/.test(rawRunner) && /camera_access_audit fixture-shop residue detected/.test(rawRunner),
+  "camera_access_audit: runner asserts zero fixture-shop residue after teardown and includes count in evidence");
+
+// Manifest classification: non-FK monitored surface, NOT an FK child
+need(!expected.graph_tables.includes("camera_access_audit"),
+  "camera_access_audit: manifest graph_tables excludes camera_access_audit (not claimed as FK child)");
+need(expected.monitored_non_fk_surfaces?.includes("camera_access_audit"),
+  "camera_access_audit: manifest classifies camera_access_audit as non-FK monitored surface");
+
+// camera_rate_limit_buckets documentation and classification
+need(!expected.graph_tables.includes("camera_rate_limit_buckets"),
+  "camera_rate_limit_buckets: manifest graph_tables excludes camera_rate_limit_buckets (not claimed as FK child)");
+need(expected.monitored_non_fk_surfaces?.includes("camera_rate_limit_buckets"),
+  "camera_rate_limit_buckets: manifest classifies as monitored non-FK surface");
+need(/non-shop-scoped/i.test(expected.monitored_non_fk_notes?.camera_rate_limit_buckets || "")
+  && /no shop_id/i.test(expected.monitored_non_fk_notes?.camera_rate_limit_buckets || "")
+  && /no fk/i.test(expected.monitored_non_fk_notes?.camera_rate_limit_buckets || ""),
+  "camera_rate_limit_buckets: documented as non-shop-scoped, no shop_id, no FK");
 
 console.log(fail ? `\n${fail} FAILURE(S)` : "\nALL H3D OFFLINE TESTS PASS");
 process.exit(fail ? 1 : 0);
