@@ -65,6 +65,36 @@ testable per case.
 
 ## 3. Scope and authority — what this does NOT authorize
 
+### 3.0 ⚠️ CORRECTION (2026-09-22, after implementation) — the helper is NOT closure-neutral
+
+This document originally claimed that because the helper imports nothing, it does not extend the
+billing-action import closure, and therefore dissolves Blocker 2. **That claim was wrong**, and it was
+falsified by execution during implementation:
+
+```text
+AssertionError: Unexpected billing-action import closure module(s):
+  server/control-plane/runtime-mode.ts
+1 failed | 47 passed (48)
+```
+
+The gate flags **any** closure member that is not in its allowlist. A zero-import helper is still a
+member, so admitting it would require widening the allowlist, which the Owner decision forbids. The
+correct shape inside that closure is an **inlined** literal check with **no import at all**.
+
+Corrected scope of the mechanism:
+
+| Path | Inside the closure gate? | Correct shape | Outcome |
+|---|---|---|---|
+| the four Control Truth routers | **no** — the closure is seeded from `routers.ts` → `service.ts` → `command-service.ts`, so the routers are never scanned | import the canonical helper | migrated at `2e49004`; gate unaffected |
+| the command path (`command-service.ts`, `demo-command-executor.ts`) | **yes** | inline the literal check, import nothing | landed at `340d1a0`; closure gate PASS 48/48 |
+
+So the mechanism still resolves both blockers, but **not by a single shared import in every place** —
+the routers share the helper, while the gated command path inlines the same literal form. Two
+discriminators are still avoided because it is the same literal expression and the same decision in
+both shapes; what differs is only whether it is reached through a module or written in place.
+
+The rest of this section stands.
+
 This finding is a **mechanism**, not a permission.
 
 - Changing `ENV.isProduction`, or introducing a competing production discriminator, is a
