@@ -48,14 +48,15 @@ BEGIN
 END $$;
 
 -- 3. controlled-table locks (SHARE ROW EXCLUSIVE): blocks concurrent INSERT/
---    UPDATE/DELETE, allows SELECT. Deterministic order, ps01 only.
+--    UPDATE/DELETE, allows SELECT. Exact order-preserving subsequence of the
+--    single deterministic global lock order documented in teardown (§3), ps01 only.
+LOCK TABLE ps01.subscription_audit_log IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.shops                  IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.shop_subscriptions     IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.pet_owners             IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.pets                   IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.rooms                  IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.room_rate_plans        IN SHARE ROW EXCLUSIVE MODE;
-LOCK TABLE ps01.shop_subscriptions     IN SHARE ROW EXCLUSIVE MODE;
-LOCK TABLE ps01.subscription_audit_log IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE ps01.camera_access_audit    IN SHARE ROW EXCLUSIVE MODE;
 
 -- 4. commercial 'starter' package — pin the exact row, assert full semantics.

@@ -14,6 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { houseCommit, selftest } from "./h3d-live-runner.mjs";
+import { checkLockOrderSubsequence } from "./sql-static-check.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXPECTED = path.resolve(HERE, "../../../docs/platform/shared-runtime/fixtures/h3d-expected-catalog-manifest.json");
@@ -111,6 +112,42 @@ need(/non-shop-scoped/i.test(expected.monitored_non_fk_notes?.camera_rate_limit_
   && /no shop_id/i.test(expected.monitored_non_fk_notes?.camera_rate_limit_buckets || "")
   && /no fk/i.test(expected.monitored_non_fk_notes?.camera_rate_limit_buckets || ""),
   "camera_rate_limit_buckets: documented as non-shop-scoped, no shop_id, no FK");
+
+// ---- lock-order subsequence tests (H3D-S) ----
+console.log("--- lock-order subsequence tests (H3D-S) ---");
+const lockSubseq = checkLockOrderSubsequence(rawSeed, rawTeardown);
+need(lockSubseq.ok, `seed lock order is an exact subsequence of teardown order: ${lockSubseq.errors.join("; ") || "ok"}`);
+need(lockSubseq.seedTables.length === 8, "seed locks exactly 8 tables");
+need(lockSubseq.seedTables[0] === "subscription_audit_log", "seed locks subscription_audit_log first");
+need(lockSubseq.seedTables[1] === "shops", "seed locks shops second");
+need(lockSubseq.seedTables[2] === "shop_subscriptions", "seed locks shop_subscriptions third");
+
+// Unit check: verify offline static test fails on inverted fixture
+const inlineInvertedFixture = `
+LOCK TABLE ps01.shops                  IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.subscription_audit_log IN SHARE ROW EXCLUSIVE MODE;
+`;
+const invertedCheck = checkLockOrderSubsequence(inlineInvertedFixture, rawTeardown);
+need(!invertedCheck.ok, "lock order static check: fails on inverted lock order fixture");
+need(invertedCheck.inversions.length === 1
+  && invertedCheck.inversions[0].firstInSeed === "shops"
+  && invertedCheck.inversions[0].secondInSeed === "subscription_audit_log",
+  "lock order static check: identifies exact inverted pair (shops, subscription_audit_log)");
+
+// Unit check: verify offline static test fails on pre-fix seed ordering
+const preFixSeedOrder = `
+LOCK TABLE ps01.shops                  IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.pet_owners             IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.pets                   IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.rooms                  IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.room_rate_plans        IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.shop_subscriptions     IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.subscription_audit_log IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE ps01.camera_access_audit    IN SHARE ROW EXCLUSIVE MODE;
+`;
+const preFixCheck = checkLockOrderSubsequence(preFixSeedOrder, rawTeardown);
+need(!preFixCheck.ok, "lock order static check: fails on pre-fix seed lock ordering");
+need(preFixCheck.inversions.length === 10, "lock order static check: detects all 10 inversions in pre-fix seed ordering");
 
 console.log(fail ? `\n${fail} FAILURE(S)` : "\nALL H3D OFFLINE TESTS PASS");
 process.exit(fail ? 1 : 0);
