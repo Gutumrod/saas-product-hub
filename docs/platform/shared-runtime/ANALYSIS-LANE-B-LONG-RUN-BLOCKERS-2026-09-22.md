@@ -100,19 +100,37 @@ Check the remaining stage names for the same gap before starting: `H3D-LIVE`, `H
 `H3F`, `H4`, `H5`, `HOUSE-A` each need scope, allowed/prohibited mutations, exit
 criteria and required evidence written down in Lane-B terms.
 
-### A4 — `H2` and `H4` contradict each other
+### A4 — RETRACTED. There is no `H2`/`H4` contradiction.
 
-`BRIEF-CLAUDE-H3D-H5-HOUSE-A-LONG-RUN-EXECUTION-2026-09-09.md` line 451 states that
-the H4 disposable product "requires a direct DB LOGIN credential or
-product-controlled global migration authority".
+**This finding was wrong. Corrected by the Owner in
+`OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §2, and verified here
+against the source.**
 
-`DESIGN-H2-SHARED-RUNTIME-ISOLATION-EXECUTION-BOUNDARY-2026-09-08.md` decided the
-opposite: product runtime and migrator roles are NOLOGIN, and no product receives a
-direct DB LOGIN credential. That decision is the thing H3 has spent its entire
-existence proving.
+The original claim was that
+`BRIEF-CLAUDE-H3D-H5-HOUSE-A-LONG-RUN-EXECUTION-2026-09-09.md` line 451 requires the
+H4 disposable product to hold a direct DB LOGIN credential, contradicting the `H2`
+NOLOGIN boundary.
 
-`H4` as written therefore requires violating the boundary `H3` established. This must
-be resolved as a design question now. Discovered at `H4`, it costs the whole stage.
+Line 451 sits under `## 13. Hard Stop Conditions`, whose opening sentence is *"STOP,
+write durable evidence, and do not proceed to the next dependent phase if any of
+these occurs"*. The clause is therefore a **stop condition**: if H4 turns out to need
+a direct DB LOGIN, the run halts. That is a prohibition that *enforces* the H2
+boundary, not a requirement that breaks it. The prepared H4 assets are consistent
+with it — `h4_migrator` and `h4_runtime` are both NOLOGIN, with forward and rollback
+executed through the platform-owned lane.
+
+**How the error was made, because it matters more than the error.** A bullet was
+grepped and its meaning inferred without reading the section heading that governs it.
+That is the same failure mode as A5 below — specifying from a name or a fragment
+rather than from the thing itself — committed in the document that describes A5. The
+lesson generalises past this instance: *when a single line is about to become a
+finding, read the block it belongs to first.*
+
+Standing correction: **do not redesign H4 around a direct product DB LOGIN.** What is
+required instead is an H2/H4 consistency re-verification producing a durable note on
+whether the current H4 brief, SQL, probe harness, token-issuance path and teardown
+all preserve the H2 boundary. Any inconsistency found *there* is a real finding; none
+may be manufactured from the misread sentence.
 
 ### A5 — Gate steps were specified from tool names, not tool behaviour
 
@@ -267,9 +285,11 @@ Ranked by how much stalling each removes.
    twelve of the counted tables are blind, so running `H3D-A1` first means running it
    twice.
 
-3. **Resolve the H2/H4 contradiction as a design question now.** Either H4 gets a
-   boundary-preserving issuance method, or the H4 design changes. Either way it is a
-   document change today and a lost stage if left until H4.
+3. **Re-verify H2/H4 consistency** (revised — see the retraction in A4). There is no
+   contradiction to resolve. What is needed is a durable note confirming that the
+   current H4 brief, forward and rollback SQL, probe harness, token-issuance path and
+   teardown all preserve the H2 NOLOGIN boundary, with any genuine gap recorded as a
+   new finding.
 
 4. **Write the missing stage definitions in Lane-B terms** — scope, allowed and
    prohibited mutations, exit criteria, required evidence — for `H3D-A1`,

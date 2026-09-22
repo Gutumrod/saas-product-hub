@@ -15,7 +15,8 @@ re-derive it.
 |---|---|---|
 | 1 | `BRIEF-LANE-B-SHARED-RUNTIME-LONG-RUN-CLAUDE-AGY-CODEX-2026-09-22.md` | the task, roles, loop, Owner checkpoints |
 | 2 | `RUN-MANIFEST-LANE-B-SHARED-RUNTIME-LONG-RUN-2026-09-22.md` | stage ordering |
-| 3 | `ANALYSIS-LANE-B-LONG-RUN-BLOCKERS-2026-09-22.md` | **read this before planning anything** — why the run stops, and what must be fixed before it can continue |
+| 3 | `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` | **binding** — what you are authorized to do next, and the correction to finding A4 |
+| 4 | `ANALYSIS-LANE-B-LONG-RUN-BLOCKERS-2026-09-22.md` | why the run stops, and what must be fixed before it can continue |
 | 4 | `BATCH-H3D-S-2026-09-22.md` | the state you inherit, its evidence, and the open findings |
 | 5 | `PRE-01-CLASSIFICATION-AND-CLOSURE-2026-09-22.md` | how the inherited code got here |
 | 6 | `BRIEF-CLAUDE-H3D-STATIC-ACCEPTANCE-REMEDIATION-2026-09-09.md` | defines S1–S5 and acceptance gate A1 |
@@ -58,30 +59,53 @@ Plus two design questions that will halt later stages if left:
 
 - **`H3D-A1` is named but never defined** in Lane-B terms. Same likely true of the
   stages after it. `ANALYSIS` A3.
-- **`H4` requires a direct DB LOGIN, which the `H2` boundary decision forbids.**
+- **H2/H4: no contradiction — the A4 finding was retracted.** What remains is a consistency re-verification.
   `ANALYSIS` A4.
 
 And one standing platform fact: **H1 is still open and wider than recorded** — every
 new role in LAB inherits write access to `cron` and `net` through the managed
 `PUBLIC` ACL, at creation, with nothing granted. `BATCH-H3D-S` §7.
 
-## 4. Recommended next unit — not `H3D-A1`
+## 4. Next unit — authorized, do not start `H3D-A1`
 
-`H3D-A1` issues real DML in two concurrent sessions and rolls back. Authorising it
-now means running it over three known holes, and its own exit criterion — "nothing
-left behind" — cannot be evidenced while twelve of the counted tables are blind. It
-would have to be run twice.
+The Owner decided this on 2026-09-22:
+`OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` — **AUTHORIZED WITH
+CORRECTION**. Read it before acting; it is binding and it overrides the shape
+recommended here.
 
-Recommended instead, as one remediation unit with its own Codex review:
+One bounded controller/design unit, then the normal loop:
 
-1. a credential strategy document covering every remaining stage (`ANALYSIS` D1);
-2. `F-GATE-RLS-COUPLING`, `F-CATALOG-PROVENANCE`, `auth.users` measurability;
-3. the `H2`/`H4` contradiction resolved as a design decision;
-4. the missing stage definitions written in Lane-B terms.
+- **A — run-wide credential strategy.** One durable policy covering every remaining
+  stage: role shape, privilege boundary, creation authority, injection, verification,
+  explicit revoke list, teardown order, ephemerality, no persisted secret values, and
+  how Supabase managed-ACL and RLS measurability are handled. It may *define* future
+  ephemeral roles but **must not create or mutate any LAB role or credential**.
+- **B — remediation brief for the three findings**, making each acceptance check
+  non-vacuous and falsifiable: no RLS-blind zero may count as proof of zero residue;
+  catalog drift capture separated from RLS-protected data claims; provenance measured
+  rather than stamped; an Auth-identity residue proof path that exists before any
+  stage creates identities; and negative controls proving each measurement would fail
+  under a wrong target or hidden residue.
+- **C — H2/H4 consistency re-verification**, not a redesign. See §3 and `ANALYSIS`
+  A4.
 
-The Owner may override and authorise `H3D-A1` directly. That is their call, and it
-would be recorded as an Owner override of a controller recommendation, not a clean
-gate.
+Then: **Codex reviews the Claude-authored controller package before AGY touches
+anything**, because Claude authored design and security-contract changes. Codex
+mutation → back to Claude for `CLAUDE_REVIEW_PASS`. Then AGY does all ordinary
+source/tool/test/evidence work, Codex reviews the exact AGY revision, Claude does the
+final consistency check.
+
+No live LAB role, Auth, DML or config mutation is authorized in this unit. Do not
+return to the Owner for routine questions inside the package — Claude owns the
+technical decomposition and may split AGY work into smaller units without changing
+the locked acceptance criteria. Stop early only for a genuinely new
+security/architecture decision, a required Production mutation, inability to close a
+finding without a mutation belonging to a later checkpoint, secret exposure, or
+unexplained shared-runtime drift.
+
+When the three findings are closed at source/tooling/evidence-contract level and the
+credential strategy and H2/H4 verification are approved, advance to
+`OWNER-CP-H3D-A1` and **stop**.
 
 ## 5. Standing rules earned this session — apply them, do not relearn them
 
