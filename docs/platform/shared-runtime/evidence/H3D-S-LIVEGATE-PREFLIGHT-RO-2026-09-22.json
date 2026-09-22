@@ -1,0 +1,11 @@
+{
+  "kind": "preflight-readonly",
+  "mutation_free": true,
+  "catalog_fingerprint": "3413b3494dfd3e1c264600c1cee5605f82c4c36ad8d9112156558a8202ecd806",
+  "ps01_table_col": "check_in_date",
+  "authz_fixture_discovery": {
+    "ok": false,
+    "reason": "Fixture A: no ps01.pet_owners row with a linked line_user_id AND at least one owned pet exists in LAB"
+  },
+  "verdict": "STOP — Fixture A: no ps01.pet_owners row with a linked line_user_id AND at least one owned pet exists in LAB"
+}
