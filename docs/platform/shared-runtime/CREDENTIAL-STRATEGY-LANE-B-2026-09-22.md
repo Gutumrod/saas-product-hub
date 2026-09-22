@@ -4,7 +4,7 @@ Date: 2026-09-22
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Author: Claude (Windows) — Lane-B controller
 Authority: `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §3.A
-Status: `CONTROLLER DRAFT — AWAITING CODEX INDEPENDENT REVIEW`
+Status: `CONTROLLER DRAFT REV2 — CORRECTS DEFECT-02/03/04/05/06/10 FROM CODEX ROUND 1 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
 Execution baseline read: `work/house-h3d-h5-20260909 @ 2b1af861aa608f08abb0bd8224821b9ca5ac9981`
 
 This document **defines** roles and runbooks. It creates nothing. No LAB role,
@@ -24,7 +24,7 @@ inferred from a file name.
 | F4 | The runner writes `wstera_platform_internal.runtime_token_grants` (INSERT/DELETE/SELECT) and creates/deletes Auth identities through the Admin API with `H3D_SERVICE_KEY`. | `h3d-live-runner.mjs:302-360` |
 | F5 | No runner/catalog/psql path checks the **database** connection target against `LAB_REF`. Only the Auth/API origin is checked (`assertLabTarget`). | `h3d-live-runner.mjs:130`, `:497-510`; `catalog-manifest.mjs:260-266` |
 | F6 | H3E forward, H4 forward and H4 rollback assert `current_user = 'postgres'` and perform role DDL (`ALTER ROLE … NOLOGIN`, `CREATE ROLE`, `GRANT … TO authenticator`). | `migrations/h3e_*.sql`, `migrations/h4_*.sql` |
-| F7 | `h4_runtime_token_grants` is `REVOKE ALL` from every role except its owner; only the platform `postgres` session can insert the H4 grant row. | `h4_disposable_product_forward.sql` token-support block |
+| F7 | `h4_runtime_token_grants` is `REVOKE ALL` from a finite named list (`PUBLIC, anon, authenticated, service_role, authenticator, ps01_migrator, ps01_runtime, ps01_runtime_login, ps01_line_runtime, h4_migrator, h4_runtime`) and separately `GRANT SELECT` to `supabase_auth_admin`. This is not a proven all-roles statement — the source does not assert "no other role can access this table" as a catalog check. Owner (`h4_migrator`, by `CREATE TABLE` ownership) can still write it; only the platform `postgres` session (which owns/administers `h4_migrator`) can insert the H4 grant row in practice. | `h4_disposable_product_forward.sql:83-95` |
 | F8 | `lab-readonly-inventory.mjs` reads `auth.users`, `storage.buckets`, `cron.job`, `supabase_migrations.schema_migrations`. `storage.buckets` and `cron.job` carry RLS in Supabase; `auth.users` returned `42501` to a granted role. | `lab-readonly-inventory.mjs:151-208`; `BATCH-H3D-S` §3, §6 |
 | F9 | Supabase `postgres` is not a true superuser: `DROP OWNED BY` for another role is refused (`42501`); teardown needs a mirrored explicit `REVOKE` list. | `BATCH-H3D-S` §8 teardown |
 | F10 | Any role created in LAB inherits write on `cron` (1 table) and `net` (2 tables) through the managed `PUBLIC` ACL at creation. This cannot be avoided by grant scoping. | `BATCH-H3D-S` §7 |
@@ -38,11 +38,51 @@ classes listed for it in §2.
 
 | Class | Name pattern | Shape | Lifetime |
 |---|---|---|---|
-| **M — measurement** | `lane_b_measure_<stage>` | `LOGIN`, `NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION`, **`BYPASSRLS`**, `CONNECTION LIMIT 2`, `VALID UNTIL` ≤ window end. `USAGE` + `SELECT` only on the schemas/tables the stage's gates read (§4). No `INSERT/UPDATE/DELETE/TRUNCATE` anywhere; no role membership. | ephemeral, one window |
-| **W — scoped write** | `lane_b_rw_<stage>` | `LOGIN`, no superuser/createdb/createrole/replication, **no `BYPASSRLS` attribute**, `CONNECTION LIMIT 3`, `VALID UNTIL` ≤ window end. Membership `ps01_migrator` (`INHERIT TRUE, SET TRUE`) **only** where F1/F2 owner DDL is required; stage-specific table DML otherwise (§2). No other schema. | ephemeral, one window |
+| **M — measurement** | `lane_b_measure_<stage>` | `LOGIN`, `NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION`, **`BYPASSRLS`**, `CONNECTION LIMIT 2`, `VALID UNTIL` ≤ window end. `USAGE` + `SELECT` only on the schemas/tables the stage's gates read (§4). No **intended** `INSERT/UPDATE/DELETE/TRUNCATE` grant anywhere; no role membership. **Effective privilege is broader than the intended grant** — see §1a. | ephemeral, one window |
+| **W — scoped write** | `lane_b_rw_<stage>` | `LOGIN`, no superuser/createdb/createrole/replication, **no `BYPASSRLS` attribute**, `CONNECTION LIMIT 3`, `VALID UNTIL` ≤ window end. Membership `ps01_migrator` (`INHERIT TRUE, SET TRUE`) **only** where F1/F2 owner DDL is required. **This membership is an ownership-level capability, not a table-only grant** — see §1a. | ephemeral, one window |
 | **A — Auth admin** | env `H3D_SERVICE_KEY` / `LANE_B_AUTH_ADMIN_KEY` ← `.secrets` `SUPABASE_SECRET_KEY_WSTERA_LAB` | Project secret key. Supabase offers no narrower Auth-admin credential — this is a **platform ceiling**, recorded not waived. Used only by agent tooling for `/auth/v1/admin/*`; never passed to a child process, harness, product, browser, or evidence. | existing key; per-window use only |
 | **P — platform admin** | LAB `postgres` | Role DDL and platform-owned migrations only (F6, F7). **Executed by the Owner in the Supabase SQL editor.** The agent never holds this credential in any Lane-B stage. `BILLING_DATABASE_URL` and `SUPABASE_DB_PASSWORD_WSTERA_LAB` are **not** injected into any agent process. | none on agent side |
 | **T — product token** | JWT, `role = ps01_line_runtime` / `h4_runtime` | Auth-issued through the hook, ≤ 300 s, held in memory / minimal child env only. | ≤ 5 min |
+
+### 1a. Effective boundary — corrected from Codex round 1 (DEFECT-02, DEFECT-03)
+
+The table above states each class's *intended* grants. Round-1 review found that
+stating "no other schema" (W) and "no writes anywhere" (M) as if those were the
+*effective* privilege was false, because both classes inherit privilege they were
+never explicitly granted. This section states the effective boundary; §3 and §6 gate
+it, they do not merely assert it.
+
+**M's effective reach beyond SELECT:** `BYPASSRLS` is a row-visibility attribute, not
+a write grant, and it grants no write capability by itself. But every role created in
+LAB — M included — inherits managed `PUBLIC` write privilege on `cron` (1 table) and
+`net` (2 tables) at creation, with nothing explicitly granted (F10,
+`BATCH-H3D-S-2026-09-22.md:191-198`). **M is therefore not read-only in the
+project-wide sense; it is read-only with respect to product/data schemas, and it
+carries an accepted, bounded, re-measured managed-surface write exposure on
+`cron`/`net`.** That exposure is not removed by role design — Supabase does not
+expose a supported way to opt a new role out of it — so it is controlled at the tool
+boundary (G-STATIC-NOSHARED, §6) and re-measured (zero `cron.job` / `net` delta,
+§1 inv. 5), never described as absent.
+
+**W's effective reach beyond table DML:** `ps01_migrator` **owns** schemas `ps01` and
+`ps01_internal` (`H1-EFFECTIVE-PRIVILEGE-INVENTORY-2026-09-08.md:48,100`). Role
+membership with `INHERIT TRUE` inherits *ownership-derived* privilege, not only the
+grants a policy author lists — an owning role can `ALTER`/`DROP`/`GRANT` on every
+object it owns, not merely the tables a stage's fixture SQL happens to touch. A W
+session for a stage that only needs `ps01` fixture DML and the
+`ps01.subscription_audit_log` trigger toggle (F2) is therefore *capable* of far more
+than that stage's task, for as long as the membership grant exists. Plus, like M, W
+inherits the same managed `PUBLIC` `cron`/`net` write (F10).
+
+**Corrected boundary statement for W:** effective reach = every object ownable by
+`ps01_migrator` (`ps01`, `ps01_internal`) **plus** the managed `PUBLIC` write on
+`cron`/`net`. W does **not** reach `local_service`, `mt01`, `mt01_private`, `auth`,
+`vault`, or `wstera_platform_internal` — no grant or membership path gives it those,
+and this is a check, not an assumption (§3's window-open "forbidden reach (W)"
+check). `ps01_internal` reach is accepted as unavoidable under ownership-level
+membership and is bounded by G-STATIC-NOSHARED plus the H3F-style zero-delta
+re-measure, exactly like the `cron`/`net` exposure above — it is not a table-DML-only
+credential, and no document in this package may describe it as one again.
 
 Invariants across all classes:
 
@@ -61,10 +101,13 @@ Invariants across all classes:
 4. **One writer per surface per window** (Lane-B brief §8). M and W for the same stage
    may coexist; W windows of different stages never overlap.
 5. **F10 is accepted, bounded, and re-measured.** Every M/W role carries the managed
-   `PUBLIC` write on `cron`/`net`. Compensating controls: (a) the tool that uses the
-   role is static-checked to issue no statement naming `cron`, `net`, `pg_net` or
-   `http_` (§6 gate G-STATIC-NOSHARED); (b) the post-window H3F-style inventory shows
-   zero `cron.job` / `net` delta. This does not close H1; H1 remains open (§7).
+   `PUBLIC` write on `cron`/`net`; W additionally carries `ps01_internal` ownership
+   reach through `ps01_migrator` membership (§1a). Compensating controls: (a) the
+   tool that uses the role is static-checked to issue no statement naming `cron`,
+   `net`, `pg_net`, `http_`, or (for W) any `ps01_internal` object outside what the
+   stage's fixture SQL already names (§6 gate G-STATIC-NOSHARED); (b) the post-window
+   H3F-style inventory shows zero `cron.job` / `net` / `ps01_internal` delta beyond
+   the stage's declared changes. This does not close H1; H1 remains open (§7).
 
 ## 2. Per-stage credential map
 
@@ -81,6 +124,49 @@ Invariants across all classes:
 
 The agent-held surfaces are therefore only **M**, **W**, **A** and **T**. Class **P**
 never leaves the dashboard.
+
+### 2a. Per-stage teardown sequences for Auth/grant/token surfaces (Codex round 1, DEFECT-06)
+
+§3's generic M/W runbook teardown (revoke grants → revoke membership → terminate
+sessions → drop role) is necessary but not sufficient for `H3D-LIVE` and `H4`: both
+also create Auth identities, runtime-grant rows, and (for `H4`) a hook, none of which
+the generic template touches. Each of those has its own lifecycle and must be torn
+down in this exact order, **before** the M/W database role teardown runs:
+
+**`H3D-LIVE` teardown order** (matches the runner's own ledgered `--teardown-only`
+path and the Operator Action Pack §9 transitions 11–14 — this section makes it an
+explicit credential-strategy requirement rather than leaving it implicit in the
+runner's code):
+
+1. disable the Custom Access Token hook (operator, Dashboard);
+2. delete every ledgered Auth identity created this window (class A, `DELETE
+   /auth/v1/admin/users/<id>`, per identity);
+3. delete the corresponding `wstera_platform_internal.runtime_token_grants` row(s)
+   (class W, the grant-privileged session for this stage only);
+4. wait past `residualNarrowAuthorityUntil` (the latest issued token's `exp`) —
+   record the wait, do not shortcut it;
+5. independently re-verify zero owned identities/grants (class M, fresh session);
+6. **only then** run the class-W fixture teardown (F1/F2) and the M/W runbook
+   teardown from §3.
+
+**`H4` teardown order** (already specified in source at
+`h4_disposable_product_rollback.sql:1-5` and `BRIEF-H4-DISPOSABLE-PRODUCT-PROOF-2026-09-09.md`
+§6 — restated here so the credential strategy does not contradict it, per Codex round
+1 DEFECT-06):
+
+1. delete the disposable H4 Auth identity + its sessions (class A, operator-directed);
+2. delete the `h4_runtime_token_grants` row (class P — the table is owner-only by F7);
+3. disable the hosted hook; wait past the last issued token's `exp`, or prove
+   rejection;
+4. restore the exact pre-H4 `pgrst.db_schemas` string (operator, Dashboard);
+5. run `h4_disposable_product_rollback.sql` (class P, platform SQL editor — see
+   `VERIFICATION-H2-H4-CONSISTENCY-2026-09-22.md` G-H4-5 for the actor gap this
+   depends on resolving before `OWNER-CP-H4`);
+6. re-run the inventory/compare tooling (class M) and require signature match.
+
+Both sequences end in an M-class re-measurement, not merely the actor's report,
+consistent with `BATCH-H3D-S` §8's stated limitation that a report alone is not
+closure.
 
 ### Consequence for existing source — required changes (prepared in the B brief, not here)
 
@@ -125,8 +211,10 @@ Verification at window open, before any gate runs (all must pass or the window c
 | target | §5 provenance: measured ref = `ykxlqnshaaxmzzocpjlj`, both from the connection and from the database. |
 | identity | `current_user` = the planned role; `session_user` = same. |
 | visibility (M) | `SELECT count(*) FROM ps01.commercial_packages` = `3` (F12). A role that reads 0 is RLS-blind → window STOPs. |
-| no write (M) | `BEGIN; SET LOCAL lock_timeout='1s'; LOCK TABLE ps01.shops IN ROW EXCLUSIVE MODE; ROLLBACK;` must fail `42501`. `ROW EXCLUSIVE` requires a write privilege; if the role wrongly has one, the probe only takes and releases a lock — it cannot write a row. |
-| forbidden reach (W) | `LOCK TABLE local_service.<any table> IN ACCESS SHARE MODE` inside a rolled-back txn must fail `42501`. |
+| no real-table write privilege (M, W) | **Corrected from Codex round 1 (DEFECT-04): no live lock is taken on a product table.** For every table the role must not write (all of `ps01` for M; everything outside the stage's declared fixture set for W): `has_table_privilege(current_user, t, 'INSERT') = false` from `information_schema`/`pg_catalog`, queried directly — a metadata read, not a lock. Any `true` → window STOPs before any gate runs. |
+| connection-level read-only behaviour (M only, where the tool still wants the compensating control of F11) | `CREATE TEMP TABLE lane_b_probe(x int); INSERT INTO lane_b_probe VALUES (1); DROP TABLE lane_b_probe;` — session-local, never touches shared storage, safe to succeed or fail either way. Its *purpose* is to distinguish "role genuinely cannot write" (real STOP above) from "pooler silently dropped a read-only setting" (F11) — it is diagnostic, not a gate, and its result is recorded, not enforced. |
+| forbidden reach (W) | `LOCK TABLE local_service.<any table> IN ACCESS SHARE MODE` inside a rolled-back txn must fail `42501`. Same for `mt01`, `mt01_private`, `auth`, `vault`, `wstera_platform_internal` (§1a: these are the schemas W must **not** reach). |
+| trigger-DDL capability (W, Codex round 1 DEFECT-05) | **Required before any stage that uses F2 (fixture teardown) is allowed to proceed under class W.** In its own transaction, rolled back regardless of outcome: `BEGIN; ALTER TABLE ps01.subscription_audit_log DISABLE TRIGGER trg_subscription_audit_immutable; ALTER TABLE ps01.subscription_audit_log ENABLE TRIGGER trg_subscription_audit_immutable; ROLLBACK;` — the `ROLLBACK` means neither statement's effect persists even on success, so the probe is harmless whether it passes or fails. If either statement raises (expected error `42501` if membership does not confer the capability the §8 assumption expects), the window STOPs: **do not fall back to class P**; this is exactly the "inability to prove a finding closed without a mutation belonging to a later checkpoint" stop condition in the Owner decision §5, and the new credential decision returns to the Owner. |
 
 Teardown verification: the closing assertion in the teardown file, **plus** an
 independent re-measure by the next M role or H3F inventory showing the role absent.
@@ -165,7 +253,7 @@ gate query, and record the measured value, not a constant:
 
 | Gate | Checks |
 |---|---|
-| G-STATIC-NOSHARED | every tool that runs under M/W contains no SQL naming `cron.`, `net.`, `pg_net`, `http_request`, `local_service.`, `mt01`, `vault.`, `auth.` (except the Auth API path, which is HTTP). |
+| G-STATIC-NOSHARED | every tool that runs under M/W contains no SQL naming `cron.`, `net.`, `pg_net`, `http_request`, `local_service.`, `mt01`, `vault.`, `auth.` (except the Auth API path, which is HTTP), or `ps01_internal.` outside the stage's declared fixture SQL (§1a). |
 | G-REVOKE-MIRROR | a selftest parses each create runbook and its teardown; every `GRANT` has exactly one mirrored `REVOKE`; teardown contains no `DROP OWNED`. |
 | G-NO-SECRET-AT-REST | blocking assignment-shape secret scan (`HANDOFF` §5) over the diff and evidence = 0. |
 | G-NO-P-ON-AGENT | no Lane-B tool or runbook reads `BILLING_DATABASE_URL`, `SUPABASE_DB_PASSWORD_WSTERA_LAB`, or accepts `current_user = 'postgres'` outside the H3E/H4 platform SQL files. |

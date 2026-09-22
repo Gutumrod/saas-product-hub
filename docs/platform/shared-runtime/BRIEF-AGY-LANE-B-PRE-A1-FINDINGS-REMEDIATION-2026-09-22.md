@@ -4,7 +4,7 @@ Date: 2026-09-22
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Author: Claude (Windows) — Lane-B controller
 Authority: `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §3.B, §4
-Status: `CONTROLLER DRAFT — AWAITING CODEX INDEPENDENT REVIEW. AGY MUST NOT START UNTIL CLAUDE RELEASES IT.`
+Status: `CONTROLLER DRAFT REV2 — CORRECTS DEFECT-07/DEFECT-08 FROM CODEX ROUND 1 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW. AGY MUST NOT START UNTIL CLAUDE RELEASES IT.`
 Companion (binding): `CREDENTIAL-STRATEGY-LANE-B-2026-09-22.md`
 
 ## 0. Where you work
@@ -143,10 +143,29 @@ checked at all: psql and `pg` connect to whatever `H3D_GRANTS_DB_URL` names
 - user ref ≠ host ref → STOP.
 - URL with no parseable ref → STOP.
 - mocked `databaseRefEvidence` ≠ recorded LAB value → STOP.
+- **two-project same-schema fixture (added, Codex round 1 DEFECT-07):** a mocked
+  client presenting the identical schema/data capture as LAB but a *different*
+  `database_ref_evidence` value must be rejected (STOP), proving the mechanism
+  distinguishes projects and not merely schema drift. A companion mocked client that
+  returns a **constant or hardcoded** `database_ref_evidence` (mimicking the exact
+  literal-stamping bug this finding fixes) across two differently-configured mock
+  connections must also be rejected by the selftest itself — i.e. the selftest harness
+  asserts the chosen mechanism is *capable of varying*, not only that today's LAB
+  value matches. A mechanism that cannot fail this control (e.g. `databaseRefEvidence`
+  implemented as `() => LAB_REF`) does not satisfy this finding and must not be
+  merged.
 - expected manifest carrying only a literal `project_ref` → verify refuses.
 - seed manifest without tool-attached provenance → runner refuses it.
 - source scan: no remaining literal-stamped `project_ref` output in any in-scope file
   (the constant may exist only as `LAB_REF` / `expected_project_ref`).
+
+**Live-only closure (`LIVE_DEFERRED_TO_A1_PREFLIGHT`, unresolved in this unit):** the
+offline controls above can prove the *comparison logic* is sound; they cannot prove
+`databaseRefEvidence`'s chosen live mechanism actually differs between two real
+Supabase projects, because this unit has no LAB access. The A1 preflight window must
+run the mechanism against LAB and record the raw value before it is trusted for any
+gate; if it turns out constant or unreadable under class M, `H3D-A1` STOPs and returns
+a new finding, it does not fall back to the literal.
 
 ## 4. Finding 3 — `auth.users` measurability (MEDIUM)
 
@@ -170,6 +189,17 @@ depend on it, and `lab-readonly-inventory.mjs:204` reads it through SQL.
 3. Inventory and runner stop reading `auth.users` through SQL; they use this module.
 4. The module must be unable to mutate: a source-level test asserts its only HTTP
    method is `GET` and its only path prefix is `/auth/v1/admin/users`.
+5. **Output schema guard (added, Codex round 1 DEFECT-08).** The module's return type
+   is `{ measured: true, count: number, id_set_sha256: <64-hex-char string> } |
+   { measured: false, reason: string }`. Before returning `measured: true`, the module
+   validates `count` is a non-negative integer and `id_set_sha256` matches
+   `/^[0-9a-f]{64}$/, and that `id_set_sha256` is the empty-list hash
+   (`sha256("")`) if and only if `count === 0`. Any violation — absent field, `null`,
+   wrong type, empty string, malformed hex, or a count/hash pair that is internally
+   inconsistent — returns `measured: false`, never a partially-populated `measured:
+   true` object. The residue comparison (step 2) itself additionally refuses to run
+   if either side is `measured: false`, reporting `UNMEASURED` rather than treating a
+   missing value as equal to another missing value.
 
 **Negative controls (offline, mocked fetch):**
 
@@ -178,6 +208,12 @@ depend on it, and `lab-readonly-inventory.mjs:204` reads it through SQL.
 - pagination truncated → `UNMEASURED`.
 - origin ≠ LAB → STOP before fetch.
 - output scan: no email/uuid-shaped raw value in the emitted evidence.
+- **malformed-success negative controls (added, Codex round 1 DEFECT-08):** a mocked
+  response that returns HTTP 200 with `count: null`, or with `id_set_sha256`
+  missing/empty/wrong-length, or with `count` and `id_set_sha256` mutually
+  inconsistent (e.g. `count: 0` paired with a non-empty-list hash) — each must yield
+  `measured: false`, and a before/after pair built from two such malformed results
+  must not be reported as matching residue.
 
 **Live positive control** (`LIVE_DEFERRED`): at the A1 preflight the measured count
 must equal the recorded baseline `5`; at H3D-LIVE the runner's own created identity

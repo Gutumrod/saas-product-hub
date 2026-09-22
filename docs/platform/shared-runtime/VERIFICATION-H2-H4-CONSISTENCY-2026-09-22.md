@@ -4,7 +4,7 @@ Date: 2026-09-22
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Author: Claude (Windows) — Lane-B controller
 Authority: `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §2, §3.C
-Status: `CONTROLLER DRAFT — AWAITING CODEX INDEPENDENT REVIEW`
+Status: `CONTROLLER DRAFT REV2 — CORRECTS DEFECT-01/DEFECT-09 FROM CODEX ROUND 1 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
 Mutation: none. No H4 object was applied, and no LAB access was made.
 
 ## 1. Question
@@ -18,8 +18,39 @@ re-opened.
 ## 2. Inspected — exact revision
 
 Repo `github.com/Gutumrod/saas-product-hub`, branch `work/house-h3d-h5-20260909`,
-`2b1af861aa608f08abb0bd8224821b9ca5ac9981`. The H4 files were last changed at
-`7ab7b6c` and are unchanged in the reviewed range `d6707c0..2b1af86`.
+`2b1af861aa608f08abb0bd8224821b9ca5ac9981`.
+
+**Correction (Codex round 1, DEFECT-01):** the claim "the H4 files were last changed
+at `7ab7b6c` and are unchanged in `d6707c0..2b1af86`" was false for one file in the
+table. Verified independently:
+
+```
+git log d6707c0..2b1af86 -- docs/platform/shared-runtime/OPERATOR-ACTION-PACK-H3D-TO-H5-2026-09-09.md
+  -> 2c1ef3a044b0d31ed09efeb0c416583936eb3759
+```
+
+`2c1ef3a` is the H3D-S commit; the change to this file is confined to the H3D section
+(the catalog-manifest command syntax correction, `--verify` usage), not to the §H4
+block. All six other files in the table have last-change commit `7ab7b6c471c227b24364b7d92d32ae7bfb421f07`
+and are genuinely unchanged in the range — re-verified:
+
+```
+for f in DESIGN-H2-SHARED-RUNTIME-ISOLATION-EXECUTION-BOUNDARY-2026-09-08.md \
+         BRIEF-H4-DISPOSABLE-PRODUCT-PROOF-2026-09-09.md \
+         migrations/h4_disposable_product_forward.sql \
+         migrations/h4_disposable_product_rollback.sql \
+         ../../../tools/shared-runtime/h4/h4-probe-harness.mjs \
+         ../../../tools/shared-runtime/h4/h4-privilege-snapshot.sql \
+         evidence/H4-DISPOSABLE-PRODUCT-PROOF-2026-09-09.md; do
+  git log --oneline d6707c0..2b1af86 -- "$f"
+done
+# -> empty for all seven
+```
+
+The §H4 block of the operator pack itself (lines 154-176, including the `Agent: psql -f`
+instructions DEFECT-09 addresses below) is unchanged in the range; only the unrelated
+H3D-section line moved. The table below is re-read at `2b1af86` directly, not carried
+over from `7ab7b6c`.
 
 | File | Role |
 |---|---|
@@ -39,7 +70,7 @@ Repo `github.com/Gutumrod/saas-product-hub`, branch `work/house-h3d-h5-20260909`
 | Product runtime role `NOLOGIN` (inv. 2) | **HOLDS** | forward: `CREATE ROLE h4_runtime NOLOGIN NOINHERIT … NOBYPASSRLS`; post-check raises on `rolcanlogin`. |
 | Product migration role `NOLOGIN` (inv. 3) | **HOLDS** | same for `h4_migrator`. |
 | No reusable product DB LOGIN credential (inv. 1) | **HOLDS** | no `PASSWORD` clause anywhere in H4 SQL; harness env takes only `H4_RUNTIME_JWT` / `H4_EXPIRED_JWT` / publishable key; evidence template row "direct DB login … no credential exists". |
-| Migrations are platform-executed proposals (§Migration Execution Boundary) | **HOLDS** | forward and rollback assert `current_user = 'postgres'`; positive migrator proof is `SET ROLE h4_migrator` from the platform session, not a product credential. Under `CREDENTIAL-STRATEGY-LANE-B` these run as class P in the SQL editor. |
+| Migrations are platform-executed proposals (§Migration Execution Boundary) | **HOLDS at the SQL level; actor is contradicted in the operator pack — see G-H4-5** | forward and rollback assert `current_user = 'postgres'`; positive migrator proof is `SET ROLE h4_migrator` from the platform session, not a product credential. `CREDENTIAL-STRATEGY-LANE-B` requires these to run as class P, Owner-only, in the SQL editor — but the operator pack literally instructs `Agent: psql -f migrations/h4_disposable_product_forward.sql` and `agent psql -f migrations/h4_disposable_product_rollback.sql`. The SQL's own `current_user = 'postgres'` guard means an agent process cannot actually execute it without holding the platform credential, which the credential strategy forbids — so the two documents cannot both be followed as written. |
 | Token authority is House-owned (§Token Authority, inv. 4–5) | **HOLDS** | separate `h4_runtime_token_grants` (owner-only, `SELECT` to `supabase_auth_admin`) + `h4_custom_access_token_hook` caps `exp` ≤ 5 min and refuses a login-capable/privileged target role. No signing material leaves the platform. |
 | Exposure limited (inv. 6) | **HOLDS** | only `h4_probe` added to exposed schemas; teardown restores the exact prior string. |
 | Exact operation grants (inv. 7) | **HOLDS** | post-check: `h4_runtime` EXECUTE count = 1, direct table writes = 0. |
@@ -47,9 +78,14 @@ Repo `github.com/Gutumrod/saas-product-hub`, branch `work/house-h3d-h5-20260909`
 | H4 tests only product-available interfaces (§H4) | **HOLDS** | runtime probes are Data API calls with an Auth-issued token; metadata/`SET ROLE` checks are labelled platform-admin evidence, as H2 permits. |
 | Teardown preserves the boundary | **HOLDS, with G-H4-2 below** | rollback drops hook → grant table → membership → schema → roles, asserts zero residue and that the ps01 H3C contract and the 3-EXECUTE `ps01_line_runtime` boundary are intact. |
 
-**Conclusion: the current H4 design preserves the H2 NOLOGIN boundary.** No
-contradiction exists and none is recorded. H4 must not be redesigned around a direct
-product DB LOGIN.
+**Conclusion: the current H4 SQL design preserves the H2 NOLOGIN boundary.** No
+contradiction exists in the SQL and none is recorded. H4 must not be redesigned
+around a direct product DB LOGIN.
+
+**A separate, real contradiction exists between the operator pack and the credential
+strategy over *who* runs the platform SQL** — recorded as G-H4-5. This is a
+documentation/authority gap, not an H2 breach, and it does not authorize an agent to
+hold `postgres` under the current contract.
 
 ## 4. Real gaps found during re-verification
 
@@ -103,6 +139,39 @@ the claim.
 `h4-privilege-snapshot.sql:18` stamps `'project_ref', 'ykxlqnshaaxmzzocpjlj'` as a
 literal, exactly as `catalog-manifest.mjs:174` does. Handled by the root-cause fix in
 the B brief (finding 2 covers every literal-stamped provenance field), not separately.
+
+### G-H4-5 — HIGH — the operator pack assigns H4 platform SQL to "Agent", contradicting class P
+
+Codex round 1, DEFECT-09. `OPERATOR-ACTION-PACK-H3D-TO-H5-2026-09-09.md:154-170`
+reads (unchanged at `2b1af86` per §2 above):
+
+```
+1. Agent: psql -f migrations/h4_disposable_product_forward.sql
+...
+   → agent psql -f migrations/h4_disposable_product_rollback.sql
+```
+
+`CREDENTIAL-STRATEGY-LANE-B-2026-09-22.md` §1–§2 classifies H4 forward/rollback as
+class **P**, run by the **Owner** in the Supabase SQL editor; the agent never holds
+`postgres`. The operator pack's own SQL requires `current_user = 'postgres'`
+(`h4_disposable_product_forward.sql:14-18`, rollback `:7-12`), so an agent literally
+following the pack's instruction as written would need to hold the platform
+credential — which the credential strategy exists to forbid. The two documents
+cannot both be followed; this is a real authority-actor gap in the source pack, not
+an ambiguity in the credential strategy.
+
+**Not an H2 breach:** the SQL's guard already prevents any non-`postgres` session from
+running it, so no agent can silently execute it today — the pack's wording is wrong,
+not the enforcement.
+
+**Disposition for this unit:** the pre-A1 remediation brief (B) does not touch
+`OPERATOR-ACTION-PACK-H3D-TO-H5-2026-09-09.md`, and no agent is authorized to run
+`psql -f migrations/h4_*.sql` under any Lane-B credential class. Remediation —
+rewriting the operator pack's H4 section to name the Owner/platform SQL-editor actor
+explicitly for those two steps — is scheduled before `OWNER-CP-H4`, alongside
+G-H4-1..4. Until then, if H4 is ever reached, this batch's controller review must
+independently confirm the executing actor before the step is allowed to proceed,
+regardless of what the pack's prose says.
 
 ## 5. Standing boundary for later stages
 
