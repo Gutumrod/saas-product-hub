@@ -82,17 +82,23 @@ Reconciling this required real boundary measurements, which means real requests 
 ## 4. Current outbox state — stated plainly, no reinterpretation
 
 ```text
-delivered      : 28   (includes the 3 accepted probes)
+delivered      : 40   (includes the 3 accepted probes)
 dead_letter    : 11   =  1 original task event
                       + 10 probe events from the boundary measurement
 ```
+
+Measured against the canonical outbox at
+`D:/AI-Workspace/runtime/hermes-native/data/.hermes-runtime/wstera-control-sync.sqlite3` (51 rows
+total). An earlier note in this document said 28 delivered; that figure was stale — it had been read
+while a probe had left `WSTERA_CONTROL_SYNC_OUTBOX` pointed at a temp database. The dead-letter count
+of 11 was correct throughout.
 
 The **original** dead-letter remains exactly as it was. The 10 added dead-letters are the measurement
 cost, are individually identifiable by the `probe-detaillimit` event-id prefix, and are **not** task
 telemetry. Nothing was deleted, and no dead-letter is claimed as PASS.
 
 **Delivery-health gate rule going forward:** any claim about Control Sync delivery health must report
-this as *28 delivered + 1 classified dead-letter (superseded by a successful bounded re-send) + 10
+this as *40 delivered + 1 classified dead-letter (superseded by a successful bounded re-send) + 10
 root-cause probe rejections*, or state plainly that probe rows are excluded and why. The original item
 must not be silently dropped from the count to make the number look clean.
 

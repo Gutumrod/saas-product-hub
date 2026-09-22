@@ -184,9 +184,11 @@ falsification-tested against all four routers. R2 must review the **final** revi
 - No `PRODUCTION_READY`, no `OPERATED_STABLE`, no stage PASS asserted by Hermes on its own authority.
 - R2/R3 have not started. T4–T7 have not started.
 - Mac parity remains `MAC_PARITY_UNVERIFIED`.
-- The Control Sync dead-letter remains visible: the outbox reports **28 delivered + 11 dead-letter**
-  (1 original task event, reconciled and superseded by a successful bounded re-send, plus 10
-  root-cause probe rejections disclosed in `CONTROL-SYNC-DEAD-LETTER-CLASSIFICATION-2026-09-22.md`).
-  `work.sync` remains blocked by GAP-A; no fake Product code was invented.
+- The Control Sync dead-letter remains visible: the outbox reports **40 delivered + 11 dead-letter**
+  at the canonical path (1 original task event, reconciled and superseded by a successful bounded
+  re-send, plus 10 root-cause probe rejections disclosed in the classification document). **No item is
+  claimed as delivered that is not delivered, and no dead letter is hidden.** An earlier run of this
+  packet stated 28 delivered; the measured figure at this hold is 40, corrected rather than silently
+  updated.
 - Every bundle proof above is a **local dry-run/ local build** of the committed revision, not a
   deployed artefact. No code was executed inside the live Worker.
