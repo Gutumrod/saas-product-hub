@@ -1141,7 +1141,6 @@ function selftest() {
   d = cloneChain("altered"); { const f = chainFiles(d)[2]; const r = JSON.parse(fs.readFileSync(f)); r.kind = "tampered"; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches altered receipt"); fs.rmSync(d, { recursive: true, force: true });
   d = cloneChain("runid"); { const f = chainFiles(d)[1]; const r = JSON.parse(fs.readFileSync(f)); r.run_id = "wrong-run"; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches wrong run_id"); fs.rmSync(d, { recursive: true, force: true });
   d = cloneChain("order"); { const f = chainFiles(d)[1]; const r = JSON.parse(fs.readFileSync(f)); r.state = "RUN_AUTHORIZED"; fs.writeFileSync(f, JSON.stringify(r, null, 2) + "\n"); } ok(!verifyReceiptChain(d, CFG.runId).ok, "chain verifier catches invalid state order"); fs.rmSync(d, { recursive: true, force: true });
-  fs.rmSync(chainBase, { recursive: true, force: true });
 
   // S4: execute path must reject a manifest changed after its accepted snapshot.
   const manifestTmp = path.join(os.tmpdir(), `h3d-manifest-${process.pid}.json`);
@@ -1151,8 +1150,13 @@ function selftest() {
   fs.appendFileSync(manifestTmp, " ");
   try { assertManifestUnchanged(manifestSnap, manifestTmp); } catch { manifestTamperStopped = true; }
   ok(manifestTamperStopped, "manifest hash tamper STOPs before execute");
-  ok(!receiptFresh(readReceipt("POST_SEED_VERIFIED", chainBase), { seedManifestSha: "0".repeat(64) }).ok,
+  const psvRec = readReceipt("POST_SEED_VERIFIED", chainBase);
+  ok(psvRec !== null, "POST_SEED_VERIFIED receipt is non-null");
+  ok(receiptFresh(psvRec, { seedManifestSha: bound.seed_manifest_sha256 }).ok,
+    "manifest hash match against POST_SEED_VERIFIED ok (positive control)");
+  ok(!receiptFresh(psvRec, { seedManifestSha: "0".repeat(64) }).ok,
     "manifest hash mismatch against POST_SEED_VERIFIED STOPs run/teardown");
+  fs.rmSync(chainBase, { recursive: true, force: true });
   fs.rmSync(manifestTmp, { force: true });
 
   process.stderr.write(bad ? `\nSELFTEST: ${bad} FAILURE(S)\n` : "\nSELFTEST PASS (state machine, ledger, PII, strict target, fixtures, spawn classes)\n");
