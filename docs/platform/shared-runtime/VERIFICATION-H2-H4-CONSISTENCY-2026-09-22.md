@@ -4,7 +4,7 @@ Date: 2026-09-22
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Author: Claude (Windows) — Lane-B controller
 Authority: `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §2, §3.C
-Status: `CONTROLLER DRAFT REV2 — CORRECTS DEFECT-01/DEFECT-09 FROM CODEX ROUND 1 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
+Status: `CONTROLLER DRAFT REV3 — CORRECTS NEW-DEFECT-01 FROM CODEX ROUND 2 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-ROUND2-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
 Mutation: none. No H4 object was applied, and no LAB access was made.
 
 ## 1. Question
@@ -31,8 +31,33 @@ git log d6707c0..2b1af86 -- docs/platform/shared-runtime/OPERATOR-ACTION-PACK-H3
 
 `2c1ef3a` is the H3D-S commit; the change to this file is confined to the H3D section
 (the catalog-manifest command syntax correction, `--verify` usage), not to the §H4
-block. All six other files in the table have last-change commit `7ab7b6c471c227b24364b7d92d32ae7bfb421f07`
-and are genuinely unchanged in the range — re-verified:
+block.
+
+**Second correction (Codex round 2, NEW-DEFECT-01):** the round-1 fix above still
+claimed the other seven files share one last-change commit (`7ab7b6c`). That is false
+for the Design doc. Re-verified per file, individually — no shared-SHA claim:
+
+```
+git log -1 --format='%H %s' -- docs/platform/shared-runtime/DESIGN-H2-SHARED-RUNTIME-ISOLATION-EXECUTION-BOUNDARY-2026-09-08.md
+  -> c0d95b532ffc447b59cbc72c3cfa5c3cca1a0df8 docs(platform): lock H2 isolation execution boundary
+git log -1 --format='%H %s' -- docs/platform/shared-runtime/BRIEF-H4-DISPOSABLE-PRODUCT-PROOF-2026-09-09.md
+  -> 7ab7b6c471c227b24364b7d92d32ae7bfb421f07 docs(platform): prepare H4 + H5 packages + consolidated operator pack
+git log -1 --format='%H %s' -- docs/platform/shared-runtime/migrations/h4_disposable_product_forward.sql
+  -> 7ab7b6c471c227b24364b7d92d32ae7bfb421f07 (same)
+git log -1 --format='%H %s' -- docs/platform/shared-runtime/migrations/h4_disposable_product_rollback.sql
+  -> 7ab7b6c471c227b24364b7d92d32ae7bfb421f07 (same)
+git log -1 --format='%H %s' -- tools/shared-runtime/h4/h4-probe-harness.mjs
+  -> 7ab7b6c471c227b24364b7d92d32ae7bfb421f07 (same)
+git log -1 --format='%H %s' -- tools/shared-runtime/h4/h4-privilege-snapshot.sql
+  -> 7ab7b6c471c227b24364b7d92d32ae7bfb421f07 (same)
+git log -1 --format='%H %s' -- docs/platform/shared-runtime/evidence/H4-DISPOSABLE-PRODUCT-PROOF-2026-09-09.md
+  -> 7ab7b6c471c227b24364b7d92d32ae7bfb421f07 (same)
+```
+
+So: six of the seven files (everything except the Design doc) share last-change
+`7ab7b6c`; the Design doc's last change is the earlier `c0d95b5` ("lock H2 isolation
+execution boundary"). What matters for this unit is not the shared-SHA claim but
+**presence in the reviewed range**, which is independently confirmed for all seven:
 
 ```
 for f in DESIGN-H2-SHARED-RUNTIME-ISOLATION-EXECUTION-BOUNDARY-2026-09-08.md \
@@ -44,13 +69,14 @@ for f in DESIGN-H2-SHARED-RUNTIME-ISOLATION-EXECUTION-BOUNDARY-2026-09-08.md \
          evidence/H4-DISPOSABLE-PRODUCT-PROOF-2026-09-09.md; do
   git log --oneline d6707c0..2b1af86 -- "$f"
 done
-# -> empty for all seven
+# -> empty for all seven — none of them changed in the reviewed range,
+#    regardless of when each was last touched before it
 ```
 
 The §H4 block of the operator pack itself (lines 154-176, including the `Agent: psql -f`
-instructions DEFECT-09 addresses below) is unchanged in the range; only the unrelated
-H3D-section line moved. The table below is re-read at `2b1af86` directly, not carried
-over from `7ab7b6c`.
+instructions DEFECT-09/G-H4-5 address below) is unchanged in the range; only the
+unrelated H3D-section line moved. The table below is re-read at `2b1af86` directly,
+not carried over from any prior commit.
 
 | File | Role |
 |---|---|

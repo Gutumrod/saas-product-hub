@@ -4,7 +4,7 @@ Date: 2026-09-22
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Author: Claude (Windows) — Lane-B controller
 Authority: `OWNER-DECISION-LANE-B-PRE-A1-REMEDIATION-2026-09-22.md` §3.A
-Status: `CONTROLLER DRAFT REV2 — CORRECTS DEFECT-02/03/04/05/06/10 FROM CODEX ROUND 1 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
+Status: `CONTROLLER DRAFT REV3 — CORRECTS NEW-DEFECT-01..05 FROM CODEX ROUND 2 (REVIEW-CODEX-LANE-B-CONTROLLER-PACKAGE-ROUND2-2026-09-22.md) — AWAITING CODEX INDEPENDENT REVIEW`
 Execution baseline read: `work/house-h3d-h5-20260909 @ 2b1af861aa608f08abb0bd8224821b9ca5ac9981`
 
 This document **defines** roles and runbooks. It creates nothing. No LAB role,
@@ -74,15 +74,40 @@ session for a stage that only needs `ps01` fixture DML and the
 than that stage's task, for as long as the membership grant exists. Plus, like M, W
 inherits the same managed `PUBLIC` `cron`/`net` write (F10).
 
-**Corrected boundary statement for W:** effective reach = every object ownable by
+**Corrected boundary statement for W (Codex round 2, NEW-DEFECT-02): the forbidden
+list is stage-specific, not one constant list.** Round-1's fix stated a single
+boundary for every W role and separately forbade `wstera_platform_internal` — but
+§2's `H3D-LIVE` row explicitly grants that stage's W role `USAGE` +
+`SELECT, INSERT, DELETE` on `wstera_platform_internal.runtime_token_grants` (F4). A
+single constant forbidden list cannot be correct for both `H3D-A1` (which must not
+reach that schema at all) and `H3D-LIVE` (which must, for exactly that one table).
+
+Base effective reach, every W role regardless of stage: every object ownable by
 `ps01_migrator` (`ps01`, `ps01_internal`) **plus** the managed `PUBLIC` write on
-`cron`/`net`. W does **not** reach `local_service`, `mt01`, `mt01_private`, `auth`,
-`vault`, or `wstera_platform_internal` — no grant or membership path gives it those,
-and this is a check, not an assumption (§3's window-open "forbidden reach (W)"
-check). `ps01_internal` reach is accepted as unavoidable under ownership-level
-membership and is bounded by G-STATIC-NOSHARED plus the H3F-style zero-delta
-re-measure, exactly like the `cron`/`net` exposure above — it is not a table-DML-only
-credential, and no document in this package may describe it as one again.
+`cron` (1 table) and `net` — enumerated from H1, not just named:
+`net._http_response` and `net.http_request_queue` each carry `PUBLIC`
+`SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER`,
+`net.http_request_queue_id_seq` carries `PUBLIC` `SELECT, USAGE, UPDATE`, schema
+`net` carries `PUBLIC USAGE`, and all 12 installed `net` functions (including
+`net.http_get/post/delete`, `net.worker_restart`, `net.wake`) are `EXECUTE`-able
+through that schema `USAGE`
+(`H1-EFFECTIVE-PRIVILEGE-INVENTORY-2026-09-08.md:57-77`).
+
+Per-stage exception, explicit and exhaustive — no other exception may be added
+without amending this table:
+
+| Stage | W's allowed reach beyond the base | Everything else in `wstera_platform_internal`, `local_service`, `mt01`, `mt01_private`, `auth`, `vault` |
+|---|---|---|
+| `H3D-A1` | none | forbidden |
+| `H3D-LIVE` | `wstera_platform_internal.runtime_token_grants` — `USAGE` on the schema, `SELECT/INSERT/DELETE` on that one table only | forbidden, including every other `wstera_platform_internal` object |
+
+The §3 "forbidden reach (W)" check therefore takes the stage's row from this table as
+its allowlist, not a single constant list; for `H3D-A1` the check includes
+`wstera_platform_internal` in the forbidden set, for `H3D-LIVE` it excludes only the
+one named table. `ps01_internal` and `cron`/`net` reach is accepted as unavoidable
+under ownership-level membership (base row) and bounded by G-STATIC-NOSHARED plus the
+H3F-style zero-delta re-measure — it is not a table-DML-only credential, and no
+document in this package may describe it as one again.
 
 Invariants across all classes:
 
@@ -133,19 +158,43 @@ also create Auth identities, runtime-grant rows, and (for `H4`) a hook, none of 
 the generic template touches. Each of those has its own lifecycle and must be torn
 down in this exact order, **before** the M/W database role teardown runs:
 
-**`H3D-LIVE` teardown order** (matches the runner's own ledgered `--teardown-only`
-path and the Operator Action Pack §9 transitions 11–14 — this section makes it an
-explicit credential-strategy requirement rather than leaving it implicit in the
-runner's code):
+**`H3D-LIVE` teardown order — corrected from Codex round 2 (NEW-DEFECT-04): this is
+the required safe operator sequence, not a description of current runner behaviour.**
+Round 1's fix wrongly claimed this sequence "matches the runner's own ledgered
+`--teardown-only` path". Verified against source: it does not.
 
-1. disable the Custom Access Token hook (operator, Dashboard);
-2. delete every ledgered Auth identity created this window (class A, `DELETE
-   /auth/v1/admin/users/<id>`, per identity);
-3. delete the corresponding `wstera_platform_internal.runtime_token_grants` row(s)
-   (class W, the grant-privileged session for this stage only);
+- The runner's normal `--run` cleanup (`Ledger.cleanupAll()`, called from the
+  `finally` block of `modeRun`, `h3d-live-runner.mjs:918-924`) deletes every ledgered
+  Auth identity and grant row **concurrently** via `Promise.allSettled`
+  (`h3d-live-runner.mjs:534-555`) — it does not disable the hook first, and it does
+  not wait for token expiry; it runs automatically on both the success and the
+  failure path of a live run.
+- `modeTeardownOnly` (the `--teardown-only <uuid,uuid>` recovery path) only registers
+  and cleans up the identity/grant resources for the given ids
+  (`h3d-live-runner.mjs:981-989`); it likewise does not touch the hook or wait for
+  expiry.
+- Hook disable and the expiry wait are Operator Action Pack steps 11–12
+  (`OPERATOR-ACTION-PACK-H3D-TO-H5-2026-09-09.md:99-103`), performed by the human
+  operator **outside** the runner, after the runner's own cleanup has already run.
+
+**Required sequence for this credential strategy** (operator + agent, in this order —
+this is a policy requirement this package adds, not a claim about what the runner
+already enforces; changing the runner to enforce this order in source is out of scope
+for this unit and is not authorized here):
+
+1. disable the Custom Access Token hook (operator, Dashboard) — **before** relying on
+   any identity/grant cleanup, because the runner's own concurrent cleanup provides
+   no ordering guarantee with the hook;
+2. let (or force, via `--teardown-only`) the runner's concurrent identity + grant
+   cleanup complete; treat any `residual_resources` it reports as still present, not
+   as cleaned;
+3. for anything still residual, delete it directly (class A for identities, class W
+   for the grant row) and re-verify;
 4. wait past `residualNarrowAuthorityUntil` (the latest issued token's `exp`) —
    record the wait, do not shortcut it;
-5. independently re-verify zero owned identities/grants (class M, fresh session);
+5. independently re-verify zero owned identities/grants (class M, fresh session) —
+   this is the actual closure proof; the runner's own report is a claim, not evidence
+   (`BATCH-H3D-S` §8 discipline);
 6. **only then** run the class-W fixture teardown (F1/F2) and the M/W runbook
    teardown from §3.
 
@@ -211,10 +260,10 @@ Verification at window open, before any gate runs (all must pass or the window c
 | target | §5 provenance: measured ref = `ykxlqnshaaxmzzocpjlj`, both from the connection and from the database. |
 | identity | `current_user` = the planned role; `session_user` = same. |
 | visibility (M) | `SELECT count(*) FROM ps01.commercial_packages` = `3` (F12). A role that reads 0 is RLS-blind → window STOPs. |
-| no real-table write privilege (M, W) | **Corrected from Codex round 1 (DEFECT-04): no live lock is taken on a product table.** For every table the role must not write (all of `ps01` for M; everything outside the stage's declared fixture set for W): `has_table_privilege(current_user, t, 'INSERT') = false` from `information_schema`/`pg_catalog`, queried directly — a metadata read, not a lock. Any `true` → window STOPs before any gate runs. |
+| no real-table write privilege (M, W) | **Corrected from Codex round 1 (DEFECT-04) and round 2 (NEW-DEFECT-03): no live lock, and every write privilege is checked, not only INSERT.** For every relation the role must not write — for M: every table in `ps01` and every relation in the base-reach list of §1a; for W: every table outside the stage's declared fixture set **and** outside that stage's §1a exception row — assert `has_table_privilege(current_user, t, p) = false` for **each** of `p ∈ {'INSERT','UPDATE','DELETE','TRUNCATE'}` (four checks per relation, not one), from `information_schema`/`pg_catalog`, queried directly — a metadata read, not a lock. Any `true` on any relation/privilege pair → window STOPs before any gate runs. |
 | connection-level read-only behaviour (M only, where the tool still wants the compensating control of F11) | `CREATE TEMP TABLE lane_b_probe(x int); INSERT INTO lane_b_probe VALUES (1); DROP TABLE lane_b_probe;` — session-local, never touches shared storage, safe to succeed or fail either way. Its *purpose* is to distinguish "role genuinely cannot write" (real STOP above) from "pooler silently dropped a read-only setting" (F11) — it is diagnostic, not a gate, and its result is recorded, not enforced. |
-| forbidden reach (W) | `LOCK TABLE local_service.<any table> IN ACCESS SHARE MODE` inside a rolled-back txn must fail `42501`. Same for `mt01`, `mt01_private`, `auth`, `vault`, `wstera_platform_internal` (§1a: these are the schemas W must **not** reach). |
-| trigger-DDL capability (W, Codex round 1 DEFECT-05) | **Required before any stage that uses F2 (fixture teardown) is allowed to proceed under class W.** In its own transaction, rolled back regardless of outcome: `BEGIN; ALTER TABLE ps01.subscription_audit_log DISABLE TRIGGER trg_subscription_audit_immutable; ALTER TABLE ps01.subscription_audit_log ENABLE TRIGGER trg_subscription_audit_immutable; ROLLBACK;` — the `ROLLBACK` means neither statement's effect persists even on success, so the probe is harmless whether it passes or fails. If either statement raises (expected error `42501` if membership does not confer the capability the §8 assumption expects), the window STOPs: **do not fall back to class P**; this is exactly the "inability to prove a finding closed without a mutation belonging to a later checkpoint" stop condition in the Owner decision §5, and the new credential decision returns to the Owner. |
+| forbidden reach (W) | **Corrected from Codex round 2 (NEW-DEFECT-02, NEW-DEFECT-04 disposition of DEFECT-04): metadata only, no live lock, and the forbidden set is the stage's §1a row, not one constant list.** For `H3D-A1`: assert `has_schema_privilege(current_user, s, 'USAGE') = false` for `s ∈ {'local_service','mt01','mt01_private','auth','vault','wstera_platform_internal'}`. For `H3D-LIVE`: same set, **except** assert `has_table_privilege(current_user, 'wstera_platform_internal.runtime_token_grants', p) = true` for exactly `p ∈ {'SELECT','INSERT','DELETE'}` (the one named exception) and `has_schema_privilege(current_user,'wstera_platform_internal','USAGE') = true` **only** via that table, with no privilege on any other object in that schema (`has_table_privilege` false for every other relation `information_schema.tables` lists under `wstera_platform_internal`). |
+| trigger-DDL capability (W, Codex round 1 DEFECT-05; bounded per Codex round 2 NEW-DEFECT-05) | **Required before any stage that uses F2 (fixture teardown) is allowed to proceed under class W.** In its own transaction, with explicit bounds matching the real teardown's own guard (`fixtures/h3d-authz-fixture-teardown.sql:21-23`) and a client-side guarantee that the session always terminates: `BEGIN; SET LOCAL lock_timeout = '4s'; SET LOCAL statement_timeout = '10s'; ALTER TABLE ps01.subscription_audit_log DISABLE TRIGGER trg_subscription_audit_immutable; ALTER TABLE ps01.subscription_audit_log ENABLE TRIGGER trg_subscription_audit_immutable; ROLLBACK;` run inside a try/finally that unconditionally issues `ROLLBACK` (or closes the connection) on every code path, including a driver-level timeout or disconnect — never left to an ambient transaction boundary. `ROLLBACK` means neither statement's effect persists even on success, and `lock_timeout` means a real contending lock aborts the probe within 4s rather than waiting — this is what makes it harmless, not the rollback alone. A `55P03`/`57014` timeout is reported as `UNMEASURED` (contention, not a capability answer), not as proof the role lacks the capability. If the statements raise `42501` (membership does not confer the capability the §8 assumption expects), the window STOPs: **do not fall back to class P**; this is exactly the "inability to prove a finding closed without a mutation belonging to a later checkpoint" stop condition in the Owner decision §5, and the new credential decision returns to the Owner. |
 
 Teardown verification: the closing assertion in the teardown file, **plus** an
 independent re-measure by the next M role or H3F inventory showing the role absent.
