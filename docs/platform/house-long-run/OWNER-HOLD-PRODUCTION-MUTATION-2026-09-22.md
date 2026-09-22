@@ -151,14 +151,29 @@ through the installed copy — including this one — can still produce a dead-l
 over-long `activity.detail`. This run's mitigation is procedural (Hermes keeps details short), not
 installed.
 
-**The dead-letter count in this run's evidence must not be read as "fixed".** The outbox currently
-reports **28 delivered + 11 dead-letter**: 1 original task event (classified, reconciled, and
-superseded by a successful bounded re-send) plus **10 root-cause probe rejections that Hermes itself
-generated while measuring the 2000-character boundary**. Those 10 are disclosed in
-`CONTROL-SYNC-DEAD-LETTER-CLASSIFICATION-2026-09-22.md` §3, were sent to the live Control endpoint
-during reconciliation, and are additive activity telemetry clearly labelled as root-cause evidence.
-If you want them removed, that is a Control-side action for you or an authorized operator; Hermes holds
-no Control DB credential and will not attempt it.
+**The dead-letter count in this run's evidence must not be read as "fixed".**
+
+**Delivery state at this hold — measured against the canonical outbox**
+(`D:/AI-Workspace/runtime/hermes-native/data/.hermes-runtime/wstera-control-sync.sqlite3`):
+
+```text
+51 rows = 40 delivered + 11 dead_letter
+
+the 11 dead letters:
+  wcs-activity:cc6a86381fb4467a99828bce15988fe7   the original task event
+  wcs-activity:probe-detaillimit-2001 … -2049     (10) root-cause probe rejections
+```
+
+- The **1 original task event** is classified and reconciled in
+  `CONTROL-SYNC-DEAD-LETTER-CLASSIFICATION-2026-09-22.md` and was superseded by a successful bounded
+  re-send.
+- The **10 probe rejections are Hermes's own measurement traffic**, generated to pin the exact
+  2000-character boundary. They are disclosed there in full: 13 probe events were sent to the live
+  Control endpoint, 3 accepted and 10 rejected, and the 10 rejections wrote nothing server-side. They
+  cannot be read as task telemetry, and no dead letter is claimed as delivered.
+- An earlier count of "28 delivered" in this run's reporting was stale. The measured figure at this
+  hold is **40 delivered**. The dead-letter figure was correct at 11 throughout. This is recorded
+  rather than quietly corrected, because the owner-facing number must be the measured one.
 
 ---
 

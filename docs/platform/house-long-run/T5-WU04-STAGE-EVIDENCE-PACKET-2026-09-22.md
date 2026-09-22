@@ -173,9 +173,7 @@ visible rather than reporting it as fixed.
   the dead-letter root cause classified in `CONTROL-SYNC-DEAD-LETTER-CLASSIFICATION-2026-09-22.md`
   **remains live** for any run emitting through the installed copy, including this one. The fix exists
   in source only; installation waits for R2 per `RUN-MANIFEST` §9.
-- The Control Sync outbox reports **28 delivered + 11 dead-letter** (1 original task event, reconciled
-  and superseded by a successful bounded re-send, plus 10 root-cause probe rejections disclosed in the
-  classification document). No item was deleted and none is claimed as PASS.
+- **The Control Sync outbox is reported as 40 delivered + 11 dead-letter** at the canonical path. No item is claimed as delivered that is not delivered, and no dead letter is hidden.
 - `work.sync` remains blocked by GAP-A (non-product House/Platform work cannot be projected without a
   fake Product code). **No fake Product code was invented.**
 - No `PRODUCTION_READY`, no `OPERATED_STABLE`, no stage PASS asserted by Hermes on its own authority.
