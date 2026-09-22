@@ -155,7 +155,73 @@ pre-accepted. Codex reviewed `d6707c0..2b1af86` as a single revision, which achi
 that. Squashing now would mint a new SHA and void the review for no gain. Do not
 squash.
 
-## 9. Owner checkpoint after this unit
+## 9. Amendment — 2026-09-22, after Mac preflight preparation
+
+### 9.1 §5 Check 2 was wrong — corrected
+
+This brief specified `h3d-live-runner.mjs --preflight-readonly` for Check 2 "rather
+than ad-hoc SQL". That instruction was written from the mode's name without reading
+what it measures. The Mac controller read it and found the error. Verified
+independently from the Windows side against `2b1af86`:
+
+`modePreflightReadonly()` runs `verifyCatalog()` → `resolvePs01TableCol()` →
+`discoverAuthzFixtures()` → `writeFreshSnapshotFile()`, then throws with
+`{ stop: true }` when fixture discovery fails. It counts **none** of the values
+Check 2 requires, and because LAB has no fixtures it is *designed* to STOP at
+discovery. Using it as written would have produced either a false alarm or a gate
+that never measures its own criterion.
+
+It also calls `writeEvidence()`, which writes into the repo evidence directory and
+would dirty the working tree.
+
+**Ratified correction.** Check 2 splits:
+
+- **2a** — direct SELECT-only counts: the 20 `ps01` tables, `runtime_token_grants`,
+  `auth.users`, and `camera_access_audit`, compared against the recorded baseline
+  (`0` / `0` / `5` / `0`). A table the read-only role cannot read is reported
+  **`UNMEASURED`**, never as a pass. This is the correct discipline: an unreadable
+  table is missing evidence, not a green check.
+- **2b** — `--preflight-readonly` with evidence redirected to scratchpad, not the
+  repo. The expected outcome is the STOP at AUTHZ fixture discovery, and it is
+  classified as expected rather than as a failure.
+
+The Mac's external preflight (target confirmation, role privilege checks,
+`READ ONLY` session) is ratified as written, including the additions beyond §4:
+`rolreplication`, transitive role membership, write privileges across every schema
+rather than only the three named, and refusing the `postgres` role.
+
+### 9.2 New finding — `F-CATALOG-PROVENANCE` (HIGH, deferred)
+
+`catalog-manifest.mjs:174` writes `project_ref: "ykxlqnshaaxmzzocpjlj"` as a string
+literal. It is the only occurrence in the file; the value is never derived from the
+live connection.
+
+Consequence: a capture taken from any database is stamped as LAB. Because both sides
+of `--verify` carry the same constant, the field cancels out and contributes nothing
+to drift detection. A different PS01 instance with a matching schema — a production
+one, for example — would verify **PASS** and be recorded as LAB. PS01 is a shipped
+product, so a schema-identical production database is a realistic target for an
+operator typo, not a hypothetical.
+
+No committed manifest can currently prove which database it came from.
+
+**Disposition: do not fix in this unit.** `2b1af86` holds a clean Codex PASS that
+did not involve Codex mutation. Editing `catalog-manifest.mjs` now mints a new SHA,
+voids that review, and forces a fourth round, in exchange for a defect that the
+Mac's external preflight already contains for this run.
+
+Instead:
+- record it in `BATCH-H3D-S` as a known open finding so it cannot be lost;
+- fix it in a dedicated unit with its own review;
+- treat it as a **hard gate before `H3D-LIVE`**, because that is the first stage
+  where a wrong-target connection mutates data rather than only mis-labelling
+  evidence.
+
+Intended fix for that later unit: derive the project ref from the live connection
+and STOP on mismatch with `LAB_REF`, rather than asserting it. The host/username
+parsing in the Mac's preflight is the obvious source to move into the tool.
+
+## 10. Owner checkpoint after this unit
 
 `OWNER-CP-H3D-A1` is a hard stop. Present the batch and wait. No silence or timeout
 is approval. Nothing in this brief authorizes `H3D-A1` execution.
