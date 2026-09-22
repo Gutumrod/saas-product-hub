@@ -1,0 +1,28 @@
+REVIEWED_REVISIONS
+  hub-web          fde38f64e6bd72de9af549a88777bf276933c051  work/wstera-control-truth-sync-001
+  wstera-workflows 37865cc06ff60592779e7fae42b281c8db5b110a  work/wstera-control-truth-sync-001-t4
+
+Both worktrees are clean and match their locally available origin-tracking refs at `0 ahead / 0 behind`. No live fetch was performed.
+
+FINDINGS_CLOSURE
+  - Finding 1 wording — CLOSED — The contract, constant comment, and function docstring consistently define `applied_at` as a local claim/reservation written before downstream work. They explicitly state it does not prove downstream action occurred. The crash-window and downstream-idempotency disclaimers remain present. The real guarantee was preserved: the conditional database claim can be won only once and survives restart.
+  - Finding 2 test gap — CLOSED — `test_apply_consumption_requires_an_option_when_none_is_recorded` records a decision with `selected_option=None`, verifies the stored option is null, acknowledges it, applies without supplying an option, and explicitly asserts `ok=False`, `applied=False`, `error=="DECISION_OPTION_REQUIRED"`, plus an unchanged null marker.
+
+BEHAVIOUR_UNCHANGED
+  - Diff from `cf8b45b` to `37865cc` changes only the three declared files. In `control_sync.py`, all changes are comment/docstring text. The executable conditional update remains `WHERE decision_id=? AND applied_at IS NULL`, and winner selection remains `cursor.rowcount == 1`; no sender behaviour changed.
+
+NEW_FINDINGS
+  - Minor test-description/assertion mismatch: the final extra case supplies `selected_option="opt-a"` when the recorded option is null. Source therefore returns `DECISION_OPTION_MISMATCH`, not the comment’s claimed “same refusal” (`DECISION_OPTION_REQUIRED`). That case only asserts `applied=False` and never asserts the error. This does not invalidate the preceding direct test that closes Finding 2, but the added comment and coverage claim are inaccurate.
+
+REMAINING_UNVERIFIED_BY_ME
+  - Test execution is UNVERIFIED. The suite launched but all 29 tests failed during `setUp`, before test bodies ran, because the sandbox exposed no writable temporary directory (`FileNotFoundError: No usable temporary directory found`). This is an environment failure, not an observed product-test failure. `PYTHONDONTWRITEBYTECODE=1` was used and both worktrees remained clean afterward.
+
+RESIDUAL_RISK_FOR_OWNER
+  - Runtime assertions still require execution in an environment with writable scratch space.
+  - Remote parity is based on existing local origin-tracking refs only; live network verification was prohibited.
+  - The minor misleading final test case should be corrected later, but it does not reopen either reviewed finding or indicate a sender behaviour defect.
+
+BOUNDARY_OF_THIS_VERDICT
+  - This is a source/revision verdict for the two specified revisions only. It is not deployment, live-runtime, database, or production approval.
+
+R2_FINAL_VERDICT=APPROVED_WITH_FINDINGS

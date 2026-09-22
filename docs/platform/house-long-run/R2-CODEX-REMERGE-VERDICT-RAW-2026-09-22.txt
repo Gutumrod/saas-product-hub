@@ -1,0 +1,38 @@
+REVIEWED_REVISIONS
+  hub-web          fde38f64e6bd72de9af549a88777bf276933c051  work/wstera-control-truth-sync-001
+  wstera-workflows cf8b45bd30a2f20dcaa9ba5a88ba6a33a9fd81ee  work/wstera-control-truth-sync-001-t4
+
+  ทั้งสอง worktree สะอาด ไม่มี tracked/untracked drift และ HEAD ตรงกับ cached `origin/<branch>` refs. ทั้งสอง branch ไม่มี upstream configured และข้อห้าม network ทำให้ผมไม่ได้ fetch เพื่อยืนยัน remote ปัจจุบันแบบสด
+
+FINDING_CLOSURE
+  - Consume-exactly-once was not enforced — CLOSED — source ตอนนี้เพิ่ม `applied_at` แบบ durable และ `_apply_decision_consumption()` ใช้ atomic conditional `UPDATE ... WHERE decision_id=? AND applied_at IS NULL`; `cursor.rowcount == 1` เป็นตัวตัดสินผู้ชนะ จากนั้น repeat path คืน `applied:false`, `reason:already_applied` พร้อม marker เดิม
+  - Restart durability — CLOSED จาก source structure — marker อยู่ใน SQLite เดียวกับ ledger และ module reload เปิดฐานเดิม; test ตรวจว่า reload แล้วได้ `already_applied`
+  - Old-schema migration — CLOSED จาก source structure — `_connect()` ตรวจ `PRAGMA table_info` และใช้ `ALTER TABLE ... ADD COLUMN applied_at INTEGER` เมื่อยังไม่มีเท่านั้น ไม่มี `DROP`, table rebuild หรือ row rewrite
+  - Refusals — CLOSED จาก source inspection — ยังมี `DECISION_NOT_RECORDED`, `DECISION_SCOPE_MISMATCH`, `DECISION_OPTION_REQUIRED`, `DECISION_NOT_ACKNOWLEDGED` และ `DECISION_OPTION_MISMATCH` ก่อน conditional update
+  - Test coverage — CLOSED — 7 tests ใหม่ assert ค่าและ durable state จริง: NULL-before-apply, first/repeat outcomes, marker unchanged, module reload, old-schema row preservation, fingerprint conflict และ refusal paths ถ้าถอด predicate ออก tests exact-once กับ restart จะ fail; ถ้าปิด fingerprint refusal test conflict จะ fail
+  - ขอบเขต diff จาก `8afc8d7..cf8b45b` มีเพียง `control_sync.py`, `EVENT-CONTRACT.md`, `test_control_sync.py`; ไม่พบการเปลี่ยน activity/work signing, allowlist หรือไฟล์อื่น
+
+NEW_FINDINGS
+  - Minor test gap: source ยัง enforce `DECISION_OPTION_REQUIRED` แต่ 7 ledger tests ใหม่ไม่ได้ exercise refusal นี้โดยตรง ขณะที่ refusal อื่นถูก assert
+  - Documentation wording ยังขัดกับ non-guarantee ของตัวเอง: `applied_at` ถูกเรียกว่าเวลาที่ decision “was acted upon” และ application “records that the decision has actually been acted upon.” ใน implementation marker ถูกเขียนก่อน caller ทำ downstream work จึงพิสูจน์ได้เพียงว่าสิทธิ์ apply ถูก claim แล้วหนึ่งครั้ง ไม่ได้พิสูจน์ว่า downstream action เกิดขึ้นจริง ข้อจำกัดช่วงท้ายเขียนถูกต้องและช่วยจำกัดความหมาย แต่สองประโยคแรกยัง overstated
+
+REMAINING_UNVERIFIED_BY_ME
+  - ผมลองรัน Python suite แล้ว แต่ทั้ง 28 tests จบด้วย environment errors ก่อนเข้า test body เพราะ sandbox ไม่มี writable temporary directory; จึงไม่ได้ reproduce lifecycle, restart หรือ migration execution ด้วยตัวเอง
+  - ไม่สามารถสร้าง scratch copy นอกสอง repo ได้ จึงไม่ได้ execute falsification mutations; ความไวของ tests ต่อ defect ทั้งสองยืนยันได้จาก source inspection เท่านั้น
+  - ผมไม่ได้ reproduce commander-reported hub-web `npm run check`, Vitest 28 files/490 tests, `git diff --check`, wstera-workflows 28 tests OK หรือ Wrangler dry-run/bundle assertions ข้อมูลเหล่านี้ยังเป็น UNVERIFIED BY ME และไม่ได้ใช้เป็นหลักฐานผ่าน
+  - ไม่มี live fetch จึงยืนยันได้เพียง parity กับ cached remote refs ไม่ใช่ GitHub remote ปัจจุบัน
+
+DOCUMENT_ACCURACY
+  - Non-guarantees เรื่อง local-ledger-only, crash window หลัง marker, downstream idempotency และ acknowledgement network call ที่อยู่นอก transaction ถูกต้องและเพียงพอ
+  - ควรเปลี่ยนคำว่า “actually been acted upon” และคำอธิบาย `applied_at` ให้เป็น “application claimed/reserved locally” เพื่อไม่ให้ขัดกับ crash-window disclaimer
+  - `git diff --check 8afc8d7..cf8b45b` ผ่านจากการตรวจของผม
+
+RESIDUAL_RISK_FOR_OWNER
+  - ระบบรับประกันเพียง local claim-once ไม่ใช่ exactly-once ของ downstream side effect; caller ต้อง idempotent และต้องมี recovery/reconciliation สำหรับ crash หลังเขียน marker แต่ก่อน downstream commit
+  - Migration จะทำ schema write เมื่อเปิดฐานเก่าครั้งแรก จึงยังต้องอยู่ใน production checkpoint/backup discipline
+  - ข้อสังเกตเอกสารและ test gap ข้างต้นไม่เปิด defect เดิมกลับมา แต่ควรเก็บก่อนประกาศ contract ว่าแม่นยำสมบูรณ์
+
+BOUNDARY_OF_THIS_VERDICT
+  - นี่คือ verdict ต่อ source และ revisions ที่ระบุเท่านั้น ไม่ใช่ production approval, deployment authorization หรือการยืนยัน runtime/live integration
+
+R2_REMERGE_VERDICT=APPROVED_WITH_FINDINGS

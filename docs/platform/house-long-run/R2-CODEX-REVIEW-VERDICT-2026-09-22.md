@@ -11,6 +11,28 @@ Reviewed at: 2026-09-22 (Asia/Bangkok)
 R2_VERDICT=CHANGES_REQUIRED
 ```
 
+### Final state after remediation — R2 CLOSED
+
+| Round | Verdict | Outcome |
+|---|---|---|
+| R2 (initial) | `CHANGES_REQUIRED` | one FAIL: consume-exactly-once not enforced |
+| remediation 1 (`5189a39`) | — | durable `applied_at` + conditional UPDATE |
+| remediation 2 (`cf8b45b`) | — | 21 → 28 ledger tests incl. restart/repeat |
+| R2 re-review | `APPROVED_WITH_FINDINGS` | **original FAIL → CLOSED**; 2 minor findings raised |
+| remediation 3 (`37865cc`) | — | wording corrected; 28 → 29 tests (option-required refusal) |
+| R2 final | `APPROVED_WITH_FINDINGS` | both minor findings **CLOSED**; 1 new minor (misleading comment) |
+| final minor (`fb84b9d`) | — | comment corrected; the refusal it actually produces is now asserted |
+
+**Final R2 standing: `APPROVED_WITH_FINDINGS` at**
+- hub-web `fde38f64e6bd72de9af549a88777bf276933c051`
+- wstera-workflows `fb84b9d` (reviewed at `37865cc`; `fb84b9d` is the trivial comment/assertion
+  correction the final review itself requested — the sender is byte-unchanged, `git diff --quiet`
+  passes, and the suite remains 29/29)
+
+No finding remains open. The reviewer's own words on the last minor were that it "does not reopen
+either reviewed finding or indicate a sender behaviour defect".
+
+
 ## Exact revisions reviewed
 
 | Repo | Branch | Exact commit |
