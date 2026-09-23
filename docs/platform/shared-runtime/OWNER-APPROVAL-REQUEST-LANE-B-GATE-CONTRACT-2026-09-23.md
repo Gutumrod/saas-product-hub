@@ -27,9 +27,9 @@ Resulting canonical state after approval: **`SOL_DECISION_GATES_LOCKED`**
 | Item | Value |
 |---|---|
 | Contract file | `docs/platform/shared-runtime/OWNER-DECISION-GATE-CONTRACT-LANE-B-2026-09-23.md` |
-| Contract content SHA-256 | `4aa80cbb773cfaeafe3d093f5f2d6ecfedd6e6b6280e23dd8e14923ddccbe91f` |
-| Amendment commit (the revision this approval binds to) | `2bb3ebf6ae33c6a75f6d4057c87c358e0cd56984` |
-| Planning head at request time | `6791239e860adbf23a4366396f96de5be721e541` |
+| Contract content SHA-256 | `00f0e9e57a620e5ad0a3c51f4596e285dfcf77b8cecdb84980efcff0bc6c1d6a` |
+| Amendment commit (the revision this approval binds to) | `05442fa76cd83e3dc97955b501f8d2e0723a61cb` |
+| Approval-bound planning revision | `05442fa76cd83e3dc97955b501f8d2e0723a61cb` |
 | Execution SHA (unchanged) | `54327b1459bdecff1d00b19ca3b8099c5fc4f09a` |
 
 **Provenance, stated accurately:** the contract was
@@ -37,21 +37,23 @@ Resulting canonical state after approval: **`SOL_DECISION_GATES_LOCKED`**
 **before** Sol review, and was **subsequently reviewed by Sol**. Sol is **not** the author of
 the original revision.
 
-**Verified:** the contract file is **unchanged** between the amendment commit `2bb3ebf` and the
-current planning head (`git diff --name-only 2bb3ebf..HEAD -- <file>` → 0 files); its content
-hash is identical at both points. The two commits after it touch only the candidate manifest
-and the backlog — bookkeeping, not reviewed content.
+**Verified:** the approval-bound contract is the exact content at `05442fa76cd83e3dc97955b501f8d2e0723a61cb`,
+with SHA-256 `00f0e9e57a620e5ad0a3c51f4596e285dfcf77b8cecdb84980efcff0bc6c1d6a`.
+Any later planning commits that only update the candidate manifest / approval request are bookkeeping
+and do not change the approval-bound contract content.
 
 ## 3. Amendments Sol directed, and what was applied
 
-All three applied verbatim, scope-limited. **Nothing else changed** — §§4–§10 verified
-byte-identical to the pre-amendment revision.
+The three original Sol-directed amendments were applied scope-limited. Final Sol validation then
+found one precedence defect in §2: a later explicit Owner ruling was incorrectly listed below the
+standing contract. Amendment 4 corrects only that precedence. **§§4–§10 remain byte-identical.**
 
 | # | Sol direction | Applied |
 |---|---|---|
 | 1 | §2 — canonical Relay `SKILL.md` remains authoritative for Relay execution/safety invariants; this contract must not claim precedence over it | §2 precedence list now puts the canonical Relay skill first and states this contract governs task-specific authority/routing only within those constraints |
 | 2 | §12 — automatic closure only for evidence-backed technical stages/child cards/work units; Hermes must not mark the governing Lane-B / Secretary / Owner-acceptance task `done`; `HOUSE-A PASS` and Owner acceptance remain Owner-gated | §12 rewritten accordingly; requesting review is explicitly not closure |
 | 3 | Provenance + activation state — do not claim "Authority designer: Sol"; record proposed-before-review then Sol-reviewed; use `SOL_REVIEW_PASS / OWNER_ONE_TIME_APPROVAL_REQUIRED` before approval | header rewritten; `SOL_DECISION_GATES_LOCKED` reserved for post-approval only |
+| 4 | Final Sol precedence validation — explicit later Owner ruling must override the standing contract for task-specific authority while canonical Relay execution/safety invariants remain authoritative | §2 reordered only: canonical Relay safety first, later Owner ruling second, standing contract third |
 
 **Sol stated no new Owner policy/architecture/routing decision is required** — the core
 authority model is compatible with the active Lane-B routing and Relay recovery doctrine.
@@ -59,16 +61,15 @@ authority model is compatible with the active Lane-B routing and Relay recovery 
 ## 4. Diff scope proof
 
 ```text
-git diff 959605b -- <contract file>
-  → 1 file changed, 30 insertions(+), 14 deletions(-)
-  → hunks only at: header §, §2, §12
+original Sol amendments: `959605b..2bb3ebf` → header + §2 + §12 only
+final precedence correction: `600aa9c..05442fa` → §2 only, 4 insertions / 2 deletions
 ```
 
 Per-section comparison against the pre-amendment revision:
 
 | Section | Result |
 |---|---|
-| §2 | CHANGED (amendment 1 — expected) |
+| §2 | CHANGED (amendments 1 + 4 — canonical Relay safety precedence + later Owner-ruling precedence) |
 | **§4 · §5 · §6 · §7 · §8 · §9 · §10** | **IDENTICAL** (byte-for-byte) |
 | §12 | CHANGED (amendment 2 — expected) |
 | header | CHANGED (amendment 3 — expected) |
@@ -89,7 +90,7 @@ Sol's instruction "do not change the substantive authority matrix in §§4–10"
 ```text
 OWNER_ONE_TIME_APPROVAL
   → SOL_DECISION_GATES_LOCKED
-  → (pair already re-frozen: planning 2bb3ebf / execution 54327b1)
+  → (pair already re-frozen: planning 05442fa / execution 54327b1)
   → Codex independent review of the frozen pair
   → remediation / closure per contract
 ```
@@ -106,10 +107,10 @@ Per Sol: **the authority contract must not be changed to work around it.**
 ## 8. The single decision requested
 
 > **Approve the amended Lane B gate contract (content SHA-256
-> `4aa80cbb773cfaeafe3d093f5f2d6ecfedd6e6b6280e23dd8e14923ddccbe91f`) once, so
+> `00f0e9e57a620e5ad0a3c51f4596e285dfcf77b8cecdb84980efcff0bc6c1d6a`) once, so
 > `SOL_DECISION_GATES_LOCKED` becomes canonical and the LONG_RUN may proceed to the frozen-pair
 > Codex review without further Owner interruption outside the §8 gates?**
 >
 > Approve / Reject / Amend.
 
-`next-action: Owner one-time approval; then Codex review of (planning 2bb3ebf, execution 54327b1)`
+`next-action: Owner one-time approval; then Codex review of (planning 05442fa, execution 54327b1)`

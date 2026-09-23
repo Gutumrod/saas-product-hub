@@ -6,15 +6,16 @@ Re-frozen at: 2026-09-23 — planning revision changed because Sol's amendments 
 Authority: `OWNER-RULING-LANE-B-HERMES-RELAY-TAKEOVER-2026-09-22.md` §2;
 `SOL_GATE_VERDICT = READY_TO_LOCK_WITH_AMENDMENTS` (2026-09-23)
 
-**This manifest supersedes the earlier freeze at planning `959605b` / execution `54327b1`.**
-That earlier candidate expired when the planning SHA changed, per the invalidation rule.
+**This manifest supersedes the prior re-freeze at planning `2bb3ebf` / execution `54327b1`.**
+That candidate expired when Sol Amendment 4 changed the approval-bound planning revision to
+`05442fa76cd83e3dc97955b501f8d2e0723a61cb`; execution remains unchanged.
 
 ---
 
 ## 1. The bound pair
 
 ```text
-planning_sha  = 2bb3ebf  (full: see §1.1)
+planning_sha  = 05442fa76cd83e3dc97955b501f8d2e0723a61cb
 execution_sha = 54327b1459bdecff1d00b19ca3b8099c5fc4f09a
 ```
 
@@ -29,11 +30,12 @@ Repo: `github.com/Gutumrod/saas-product-hub`
 
 ### 1.2 Planning SHA binding
 
-The planning revision that this pair binds to is the commit that **applies Sol's
-amendments** — `2bb3ebf` (`docs(platform): apply Sol's three minimum amendments to the Lane B
-gate contract`). This manifest is committed immediately after it; the manifest commit is
-bookkeeping and does not change the reviewed content. The authoritative planning SHA for the
-review is stated in §6 with its full value.
+The planning revision that this pair binds to is the final authority-contract commit
+`05442fa76cd83e3dc97955b501f8d2e0723a61cb` (`docs(platform): preserve later Owner ruling precedence`).
+This commit preserves the three original Sol amendments and adds Sol Amendment 4: a later explicit
+Owner ruling outranks the standing contract for task-specific authority while canonical Relay
+execution/safety invariants remain authoritative. Later manifest/request commits are bookkeeping
+and do not change the approval-bound contract content.
 
 ## 2. Invalidation rule
 
@@ -45,31 +47,31 @@ merged merely to manufacture one SHA.
 
 | Item | Previous freeze | This re-freeze |
 |---|---|---|
-| planning_sha | `959605b38a4917a18f7218a97393d78030e164ce` | `2bb3ebf` + full SHA in §6 |
+| planning_sha | `2bb3ebf6ae33c6a75f6d4057c87c358e0cd56984` | `05442fa76cd83e3dc97955b501f8d2e0723a61cb` |
 | execution_sha | `54327b1459bdecff1d00b19ca3b8099c5fc4f09a` | unchanged |
-| Trigger | — | Sol's three minimum amendments applied to the gate contract |
+| Trigger | original three Sol amendments | final Sol precedence correction in §2 |
 
 The U-R3 execution-branch content is **unchanged**: `54327b1` is identical to the previous
 freeze.
 
 ## 4. Changed-file set — planning branch
 
-### 4.1 Amendment commit (`2bb3ebf`)
+### 4.1 Authority-contract commit (`05442fa`)
 
 ```text
 M  docs/platform/shared-runtime/OWNER-DECISION-GATE-CONTRACT-LANE-B-2026-09-23.md
 ```
 
-Exactly three amendment sites, all Sol-directed:
+The original three Sol-directed amendment sites remain, plus one final Sol precedence correction in §2:
 
 | Site | Amendment |
 |---|---|
 | Header | provenance corrected (proposed in Owner identity before Sol review; Sol is not the original author); state → `SOL_REVIEW_PASS / OWNER_ONE_TIME_APPROVAL_REQUIRED` |
-| §2 | canonical Agent Relay `SKILL.md` is authoritative for Relay execution/safety invariants; this contract no longer claims precedence over it |
+| §2 | canonical Agent Relay `SKILL.md` remains authoritative for execution/safety; final correction also places explicit later Owner rulings above the standing contract for task-specific authority |
 | §12 | automatic closure limited to evidence-backed technical stages/child cards/work units; Hermes must not mark the governing Lane-B / Secretary / Owner-acceptance task `done`; `HOUSE-A PASS` and Owner acceptance remain Owner-gated |
 
-**Verified:** sections **§4–§10 are byte-identical** to `959605b`; diff limited to header,
-§2, §12 (`30 insertions / 14 deletions` in one file).
+**Verified:** sections **§4–§10 remain byte-identical** to the pre-amendment authority matrix.
+The final `05442fa` correction changes only §2 precedence (4 insertions / 2 deletions vs `600aa9c`).
 
 ### 4.2 Planning files carried in this candidate (vs base `8cf4315`)
 
@@ -115,11 +117,11 @@ A  docs/platform/shared-runtime/evidence/LANE-B-U-R3-EXECUTABLE-CHECKS-2026-09-2
 ## 6. Authoritative SHAs for the review
 
 ```text
-planning_sha  = <see committed manifest header / git rev-parse of the amendment commit 2bb3ebf>
+planning_sha  = 05442fa76cd83e3dc97955b501f8d2e0723a61cb
 execution_sha = 54327b1459bdecff1d00b19ca3b8099c5fc4f09a
 ```
 
-The planning SHA bound by this candidate is the **amendment commit `2bb3ebf`**. Its full
+The planning SHA bound by this candidate is the **authority-contract commit `05442fa76cd83e3dc97955b501f8d2e0723a61cb`**. Its full
 40-character value is recorded in the Owner approval request
 (`OWNER-APPROVAL-REQUEST-…`) so the Owner approves an exact revision.
 
