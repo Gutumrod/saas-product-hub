@@ -14,8 +14,15 @@ Terminal output form, first line, exactly one of:
 ## 1. Exact inputs — immutable bound pair
 
 ```text
-planning_sha  = 74db7cc  (work/house-lane-b-longrun-plan-20260922)
-execution_sha = 54327b1459bdecff1d00b19ca3b8099c5fc4f09a  (work/house-h3d-h5-20260909)
+planning_sha  = as stated in the task card's frozen-pair contract (authoritative)
+execution_sha = as stated in the task card's frozen-pair contract (authoritative)
+
+NOTE: the SHAs are deliberately NOT hardcoded in this brief. This brief is itself
+committed to the planning branch, so any SHA written here would be superseded by the
+commit carrying it — the exact defect that produced a misquoted revision in the previous
+review round. The card's `approved_decisions` / contract carries the frozen pair and is
+bound at materialization time by the driver (`baseline_revision`).
+
 repo          = github.com/Gutumrod/saas-product-hub
 ```
 
