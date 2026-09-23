@@ -233,23 +233,44 @@ No file was created.
 discriminator, why both prior attempts failed, the required negative-control set, and the note that
 the release verifier constrains the change.
 
-### 6.4.1 Why this verdict is not yet usable
+### 6.4.1 Why this verdict is not yet usable — root cause is a harness provenance bug
 
-The driver recorded `error_code: IDENTITY_PROVENANCE_MISMATCH`. Cause: the review stage runs with
-`context_mode = INDEPENDENT-QA`, which the wrapper maps to `--sandbox read-only`; the reviewer could
-not write its required output file
-(`docs/platform/shared-runtime/CLASSIFY-CODEX-LANE-B-SCANNER-FALSE-POSITIVE-2026-09-23.md`), so its
-result never satisfied the direct-executor provenance contract and the stage did not complete.
+The driver recorded `IDENTITY_PROVENANCE_MISMATCH:agent-codex:stdout`. Root-caused in source:
 
-So the verdict **exists in the reviewer's stdout** but is **not** a validly admitted stage result, and
-the card correctly remains un-completed. Recording it here as evidence of the classification outcome
-is not the same as accepting it as a passing stage gate; the contract's admission rules are not
-being relaxed.
+```python
+# direct_external_executors.py:1343  (metadata built by the executor)
+        "stdout_sha256": _sha256_file(output_file),          # hash of the FILE's bytes
 
-This is a **third, distinct** condition in this sequence:
+# relay_execution_driver.py:286     (validation done by the driver)
+    if metadata["stdout_sha256"] != _sha256_bytes(output.strip().encode("utf-8")):   # hash of the STRING
+        raise DriverError(f"IDENTITY_PROVENANCE_MISMATCH:{identity}:stdout")
+```
+
+The two sides hash **different things**: the executor hashes the output *file's* bytes; the driver
+re-hashes the *string* it received. They agree only when the file's bytes happen to equal the stripped
+string — which is why this survived until now.
+
+Measured comparison of the two codex stages that reached this point:
+
+| Stage | Reviewer wrote its output file? | Path taken | Result |
+|---|---|---|---|
+| review R1 (`t_5a99e202`) | **no** — read-only QA sandbox prevented the write, so `output_file` never existed | `agent_output = stdout` fallback | hash comparison coincidentally matched → **stage PASSED** |
+| classify (`t_4eb87a78`) | **yes** — the file was created | `agent_output = output_file.read_text(...)` | file-bytes hash ≠ string hash → **`IDENTITY_PROVENANCE_MISMATCH:stdout`** |
+
+So R1's PASS was **not** a clean result of the design; it passed because the failure mode that would
+have exposed this bug did not trigger. The bug is latent and deterministic, and it fires exactly when
+a reviewer **succeeds** in writing its output.
+
+**The verdict therefore cannot be admitted**, and it cannot be repaired inside the controller's
+authority: `direct_external_executors.py` and `relay_execution_driver.py` are both listed in the
+v2.5.4 release manifest (protected canonical Relay components).
+
+**This is a third, distinct issue fingerprint:**
 1. the scanner misreads a psql reference (the original fingerprint);
 2. the controller's own prompt reproduced the trigger string (§6.3);
-3. the QA sandbox cannot admit a reviewer that must write a file.
+3. the non-BUILD wrapper log was scanned and then the scope guard counted harness evidence — both repaired;
+4. **the executor/driver disagree on what `stdout_sha256` hashes** — a provenance-contract bug that
+   blocks every codex/qwen stage whose reviewer successfully writes its output file.
 
 ## 7. Ladder position — all authorized routes exhausted
 
