@@ -53,12 +53,27 @@ If any of these changed, classify the change before proceeding. Do not reset/cle
 
 Hermes remains Lane-A orchestrator/state holder.
 
-Before substantive dispatch:
-- load and obey hermes-native-swarm;
-- load/discover wstera-control-sync for truth/activity projection;
-- Agent Relay is not the ordinary execution path.
+### Owner runtime amendment — 2026-09-23
 
-No installed runtime skill mutation is authorized by this brief.
+Ordinary Lane-A execution MUST use the installed `hermes-native-swarm` skill.
+
+Model policy for every Native Swarm work unit in this brief:
+- execution class: `Model:cloud`;
+- exact installed baseline model: `deepseek-v4.1-flash:cloud`;
+- `model_substitution_authorized: false`;
+- no silent fallback to a local model, another cloud model, Agent Relay, or a direct executor;
+- if the pinned cloud model/profile is unavailable or drifted, fail closed and report the blocker instead of substituting.
+
+Before substantive dispatch:
+- load and obey the installed `hermes-native-swarm` skill and verify its runtime/profile inventory;
+- load/discover `wstera-control-sync` for truth/activity projection;
+- split composite work into bounded Native Swarm work units that each map to one capability class;
+- Hermes runs the declared commander-side deterministic checks and preserves revision-bound evidence;
+- Agent Relay is not the ordinary execution path for this Lane-A brief.
+
+Codex remains the independent reviewer at the focused review gate defined in §9; Native Swarm does not self-approve substantive work.
+
+No installed runtime skill/profile/model mutation is authorized by this brief.
 
 ## 4. Objective
 
