@@ -29,8 +29,10 @@ For authority/routing questions in Lane B, precedence is:
 1. the canonical Agent Relay `SKILL.md` for **Relay execution and safety invariants** — this
    Lane-B contract does **not** claim precedence over it, and governs task-specific
    authority/routing only **within** those canonical Relay constraints;
-2. this Owner Decision Gate Contract after one-time Owner approval;
-3. explicit later Owner ruling that names this task;
+2. explicit later Owner ruling that names this task, for task-specific authority/routing
+   within the canonical Relay execution/safety constraints (or together with an explicitly
+   authorized change to those constraints);
+3. this Owner Decision Gate Contract after one-time Owner approval;
 4. active Lane-B resume/work-unit brief;
 5. prior Lane-B routing/decision documents;
 6. worker/reviewer prose.
