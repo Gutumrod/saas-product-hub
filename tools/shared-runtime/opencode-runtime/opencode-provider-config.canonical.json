@@ -1,0 +1,38 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "ollama": {
+      "name": "Ollama Cloud",
+      "env": ["OLLAMA_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://ollama.com/v1"
+      },
+      "models": {
+        "deepseek-v4.1-flash:cloud": {
+          "name": "DeepSeek V4.1 Flash Cloud"
+        },
+        "glm-5.3-flash:cloud": {
+          "name": "GLM 5.3 Flash Cloud"
+        }
+      }
+    }
+  },
+  "permissions": [
+    {
+      "action": "*",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "external_directory",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "read",
+      "resource": "*.env",
+      "effect": "ask"
+    }
+  ]
+}
