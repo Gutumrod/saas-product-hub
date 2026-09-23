@@ -1,0 +1,122 @@
+# FINDING — the brief's stated migration runner contradicts the measured repository state
+
+Task: `WSTERA-CONTROL-TRUTH-SYNC-001` · Lane A resume
+Recorded: 2026-09-23 (Asia/Bangkok) · Recorded by: Hermes (Long-Run Orchestrator / State Holder)
+Severity: **BLOCKING for the production runbook** — it does not block the source revisions, but it
+invalidates the operator steps the brief prescribes for Window 1 and Window 3.
+Status: source work continued; this finding is raised rather than silently worked around.
+
+---
+
+## 1. What the brief asserts
+
+`BRIEF-RESUME-LANE-A-CONTROL-TRUTH-EXPAND-CONTRACT-2026-09-22.md` states, in three places, that the
+normal repo migration command is `drizzle-kit migrate`:
+
+- `:22` — *"the normal repo migration command is drizzle-kit migrate, which applies migration files as
+  migrations rather than pausing inside one file to let a Worker deploy occur"*;
+- `:117-118` — *"The production migration runner is: drizzle-kit migrate"*;
+- `:194-195` — *"Does the normal migration runner apply only 0009 when run from A_EXPAND_REV? Does it
+  apply only 0010 later when run from A_CONTRACT_REV after 0009 is already recorded?"*
+
+The whole two-revision design (§5) is justified by that premise.
+
+## 2. What the repository actually contains — measured
+
+```text
+$ find drizzle -type f
+drizzle/migrations/0001_rbac_roles.sql
+drizzle/migrations/0002_control_plane_schema.sql
+drizzle/migrations/0003_work_tracking_truth_pipeline.sql
+drizzle/migrations/0004_add_unmapped_to_work_item_status.sql
+drizzle/migrations/0005_atomic_work_event_rpc.sql
+drizzle/migrations/0006_canonical_product_id_work_truth.sql
+drizzle/migrations/0007_shared_one_time_fulfillment.sql
+drizzle/migrations/0008_product_installations.sql
+drizzle/migrations/0009_work_scope_identity.sql
+drizzle/schema.ts
+
+$ ls drizzle        # no meta/ directory, no _journal.json
+migrations  schema.ts
+```
+
+There is **no `drizzle/migrations/meta/` directory and no `_journal.json`**. `drizzle-kit migrate`
+resolves migrations through the journal (`meta/_journal.json`, 4 references in
+`node_modules/drizzle-kit/bin.cjs`); with no journal there is nothing for it to enumerate. The
+repository has never carried one — `git log --all -- drizzle/migrations/meta/*` returns nothing.
+
+`package.json` exposes exactly one migration path, and it is the one the Owner has prohibited:
+
+```json
+"db:push": "drizzle-kit generate && drizzle-kit migrate"
+```
+
+## 3. Independent corroboration already on disk
+
+Three separate prior artefacts in the same task already record the same fact — this finding is not new
+information, it is an unresolved contradiction between those artefacts and this brief:
+
+| Artefact | What it records |
+|---|---|
+| `R15-D0-DECISION-REPORT-CODEX-2026-09-20.md:44` | *"ห้ามใช้ `drizzle-kit migrate` หรือ `db:push` บน Project A จนกว่าจะมี migration-history strategy ที่ปลอดภัย เพราะ database ไม่มี `__drizzle_migrations`"* |
+| `R15-D0-DECISION-OUTCOME-2026-09-20.md:69` | Explicitly NOT authorized: `drizzle-kit generate` / `drizzle-kit migrate` / `npm run db:push` |
+| `T2-WU02-MIGRATION-RPC-QUALIFICATION-2026-09-21.md:963` (F10) | *"no `__drizzle_migrations` journal ... `db:push` is `drizzle-kit generate && drizzle-kit migrate`, which without a journal would attempt to reconcile the entire schema"* |
+| `0009_work_scope_identity.sql:11-13` (its own header) | *"There is no `__drizzle_migrations` journal under drizzle/, so `npm run db:push` ... would attempt to reconcile the ENTIRE schema across both projects. Do NOT run db:push for this file."* |
+
+So the brief's premise is contradicted by (a) the repository contents, (b) a prior Owner decision that
+explicitly forbids that runner, and (c) the migration file's own header.
+
+## 4. Why this matters for revenue and for safety
+
+The two-revision design was adopted **because** the runner was believed to be non-pausable. The
+retained-overload shape of Revision A remains correct and useful under either runner — it is strictly
+safer — but the **operator steps** in Brief §10 Window 1 / Window 3 (`"Run the normal migration
+mechanism from that exact revision"`, `"Since 0009 is already recorded, only 0010 should apply"`) are
+**not executable as written**, because:
+
+- there is no runner to "run the normal migration mechanism" with;
+- there is no migration ledger in which 0009 could be "already recorded", so "only 0010 should apply"
+  is not a property any tool can enforce.
+
+An operator following §10 literally would either (i) run `npm run db:push`, which the Owner has
+explicitly prohibited and which would attempt to reconcile the entire schema across two different
+databases, or (ii) discover mid-window that the prescribed command does not apply anything, in a
+production deployment window.
+
+## 5. Shortest safe remediation path (proposal — NOT authorized, needs Owner ruling)
+
+The source revisions do not depend on resolving this. What must be resolved **before** the production
+window is opened:
+
+1. **Owner/operator names the actual apply mechanism.** Evidence on disk shows every prior Control-DB
+   migration was applied by an explicit, reviewed statement sequence — the folder's own established
+   precedent is `BEGIN; <DDL>; <assertions>; ROLLBACK;` dry-run first, then a real apply
+   (`0008_product_installations.sql:9-10`, cited in `T2-WU02…:841-844`). The shortest path is to state
+   that the same reviewed-apply mechanism is used for 0009 and 0010, with the file path as the input,
+   rather than invoking a drizzle runner that has no journal.
+2. **Name the migration-ledger question explicitly.** Either the window accepts "no ledger — apply by
+   exact file, recorded in the release evidence packet", or a ledger strategy is designed first. Codex
+   already flagged the latter as a precondition in `R15-D0-DECISION-REPORT-2026-09-20.md:44`.
+3. **Restate Brief §10 Window 1 / Window 3** in terms of the named mechanism, so the operator steps are
+   executable and the "only 0009 then only 0010" property is asserted by the release evidence rather
+   than by a tool that cannot assert it.
+
+This finding does **not** weaken any rollout invariant: Revision A still retains the legacy overload and
+Revision B still fails closed before retiring it, so both clients remain serviceable across the boundary
+under any apply mechanism.
+
+## 6. Non-claims
+
+No database was contacted to produce this finding. No `drizzle-kit` command was executed. No
+production mutation occurred. This finding is raised by the state holder; it does **not** authorise any
+change to the runbook, and it does not authorise production mutation of any kind.
+
+## 7. Evidence
+
+- `BRIEF-RESUME-LANE-A-CONTROL-TRUTH-EXPAND-CONTRACT-2026-09-22.md:22,117-118,194-195`
+- `drizzle/` contents and absence of `meta/_journal.json` — measured in worktree
+  `D:/AI-Workspace/runtime/worktrees/hub-web-cts001` at revision `dfcb4be`
+- `package.json` `scripts.db:push`
+- `R15-D0-DECISION-REPORT-CODEX-2026-09-20.md:44`, `R15-D0-DECISION-OUTCOME-2026-09-20.md:69`
+- `T2-WU02-MIGRATION-RPC-QUALIFICATION-2026-09-21.md:963` (F10), `:841-844`
+- `drizzle/migrations/0009_work_scope_identity.sql:11-13`, `:15-21`
