@@ -1,34 +1,77 @@
-# CANDIDATE MANIFEST — LANE B RECONSTRUCTION (BOUND PAIR, FROZEN)
+# CANDIDATE MANIFEST — LANE B RECONSTRUCTION (BOUND PAIR) — RE-FROZEN
 
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
 Candidate identity: **immutable bound pair** `(planning_sha, execution_sha)`
-Frozen at: 2026-09-23 (after U-R3 stage gate PASS)
-Authority: `OWNER-RULING-LANE-B-HERMES-RELAY-TAKEOVER-2026-09-22.md` §2; Owner instruction
-"run through U-R3 → freeze pair → Codex review → final closure"
+Re-frozen at: 2026-09-23 — planning revision changed because Sol's amendments were applied
+Authority: `OWNER-RULING-LANE-B-HERMES-RELAY-TAKEOVER-2026-09-22.md` §2;
+`SOL_GATE_VERDICT = READY_TO_LOCK_WITH_AMENDMENTS` (2026-09-23)
+
+**This manifest supersedes the earlier freeze at planning `959605b` / execution `54327b1`.**
+That earlier candidate expired when the planning SHA changed, per the invalidation rule.
 
 ---
 
 ## 1. The bound pair
 
 ```text
-planning_sha  = 959605b38a4917a18f7218a97393d78030e164ce
+planning_sha  = 2bb3ebf  (full: see §1.1)
 execution_sha = 54327b1459bdecff1d00b19ca3b8099c5fc4f09a
 ```
 
+### 1.1 Exact SHAs
+
 | Branch | SHA | Remote parity | Dirty |
 |---|---|---|---|
-| `work/house-lane-b-longrun-plan-20260922` | `959605b38a4917a18f7218a97393d78030e164ce` | EXACT | 0 |
+| `work/house-lane-b-longrun-plan-20260922` | recorded in §1.2 (this manifest is committed onto it) | EXACT | 0 |
 | `work/house-h3d-h5-20260909` | `54327b1459bdecff1d00b19ca3b8099c5fc4f09a` | EXACT | 0 |
 
 Repo: `github.com/Gutumrod/saas-product-hub`
 
+### 1.2 Planning SHA binding
+
+The planning revision that this pair binds to is the commit that **applies Sol's
+amendments** — `2bb3ebf` (`docs(platform): apply Sol's three minimum amendments to the Lane B
+gate contract`). This manifest is committed immediately after it; the manifest commit is
+bookkeeping and does not change the reviewed content. The authoritative planning SHA for the
+review is stated in §6 with its full value.
+
 ## 2. Invalidation rule
 
 If **either** SHA changes, this candidate expires immediately: the prior review must not be
-inherited, a new manifest is created, and the exact new pair is reviewed afresh.
-The two branches are **not** merged merely to manufacture one SHA.
+inherited, and a new manifest is created for the exact new pair. The two branches are **not**
+merged merely to manufacture one SHA.
 
-## 3. Changed-file set — planning branch (`959605b`, vs base `8cf4315`)
+## 3. What changed in this re-freeze (vs the previous freeze)
+
+| Item | Previous freeze | This re-freeze |
+|---|---|---|
+| planning_sha | `959605b38a4917a18f7218a97393d78030e164ce` | `2bb3ebf` + full SHA in §6 |
+| execution_sha | `54327b1459bdecff1d00b19ca3b8099c5fc4f09a` | unchanged |
+| Trigger | — | Sol's three minimum amendments applied to the gate contract |
+
+The U-R3 execution-branch content is **unchanged**: `54327b1` is identical to the previous
+freeze.
+
+## 4. Changed-file set — planning branch
+
+### 4.1 Amendment commit (`2bb3ebf`)
+
+```text
+M  docs/platform/shared-runtime/OWNER-DECISION-GATE-CONTRACT-LANE-B-2026-09-23.md
+```
+
+Exactly three amendment sites, all Sol-directed:
+
+| Site | Amendment |
+|---|---|
+| Header | provenance corrected (proposed in Owner identity before Sol review; Sol is not the original author); state → `SOL_REVIEW_PASS / OWNER_ONE_TIME_APPROVAL_REQUIRED` |
+| §2 | canonical Agent Relay `SKILL.md` is authoritative for Relay execution/safety invariants; this contract no longer claims precedence over it |
+| §12 | automatic closure limited to evidence-backed technical stages/child cards/work units; Hermes must not mark the governing Lane-B / Secretary / Owner-acceptance task `done`; `HOUSE-A PASS` and Owner acceptance remain Owner-gated |
+
+**Verified:** sections **§4–§10 are byte-identical** to `959605b`; diff limited to header,
+§2, §12 (`30 insertions / 14 deletions` in one file).
+
+### 4.2 Planning files carried in this candidate (vs base `8cf4315`)
 
 ```text
 A  docs/platform/shared-runtime/BACKLOG-LANE-B-FOLLOWUP-HARDENING-2026-09-23.md
@@ -38,17 +81,15 @@ M  docs/platform/shared-runtime/CREDENTIAL-STRATEGY-LANE-B-2026-09-22.md
 A  docs/platform/shared-runtime/LEDGER-LANE-B-FINDING-FAMILIES-2026-09-22.md
 A  docs/platform/shared-runtime/RECONSTRUCTION-LANE-B-CREDENTIAL-BOUNDARY-2026-09-23.md
 A  docs/platform/shared-runtime/RUNTIME-HARDENING-OPENCODE-PROVIDER-CONTRACT-2026-09-23.md
+A  docs/platform/shared-runtime/OWNER-DECISION-GATE-CONTRACT-LANE-B-2026-09-23.md
+A  docs/platform/shared-runtime/BRIEF-RESUME-LANE-B-HERMES-RELAY-AFTER-OPENCODE-RECOVERY-2026-09-23.md
+A  docs/platform/shared-runtime/SOL-REVIEW-REQUEST-LANE-B-GATE-CONTRACT-2026-09-23.md
 A  tools/shared-runtime/opencode-runtime/README.md
 A  tools/shared-runtime/opencode-runtime/opencode-provider-config.canonical.json
 A  tools/shared-runtime/opencode-runtime/opencode_contract.py
-A  docs/platform/shared-runtime/BRIEF-RESUME-LANE-B-HERMES-RELAY-AFTER-OPENCODE-RECOVERY-2026-09-23.md   (*)
-A  docs/platform/shared-runtime/OWNER-DECISION-GATE-CONTRACT-LANE-B-2026-09-23.md                       (*)
 ```
 
-`(*)` — these two files were **not authored by Hermes** and appeared in `959605b`, a commit
-made by the Owner identity at 2026-09-23 11:06 +0700. See §6.
-
-## 4. Changed-file set — execution branch (`54327b1`, vs base `b8a8f47`)
+## 5. Changed-file set — execution branch (`54327b1`, vs base `b8a8f47`)
 
 ```text
 A  tools/shared-runtime/lib/six-layer-privileges.mjs
@@ -61,18 +102,32 @@ A  tools/shared-runtime/inventory/lane-b-effective-reach.mjs
 M  tools/shared-runtime/package.json
 A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_measure_a1-create.sql
 A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_measure_a1-teardown.sql
+A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_measure_live-create.sql
+A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_measure_live-teardown.sql
+A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_rw_a1-create.sql
+A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_rw_a1-teardown.sql
+A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_rw_live-create.sql
+A  docs/platform/shared-runtime/runbooks/lane-b-role-lane_b_rw_live-teardown.sql
 A  docs/platform/shared-runtime/fixtures/lane-b-per-stage-allowlist.json
 A  docs/platform/shared-runtime/evidence/LANE-B-U-R3-EXECUTABLE-CHECKS-2026-09-23.md
 ```
 
-(8 runbook files total: `lane_b_measure_a1`, `lane_b_measure_live`, `lane_b_rw_a1`,
-`lane_b_rw_live`, each with a create/teardown pair.)
+## 6. Authoritative SHAs for the review
 
-## 5. Artifact / evidence hashes
+```text
+planning_sha  = <see committed manifest header / git rev-parse of the amendment commit 2bb3ebf>
+execution_sha = 54327b1459bdecff1d00b19ca3b8099c5fc4f09a
+```
+
+The planning SHA bound by this candidate is the **amendment commit `2bb3ebf`**. Its full
+40-character value is recorded in the Owner approval request
+(`OWNER-APPROVAL-REQUEST-…`) so the Owner approves an exact revision.
+
+## 7. Artifact / evidence hashes (unchanged by the amendment)
 
 | Artifact | SHA-256 |
 |---|---|
-| `CREDENTIAL-STRATEGY-LANE-B-2026-09-22.md` (REV5, reconstructed) | `9f49ea1a5bfb229143658d7fc6176fd5cb3e0ca521471ddca64f5d17566ff490` |
+| `CREDENTIAL-STRATEGY-LANE-B-2026-09-22.md` (REV5) | `9f49ea1a5bfb229143658d7fc6176fd5cb3e0ca521471ddca64f5d17566ff490` |
 | `RECONSTRUCTION-LANE-B-CREDENTIAL-BOUNDARY-2026-09-23.md` | `9e6904154df8ae6e7f7897e9e6cd7686d0b7bdfb6d0d800c88d4dd64eb12dda8` |
 | `LEDGER-LANE-B-FINDING-FAMILIES-2026-09-22.md` (U-R1) | `1477ff5acdd07c36bbfe929f57de58eeaa7c3514daae41357dc7d507afae35a2` |
 | `tools/shared-runtime/lib/six-layer-privileges.mjs` | `b87165951c2cd026526aebe2834ae0206ab5f7e7c549fe3e93dc990a40947bad` |
@@ -82,55 +137,27 @@ A  docs/platform/shared-runtime/evidence/LANE-B-U-R3-EXECUTABLE-CHECKS-2026-09-2
 | `docs/…/evidence/LANE-B-U-R3-EXECUTABLE-CHECKS-2026-09-23.md` | `62f9ed6b097753df923790b0bf5c9f9bc4a709e92178efb04d3283ec144aacc7` |
 | OpenCode runtime contract (pinned) | commit `931e3711f0fec19860be1e59769674a4981b7e4a` |
 
-## 6. UNAUTHORED COMMITS ON THE PLANNING BRANCH — requires Owner decision
+## 8. Non-blocking operational gap (Sol-directed, preserved)
 
-`959605b` is **not a Hermes commit**. It was authored in the Owner identity
-(`Gutumrod <titazmth@gmail.com>`) at **2026-09-23 11:06 +0700** and contains exactly two new
-files that Hermes did not request and did not create:
+`SOL_VERIFY_OR_RESOLVE` has **no direct automated Hermes→Sol transport**. Recorded as a
+follow-up infrastructure item and linked to `FU-02` in
+`BACKLOG-LANE-B-FOLLOWUP-HARDENING-2026-09-23.md`.
 
-- `OWNER-DECISION-GATE-CONTRACT-LANE-B-2026-09-23.md` (242 lines)
-- `BRIEF-RESUME-LANE-B-HERMES-RELAY-AFTER-OPENCODE-RECOVERY-2026-09-23.md` (203 lines)
+**Per Sol: the authority contract must NOT be changed to work around it.**
 
-**Material content, stated factually:**
+Measured basis: Sol has no CLI, no Hermes profile, and no kanban assignee; the direct executor
+registry contains `agent-opencode`, `agent-codex`, `agent-claude`, `agent-qwen`, `agent-agy`
+only; S-Bridge `notify` targets Telegram and carries no Sol-review state.
 
-- The gate contract declares a new authority layer ("Sol") between Owner and Hermes, a new
-  authority-state vocabulary, and a rule that Hermes MUST NOT stop for Owner input outside
-  §8's twelve gates after a one-time approval.
-- §14 of that contract says it **"becomes canonical only after one explicit Owner approval of
-  this exact revision"** and names the canonical state `SOL_DECISION_GATES_LOCKED`. That
-  approval has **not been given in this session**.
-- The resume brief's measured entry snapshot (`planning b80f813`, `execution b8a8f47`) was
-  accurate when written; both have since advanced by exactly the expected work
-  (`b80f813 → 959605b` is the governance commit itself; `b8a8f47 → 54327b1` is Hermes's
-  U-R3 commit).
-
-**Why this is reported rather than absorbed:**
-
-1. It changes the **authority/routing model** — exactly the category the Owner's own
-   stop-list for this round names ("ต้องเปลี่ยน architecture / routing / locked contract").
-2. It is **in the frozen candidate**: because it lives on the planning branch, any
-   `(planning_sha, execution_sha)` pair that includes `959605b` hands Codex a governing
-   document that is not yet canonically approved.
-3. Hermes must not silently treat an unapproved governance document as binding, nor silently
-   exclude it from a frozen candidate.
-
-**Options put to the Owner (not decided by Hermes):**
-
-- **(a)** Approve the gate contract as-is → `SOL_DECISION_GATES_LOCKED`; the pair in §1 stands
-  and the review proceeds with that contract in-scope.
-- **(b)** Hold the gate contract out of scope for this review; freeze the pair at a planning
-  SHA **before** `959605b` (e.g. `b80f813`) so the reviewed package is exactly the
-  reconstruction, and handle the governance question separately.
-- **(c)** Amend the contract first; then re-freeze and review.
-
-Until the Owner answers, the pair in §1 is **recorded but not released for review**.
-
-## 7. Status
+## 9. Status
 
 | Field | Value |
 |---|---|
-| U-R3 | COMPLETE (stage gate PASS, controller-run) |
-| Pair frozen | yes, §1 |
-| Pair released for Codex review | **NO** — pending §6 decision |
-| LAB / Auth / role mutation | NONE |
-| Secret persisted | NONE |
+| Pair re-frozen | yes |
+| Planning revision changed | yes (Sol amendments) — previous candidate expired |
+| Released to Codex review | **NO** — pending `OWNER_ONE_TIME_APPROVAL_REQUIRED` |
+| U-R1 / U-R2 / U-R3 evidence | preserved, unchanged |
+| Live checkpoint execution | **not started** |
+| LAB / Auth / role mutation | **NONE** |
+| Secret persisted | **NONE** |
+| Amendment scope | verified limited to header + §2 + §12; §§4–10 byte-identical |

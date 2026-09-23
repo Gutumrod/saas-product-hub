@@ -82,6 +82,27 @@ without making byte-equality the pass condition.
 
 ---
 
+## FU-05 — No direct automated Hermes → Sol transport for `SOL_VERIFY_OR_RESOLVE`
+
+**Observation.** `SOL_VERIFY_OR_RESOLVE` is a defined authority path, but there is no automated
+channel from Hermes to Sol. Measured: Sol has no CLI, no Hermes profile, and no kanban
+assignee; the direct executor registry contains `agent-opencode`, `agent-codex`,
+`agent-claude`, `agent-qwen`, `agent-agy` only; S-Bridge `notify` targets Telegram and accepts
+only the fixed state set (`ACCEPTED`, `BLOCKED`, `CHANGES_REQUIRED`, `DONE`,
+`OWNER_DECISION_REQUIRED`, `READY_FOR_GPT_REVIEW`, `REMEDIATION`) — no Sol-review state.
+
+**Impact.** A Sol gate currently needs a human to carry the request and return the verdict.
+The Lane-B Sol review on 2026-09-23 worked this way (request committed as a transport artifact,
+Owner notified via S-Bridge).
+
+**Candidate scope (later).** Add a Sol-review request/handoff state to the bridge, or a
+dedicated Sol transport. **Excluded from scope now** by Sol's explicit instruction: the
+authority contract must not be changed to work around the missing transport.
+
+**Explicitly NOT authorized now** (Owner/Sol: preserve as follow-up infrastructure item).
+
+---
+
 ## Scope exclusions carried with this backlog
 
 The Owner excluded these from the current phase; they remain out of scope until separately
