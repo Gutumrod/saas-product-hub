@@ -231,12 +231,21 @@ security baseline intact") **must not** rely on `/health` == 200. Recommended: b
 unsigned-webhook fail-closed probe (measured: `401 {"error":"invalid signature"}`) plus security headers,
 which are real signals.
 
-### FINDING-W0-C (security) — `supabase db dump --dry-run` prints the DB password in cleartext to stdout
+### 🔴 FINDING-W0-C (INCIDENT) — `supabase db dump --dry-run` is **not** read-only; it created a role on the Control DB
 
-The CLI's dry-run resolved a login role and **printed the plaintext `PGPASSWORD`** into terminal output.
-No wrapper may pass this command's stdout through in this release, and the value that reached this
-session's tool output must be treated as exposed. Recommend rotation via the canonical path before any
-window that would use a dump. The value is deliberately **not** recorded anywhere in this packet.
+**This is an incident, not merely a finding. Full record:
+`INCIDENT-UNAUTHORIZED-CONTROL-DB-MUTATION-W0-2026-09-23.md` (read that first).**
+
+Summary: `--dry-run` means "do not push the dump", **not** "do not touch the platform". The CLI resolves a
+login role first, and that resolution is an API mutation — `POST /v1/projects/{ref}/cli/login-role` with
+`read_only: false` (CLI trace + the endpoint definition read out of the CLI binary both confirm it). One
+such POST succeeded. The CLI performs **no cleanup** (`deleteLoginRoles` has no call site), and the role
+**cannot be read back** (`GET` returns 404), so it must be treated as **present**. The same command also
+printed a live DB `PGPASSWORD` in cleartext into this session's tool output; that value is deliberately
+**not** recorded anywhere in this packet and must be treated as **compromised**.
+
+No further mutation was performed; the remediation (`DELETE /cli/login-role` or rotation) is a
+Control-project mutation and awaits explicit Owner authorization.
 
 ---
 
@@ -268,7 +277,11 @@ outbox 76 = 64 delivered + 12 dead_letter
 
 ---
 
-## 8. What is required from the Owner now — two decisions, both bounded
+## 8. What is required from the Owner now — three decisions, all bounded
+
+0. **🔴 Incident remediation (see `INCIDENT-UNAUTHORIZED-CONTROL-DB-MUTATION-W0-2026-09-23.md`).**
+   Authorize `DELETE /v1/projects/plvpbribiomqppfokzir/cli/login-role` (recommended), or rotation, or both.
+   Treat the printed DB password as compromised. **Nothing is deleted until you authorize it.**
 
 1. **Backup / recovery posture.** W0 item 1 cannot be satisfied as written. Choose one:
    (a) accept **forward-fix-only** recovery for the Control DB for this release, recording explicitly that
