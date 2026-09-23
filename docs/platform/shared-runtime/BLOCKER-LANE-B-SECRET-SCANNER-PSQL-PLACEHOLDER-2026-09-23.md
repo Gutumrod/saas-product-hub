@@ -185,6 +185,29 @@ does. It may be completable by pointing the reviewer at the two source files onl
 carrying the example strings) — noted as a possible next step, not attempted here because it would
 be a fourth pass at the same fingerprint by another route.
 
+## 6.3 Correction — the classify rung's first failure was caused by the controller's own prompt
+
+The first classify dispatch failed with `DIRECT_EXECUTOR_SECRET_DETECTED:prompt` (label: **prompt**,
+not `wrapper_log`). Measured cause: **the packet the controller authored contained the offending
+example verbatim** — it quoted the psql assignment inside its own `objective` text in order to
+describe the defect. The prompt was therefore rejected before the reviewer ran.
+
+Two further contributing artefacts were identified in controller-owned material:
+
+| Artefact | Problem | Action |
+|---|---|---|
+| the classify packet | quoted the trigger string in `objective` / `scope` | rewritten to **describe** the shape instead of reproducing it |
+| `test_secret_scanner.py` (listed as a source) | intentionally contains ~16 fake-credential literals — it is the scanner's own test suite | **removed from the card's `source_of_truth`** and named in `out_of_scope` |
+| this blocker document | likewise quoted the trigger string and the credential-shaped negative-control example | rewritten to describe both rather than reproduce them |
+
+All three were verified **CLEAN** against the scanner's own patterns after the edit, and the
+document still records every fact — it simply no longer re-creates the string that trips the check.
+
+This is a **different Issue Fingerprint** from the scanner defect itself: it is "the controller's own
+prompt carried a triggering string", not "the scanner misreads a psql reference". It is therefore not
+a fourth pass at the scanner fingerprint, and it was repaired inside the controller's own authority
+(no protected component touched).
+
 ## 7. Ladder position — all authorized routes exhausted
 
 | Rung | Status |
