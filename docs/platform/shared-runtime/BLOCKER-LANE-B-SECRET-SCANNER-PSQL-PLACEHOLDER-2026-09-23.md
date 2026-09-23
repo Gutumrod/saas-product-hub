@@ -208,6 +208,49 @@ prompt carried a triggering string", not "the scanner misreads a psql reference"
 a fourth pass at the scanner fingerprint, and it was repaired inside the controller's own authority
 (no protected component touched).
 
+## 6.4 Codex classification VERDICT obtained — `SEND_TO_CLAUDE`
+
+The classification rung was re-dispatched with a sanitised prompt (see §6.3) and a card bound to the
+current revision. **The reviewer produced a verdict:**
+
+```text
+LANE_B_CLASSIFY_VERDICT=SEND_TO_CLAUDE
+
+Routing: `SEND_TO_CLAUDE`
+
+- Discriminator: inspect raw match for `:\s*'[A-Za-z_][A-Za-z0-9_]*`; do not require closing quote.
+- Prior failures: broad matching exempted real credentials; closing-quote matching missed the actual
+  scanner match.
+- Negative controls: Stripe live/test, OpenAI project key, GitHub PAT, Slack token, 32-hex secret;
+  also credential assignment and non-psql colon string.
+- Release verifier: constrains the change; preserve model pin and require `27/27` plus negative controls.
+
+Blocker: the allowed classification file could not be written because this workspace is read-only.
+No file was created.
+```
+
+**This independently reproduces the controller's own analysis** (§6.1), including the exact
+discriminator, why both prior attempts failed, the required negative-control set, and the note that
+the release verifier constrains the change.
+
+### 6.4.1 Why this verdict is not yet usable
+
+The driver recorded `error_code: IDENTITY_PROVENANCE_MISMATCH`. Cause: the review stage runs with
+`context_mode = INDEPENDENT-QA`, which the wrapper maps to `--sandbox read-only`; the reviewer could
+not write its required output file
+(`docs/platform/shared-runtime/CLASSIFY-CODEX-LANE-B-SCANNER-FALSE-POSITIVE-2026-09-23.md`), so its
+result never satisfied the direct-executor provenance contract and the stage did not complete.
+
+So the verdict **exists in the reviewer's stdout** but is **not** a validly admitted stage result, and
+the card correctly remains un-completed. Recording it here as evidence of the classification outcome
+is not the same as accepting it as a passing stage gate; the contract's admission rules are not
+being relaxed.
+
+This is a **third, distinct** condition in this sequence:
+1. the scanner misreads a psql reference (the original fingerprint);
+2. the controller's own prompt reproduced the trigger string (§6.3);
+3. the QA sandbox cannot admit a reviewer that must write a file.
+
 ## 7. Ladder position — all authorized routes exhausted
 
 | Rung | Status |
