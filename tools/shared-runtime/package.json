@@ -5,7 +5,7 @@
   "type": "module",
   "description": "WSTERA House shared-runtime isolation tooling (inventory, H3D/H4 probes). Self-contained; resolves its own pg dependency inside this directory.",
   "scripts": {
-    "selftest": "node h3c/h3c-proof-harness.mjs --selftest && node h4/h4-probe-harness.mjs --selftest && node h3d/h3d-live-runner.mjs --selftest && node h3d/tests.mjs"
+    "selftest": "node h3c/h3c-proof-harness.mjs --selftest && node h4/h4-probe-harness.mjs --selftest && node h3d/h3d-live-runner.mjs --selftest && node h3d/tests.mjs && node lib/probe-contract.mjs --selftest && node lib/provenance.mjs --selftest && node h3d/generate-runbooks.mjs --check && node h3d/lane-b-gates.mjs --selftest && node inventory/lane-b-effective-reach.mjs --selftest"
   },
   "dependencies": {
     "pg": "8.13.1"

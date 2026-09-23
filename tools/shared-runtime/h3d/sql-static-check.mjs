@@ -8,9 +8,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../docs/platform/shared-runtime/fixtures");
-// strip line comments so prose in `-- …` never trips a keyword check
+// strip line comments so prose in `-- …` never trips a keyword check.
+// EOL is normalised first: with CRLF the trailing `\r` stops `.*$` from reaching the
+// line end (`.` does not match `\r`), so a comment survived and tripped keyword checks.
 export const stripComments = (s) =>
-  s.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map((l) => l.replace(/--.*$/, "")).join("\n");
+  s
+    .replace(/\r\n?/g, "\n")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((l) => l.replace(/--.*$/, ""))
+    .join("\n");
 
 export function parseLockTableStatements(sql) {
   const stripped = stripComments(sql);

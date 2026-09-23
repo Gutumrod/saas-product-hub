@@ -1,0 +1,76 @@
+{
+  "fixture": "lane-b-per-stage-allowlist",
+  "version": 1,
+  "status": "SOLE ALLOWLIST SOURCE — do not add a second constant list anywhere (checks, runbooks, SQL, tools)",
+  "contract": {
+    "document": "docs/platform/shared-runtime/CREDENTIAL-STRATEGY-LANE-B-2026-09-22.md",
+    "section": "§1a per-stage exception table",
+    "planning_branch": "work/house-lane-b-longrun-plan-20260922",
+    "planning_sha": "b80f813050cb57457b4e31504e4a14720878d169",
+    "pinned_runtime_sot": "931e3711f0fec19860be1e59769674a4981b7e4a",
+    "note": "This file is a verbatim machine-readable projection of contract §1a. It is the only allowlist source the forbidden-reach check and the generated create-runbook closing blocks read (G-ALLOWLIST-SINGLE-SOURCE). Changing a per-stage exception means amending contract §1a first, then this projection, then regenerating runbooks."
+  },
+  "always_forbidden_schemas": [
+    "local_service",
+    "mt01",
+    "mt01_private",
+    "auth",
+    "vault"
+  ],
+  "always_forbidden_note": "L3 schema USAGE must be false for these schemas for every Lane-B M/W role, every stage (contract §3 forbidden-reach row).",
+  "base_w_reach": {
+    "ownership_capability_schemas": [
+      "ps01",
+      "ps01_internal"
+    ],
+    "ownership_note": "L6 — ps01_migrator owns ps01 and ps01_internal; a W role in that membership is capable of ALTER/DROP/GRANT on every owned object. Accepted, bounded by G-STATIC-NOSHARED and the H3F-style zero-delta re-measure; never described as table-DML-only.",
+    "accepted_managed_schema_usage_public": [
+      "net"
+    ],
+    "accepted_managed_note": "net schema USAGE is PUBLIC; cron schema USAGE is not held. The two cron object grants are therefore catalog-present but not effectively reachable (L2 != L4)."
+  },
+  "accepted_exposure": {
+    "effective_reach_contract_a": {
+      "layer": "L4",
+      "relation_set": [
+        { "nspname": "net", "relname": "_http_response", "relkind": "r" },
+        { "nspname": "net", "relname": "http_request_queue", "relkind": "r" },
+        { "nspname": "net", "relname": "http_request_queue_id_seq", "relkind": "S" }
+      ],
+      "note": "Reach = L2 object grant AND L3 schema USAGE on the same qualified object. Any reachable relation outside this set, or any change in the schema-USAGE classification (e.g. cron USAGE measuring true), STOPs the window."
+    },
+    "catalog_inventory_contract_b": {
+      "layer": "L1",
+      "relation_set": [
+        { "nspname": "cron", "relname": "job", "relkind": "r" },
+        { "nspname": "cron", "relname": "job_run_details", "relkind": "r" },
+        { "nspname": "net", "relname": "_http_response", "relkind": "r" },
+        { "nspname": "net", "relname": "http_request_queue", "relkind": "r" },
+        { "nspname": "net", "relname": "http_request_queue_id_seq", "relkind": "S" }
+      ],
+      "note": "Catalog presence only. This set is NEVER described as effective reach and is never used to conclude about L4 (NEW-DEFECT-09)."
+    }
+  },
+  "stages": {
+    "H3D-A1": {
+      "w_allowed_reach_beyond_base": "none",
+      "forbidden_beyond_base": "everything in wstera_platform_internal, local_service, mt01, mt01_private, auth, vault",
+      "wstera_platform_internal_schema_usage": false,
+      "exceptions": []
+    },
+    "H3D-LIVE": {
+      "w_allowed_reach_beyond_base": "wstera_platform_internal.runtime_token_grants — USAGE on the schema, SELECT/INSERT/DELETE on that one table only",
+      "forbidden_beyond_base": "forbidden, including every other wstera_platform_internal object",
+      "wstera_platform_internal_schema_usage": true,
+      "exceptions": [
+        {
+          "nspname": "wstera_platform_internal",
+          "relname": "runtime_token_grants",
+          "relkind": "r",
+          "allowed_privileges": ["SELECT", "INSERT", "DELETE"],
+          "denied_privileges": ["UPDATE", "TRUNCATE", "REFERENCES", "TRIGGER"]
+        }
+      ]
+    }
+  }
+}
