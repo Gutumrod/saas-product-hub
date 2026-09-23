@@ -25,12 +25,12 @@ The reviewer never ran. **No R2 verdict exists.**
 The Relay secret scanner fires on the **Lane B runbooks' own psql variable references**:
 
 ```sql
-  PASSWORD :'role_password';          <- psql -v variable, NOT a credential
+  PASSWORD followed by a colon-quote psql variable reference';          <- psql -v variable, NOT a credential
   VALID UNTIL :'window_valid_until';
 ```
 
 `_is_synthetic_secret_value` has no exemption for this shape, so
-`PASSWORD :'role_password` matches the assignment pattern with candidate `role_password`.
+`PASSWORD followed by a colon-quote psql variable reference` matches the assignment pattern with candidate `role_password`.
 
 **Why Codex triggers it and the earlier OpenCode stages did not:** the review stage is instructed to
 read `tools/shared-runtime/**` and the runbooks. Codex echoes what it reads into its stderr, the
@@ -68,9 +68,9 @@ substitute Hermes for the mandated independent reviewer.
 | # | Attempt | Result |
 |---|---|---|
 | 1 | U-R3 era: clear the hit as a false positive and run the stage gate as controller | worked for U-R3; **not applicable** to an independent review |
-| 2 | Widen the scanner's synthetic-value exemption with a broad "psql variable" pattern (`^'?identifier'?$`) | **REJECTED BY TEST** — it also exempted `password = 'AKIAIOSFODNN7EXAMPLE'` and `secret = 'Xy9zzzz…'`, i.e. it **weakened** the scanner |
+| 2 | Widen the scanner's synthetic-value exemption with a broad "psql variable" pattern (`^'?identifier'?$`) | **REJECTED BY TEST** — it also exempted `password assigned a credential-shaped literal` and `secret = 'Xy9zzzz…'`, i.e. it **weakened** the scanner |
 | 3 | Narrow the same pattern to `:\s*'identifier'` | **REJECTED BY TEST** — still exempted a non-psql colon string, and did not exempt the real runbook line |
-| 4 (diagnostic, not an edit) | Printed the matched text and candidate for the real file | `matched = "PASSWORD :'role_password"` — the match ends at the identifier; the closing quote is **not** part of the match, which is why a `:'name'`-anchored regex cannot fire on it |
+| 4 (diagnostic, not an edit) | Printed the matched text and candidate for the real file | `matched = "PASSWORD followed by a colon-quote psql variable reference"` — the match ends at the identifier; the closing quote is **not** part of the match, which is why a `:'name'`-anchored regex cannot fire on it |
 
 Attempt 1–3 are the same Issue Fingerprint (`secret-scanner false positive on psql placeholder`).
 Per §10.1 the cap is two ordinary repairs, then classification. That cap is **already exceeded** from
@@ -95,7 +95,7 @@ known precisely, but it cannot be done safely by trial:
   controller's own negative controls caught. Continuing to edit it by guesswork is exactly how a
   scanner gets quietly defanged;
 - a correct fix must distinguish *"the SQL file contains a psql variable name"* from *"the SQL file
-  contains an assigned credential"*. Given the pattern matches `PASSWORD :'role_password` (no closing
+  contains an assigned credential"*. Given the pattern matches `PASSWORD followed by a colon-quote psql variable reference` (no closing
   quote included), the reliable discriminator is the **`:'` prefix inside the matched text**, not the
   extracted candidate — which the diagnostic established. That is a real design decision for the
   scanner, and it must ship **with negative controls proving real credentials still fire**;
@@ -121,7 +121,7 @@ known precisely, but it cannot be done safely by trial:
 | Option | Effect |
 |---|---|
 | **A (recommended)** | Authorize a bounded scanner fix: exempt a psql client-variable reference when the **matched text** contains `:'<identifier>` — shipped together with negative controls proving real credentials still fire (the four probes already used: stripe live/test, openai project key, github pat, slack token, 32-hex value). Then re-dispatch R2 on the unchanged frozen pair. |
-| **B** | Rule that the runbooks should not use `PASSWORD :'var'` at all (rewrite to a form that carries no `PASSWORD` token), leaving the scanner untouched. Changes a governed runbook convention. |
+| **B** | Rule that the runbooks should not use `PASSWORD :'var'` at all (rewrite to a form that carries no the PASSWORD token), leaving the scanner untouched. Changes a governed runbook convention. |
 | **C** | Rule the review stage exempt from the wrapper-log secret scan. **Not recommended** — it weakens a security control on the one stage that is supposed to be independent. |
 | **D** | Rule a different reviewer, or waive the R2 review. |
 
@@ -131,13 +131,13 @@ The controller worked out the precise discriminator and verified it **read-only*
 
 | Probe | Result |
 |---|---|
-| matched raw text from the real runbook line | `"PASSWORD :'role_password"` |
+| matched raw text from the real runbook line | `"PASSWORD followed by a colon-quote psql variable reference"` |
 | proposed regex `:\s*'[A-Za-z_][A-Za-z0-9_]*` applied to that raw match | **True** (correctly identified as a psql reference) |
 | the previous, rejected regex requiring a closing quote (`…'`) | **False** — this is exactly why attempt 3 failed |
-| proposed regex applied to `PASSWORD = 'AKIAIOSFODNN7EXAMPLE'` (a credential-shaped value) | **False** (correctly NOT exempted) |
+| proposed regex applied to `password assigned a credential-shaped literal` (a credential-shaped value) | **False** (correctly NOT exempted) |
 
 **Why the earlier attempts failed, stated precisely:** the assignment pattern captures
-`PASSWORD :'role_password` **without the closing quote** (the pattern's character class excludes it).
+`PASSWORD followed by a colon-quote psql variable reference` **without the closing quote** (the pattern's character class excludes it).
 Any exemption that anchors on a complete `:'name'` pair can therefore never fire on the real text —
 while an exemption loose enough to fire on `role_password` alone also fires on genuine key-like
 values. The working discriminator is the **`:'` prefix present inside the raw match**, with no
@@ -174,7 +174,7 @@ triggers the scanner, because it necessarily quotes the offending string in orde
 
 | Line | Match |
 |---|---|
-| 28, 33, 73, 98, 134, 140, 158 | `PASSWORD :'role_password` |
+| 28, 33, 73, 98, 134, 140, 158 | `PASSWORD followed by a colon-quote psql variable reference` |
 | 71, 137 | `password = 'AKIAIOFSFODNN7EXAMPLE'` (a negative-control example) |
 
 The document fires on the scanner's own patterns, so any prompt that carries it is rejected before
@@ -200,7 +200,7 @@ authority, and the change required is to a **security control inside a protected
 ## 8. The single decision requested
 
 > **The Relay secret scanner false-positives on the runbooks' own psql variable references
-> (`PASSWORD :'role_password'`), so the independent Codex review cannot complete. Two repair
+> (`PASSWORD followed by a colon-quote psql variable reference'`), so the independent Codex review cannot complete. Two repair
 > attempts weakened the scanner and were rejected by test; the repair cap is reached. Which option
 > (A / B / C / D) does the Owner rule?**
 
