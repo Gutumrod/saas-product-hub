@@ -152,7 +152,52 @@ security control inside a protected canonical skill mid-run, and the repair cap 
 is already reached. The code above is offered so the Owner's decision can be made on a tested shape
 rather than an open question.
 
-## 7. The single decision requested
+## 6.2 Codex classification rung — attempted, blocked by the same fingerprint
+
+Per §10.1 the ladder after two ordinary repairs is `Codex classify`. That rung was dispatched
+(card `t_22bef385`, stage `codex-classify-fingerprint`, context `INDEPENDENT-QA`) with the runbooks
+and SQL fixtures deliberately placed **out of scope**, leaving only:
+
+- this blocker document,
+- `direct_external_executors.py`,
+- `test_secret_scanner.py`.
+
+Result:
+
+```text
+DIRECT_EXECUTOR_SECRET_DETECTED
+baseline_revision = f55de2fb4071e4cf2efffafedf09d1d8abeabfc9
+```
+
+**Cause, measured:** this blocker document — which is now part of the prompt context — itself
+triggers the scanner, because it necessarily quotes the offending string in order to describe it:
+
+| Line | Match |
+|---|---|
+| 28, 33, 73, 98, 134, 140, 158 | `PASSWORD :'role_password` |
+| 71, 137 | `password = 'AKIAIOFSFODNN7EXAMPLE'` (a negative-control example) |
+
+The document fires on the scanner's own patterns, so any prompt that carries it is rejected before
+dispatch. This is self-referential: **describing the defect reproduces the defect**.
+
+**Consequence:** the Codex-classification rung cannot be completed while the scanner behaves as it
+does. It may be completable by pointing the reviewer at the two source files only (no document
+carrying the example strings) — noted as a possible next step, not attempted here because it would
+be a fourth pass at the same fingerprint by another route.
+
+## 7. Ladder position — all authorized routes exhausted
+
+| Rung | Status |
+|---|---|
+| ordinary repair #1 | attempted (U-R3 era workaround) — not applicable to an independent review |
+| ordinary repair #2 | attempted — **rejected by test** (weakened the scanner) |
+| Codex classify | **attempted — blocked by the same fingerprint** |
+| Claude (requires `SEND_TO_CLAUDE`) | **cannot be reached** — no Codex verdict exists to send it |
+
+Per §10.2 this is `BLOCKED_HARD_STOP`: no safe technical remediation path remains inside locked
+authority, and the change required is to a **security control inside a protected canonical skill**.
+
+## 8. The single decision requested
 
 > **The Relay secret scanner false-positives on the runbooks' own psql variable references
 > (`PASSWORD :'role_password'`), so the independent Codex review cannot complete. Two repair
