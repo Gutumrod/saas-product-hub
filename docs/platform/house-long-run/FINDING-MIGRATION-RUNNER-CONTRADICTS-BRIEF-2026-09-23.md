@@ -120,3 +120,55 @@ change to the runbook, and it does not authorise production mutation of any kind
 - `R15-D0-DECISION-REPORT-CODEX-2026-09-20.md:44`, `R15-D0-DECISION-OUTCOME-2026-09-20.md:69`
 - `T2-WU02-MIGRATION-RPC-QUALIFICATION-2026-09-21.md:963` (F10), `:841-844`
 - `drizzle/migrations/0009_work_scope_identity.sql:11-13`, `:15-21`
+
+---
+
+## 8. DISPOSITION — appended 2026-09-23 (mechanism resolved at design level; operator-contract level open)
+
+This section is **appended**; nothing in §1–§7 above is rewritten, and the finding is not marked
+closed. It records the disposition of the blocker as of the F-OP-01 amendment.
+
+**Mechanism resolved.** The mechanism-design portion of this finding is resolved by the named
+contract `LANE_A_EXACT_FILE_POSTGRES_TRANSACTION_APPLY_V1`, recorded in
+`BRIEF-RESUME-LANE-A-FOP01-EXACT-FILE-APPLY-2026-09-23.md` §5. §5.1's gap — *no operator step named
+an actual apply mechanism* — is closed: the mechanism is now an exact reviewed file applied through
+the `postgres` client inside one transaction, exactly the precedent this finding's §5.1 identified on
+disk (`0008_product_installations.sql:9-10`).
+
+**Implemented.** The mechanism is implemented by the operator helper
+`docs/platform/house-long-run/tools/lane-a-exact-file-postgres-apply.mjs`, which:
+
+- reads the file bytes **from the pinned git revision** and verifies them against an expected
+  sha256, so "the exact reviewed bytes" is enforced rather than assumed;
+- **never** invokes `drizzle-kit generate`, `drizzle-kit migrate` or `npm run db:push` (the only
+  external program it can spawn is `git`);
+- creates **no** migration journal and **no** ledger — `drizzle/migrations/meta/_journal.json` and
+  `__drizzle_migrations` are neither created nor consulted;
+- proves sequencing from **live catalog preconditions read inside the apply transaction, plus
+  immutable release evidence** for the exact file/revision/hash, which is precisely what §5.2
+  asked to be named explicitly: the lane accepts "no ledger — apply by exact file, recorded in the
+  release evidence packet";
+- refuses, in a fixed order that runs entirely **before** any credential is read or any connection
+  is attempted, on an unknown migration id/path pair, a hash mismatch, a missing revision, missing
+  sequencing evidence, and a missing authority guard;
+- runs `BEGIN -> exact file -> assertions -> deliberate ROLLBACK` in dry-run and
+  `BEGIN -> preconditions -> exact file -> postconditions -> COMMIT` in apply, one file per
+  transaction, never split.
+
+**Runbook restated.** §2 of `RUNBOOK-LANE-A-EXPAND-DEPLOY-CONTRACT-2026-09-23.md` is rewritten from
+"mechanism blocker" to the resolved mechanism, and §5.3's request — *restate Window 1 / Window 3 in
+terms of the named mechanism* — is done: both windows now invoke the helper on the exact reviewed
+revision and hash.
+
+**Still open — operator-contract level only.** This finding is **not closed**. It stays open at the
+operator-contract level until:
+
+1. the focused independent Codex review of the amendment (§19 of the F-OP-01 brief) returns
+   `APPROVED` or `APPROVED_WITH_FINDINGS` with no open blocking finding; and
+2. the Owner release authorization (`LANE_A_PRODUCTION_RELEASE_V1`) is given.
+
+**Non-claims added by this disposition.** No database was contacted to produce the helper, the
+runbook amendment or this section. No connection was attempted — including for the helper's failure
+paths, which are proven without any connection. No `drizzle-kit` or `db:push` command was executed.
+No production mutation occurred, and the helper has **not** been run. The helper is prepared and NOT
+executed. No `PRODUCTION_READY` and no `OPERATED_STABLE` is claimed.

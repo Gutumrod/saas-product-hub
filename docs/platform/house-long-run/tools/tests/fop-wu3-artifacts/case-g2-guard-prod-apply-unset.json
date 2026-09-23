@@ -1,0 +1,55 @@
+{
+  "mechanism": "LANE_A_EXACT_FILE_POSTGRES_TRANSACTION_APPLY_V1",
+  "schema": "lane-a-exact-file-postgres-apply-evidence/v1",
+  "task_id": "WSTERA-CONTROL-TRUTH-SYNC-001",
+  "release_id": null,
+  "migration_id": "0009",
+  "git_revision": "dfcb4be4ac8b488ef740e2147f83b5c19251fbd8",
+  "file_path": "drizzle/migrations/0009_work_scope_identity.sql",
+  "file_sha256": "8f88a7d1e4d3777dd0c2adefa999f61799bd50dd1270407fa025f3c4068d3487",
+  "file_sha256_expected": "8f88a7d1e4d3777dd0c2adefa999f61799bd50dd1270407fa025f3c4068d3487",
+  "helper": {
+    "path": "D:\\AI-Workspace\\runtime\\worktrees\\wstera-control-truth-sync-001\\docs\\platform\\house-long-run\\tools\\lane-a-exact-file-postgres-apply.mjs",
+    "sha256": "f3fc4d0cb40ef60bfb97ac05df0623793fe52badeb2db0a07ca83911d7a2453e",
+    "repo_head": "75360add4e11a565be366370d697b2f0f071c580",
+    "present_at_repo_head": false
+  },
+  "control_repo": "D:/AI-Workspace/runtime/worktrees/hub-web-cts001",
+  "target_identity": null,
+  "mode": "apply",
+  "transaction": null,
+  "pre_run_shape": null,
+  "preconditions": null,
+  "sql_execution": null,
+  "postconditions": null,
+  "rollback": null,
+  "commit": null,
+  "post_rollback_shape": null,
+  "persistent_shape_preserved": null,
+  "sequencing_evidence": {
+    "required": false,
+    "provided": false,
+    "ok": null,
+    "reason": "not_required_for_this_pair"
+  },
+  "refusal": {
+    "reason": "LANE_A_PRODUCTION_APPLY_AUTHORIZED must be exactly 'YES' for --mode apply; no credential was read and no connection was attempted",
+    "stage": "check_6_production_apply_authority",
+    "observed_sha256": "8f88a7d1e4d3777dd0c2adefa999f61799bd50dd1270407fa025f3c4068d3487",
+    "revision_check": null,
+    "credential_read": false,
+    "connection_attempted": false
+  },
+  "guards": {
+    "live_db_authorized": true,
+    "production_apply_authorized": false
+  },
+  "failure_stage": "check_6_production_apply_authority",
+  "failure_reason": "LANE_A_PRODUCTION_APPLY_AUTHORIZED must be exactly 'YES' for --mode apply; no credential was read and no connection was attempted",
+  "exit_code": 2,
+  "final_classification": "AUTHORITY_GUARD_REFUSAL",
+  "generated_at": "2026-09-23T06:38:30.489Z",
+  "credential_value_persisted": false,
+  "connection_string_persisted": false,
+  "raw_stderr_persisted": false
+}
