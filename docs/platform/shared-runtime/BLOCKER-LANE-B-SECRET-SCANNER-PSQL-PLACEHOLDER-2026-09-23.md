@@ -125,6 +125,33 @@ known precisely, but it cannot be done safely by trial:
 | **C** | Rule the review stage exempt from the wrapper-log secret scan. **Not recommended** — it weakens a security control on the one stage that is supposed to be independent. |
 | **D** | Rule a different reviewer, or waive the R2 review. |
 
+## 6.1 Exact fix for Option A — already derived and tested offline
+
+The controller worked out the precise discriminator and verified it **read-only** (no edit made):
+
+| Probe | Result |
+|---|---|
+| matched raw text from the real runbook line | `"PASSWORD :'role_password"` |
+| proposed regex `:\s*'[A-Za-z_][A-Za-z0-9_]*` applied to that raw match | **True** (correctly identified as a psql reference) |
+| the previous, rejected regex requiring a closing quote (`…'`) | **False** — this is exactly why attempt 3 failed |
+| proposed regex applied to `PASSWORD = 'AKIAIOSFODNN7EXAMPLE'` (a credential-shaped value) | **False** (correctly NOT exempted) |
+
+**Why the earlier attempts failed, stated precisely:** the assignment pattern captures
+`PASSWORD :'role_password` **without the closing quote** (the pattern's character class excludes it).
+Any exemption that anchors on a complete `:'name'` pair can therefore never fire on the real text —
+while an exemption loose enough to fire on `role_password` alone also fires on genuine key-like
+values. The working discriminator is the **`:'` prefix present inside the raw match**, with no
+closing-quote requirement.
+
+**Option A would therefore be:** add `_PSQL_VAR_IN_MATCH = re.compile(r":\s*'[A-Za-z_][A-Za-z0-9_]*")`,
+test it against the **raw `matched` text** (not the quote-stripped candidate), and require a
+negative-control suite proving real credentials still fire before the change is accepted.
+
+**The controller did NOT apply this.** Deriving a fix is not the same as being authorized to change a
+security control inside a protected canonical skill mid-run, and the repair cap for this fingerprint
+is already reached. The code above is offered so the Owner's decision can be made on a tested shape
+rather than an open question.
+
 ## 7. The single decision requested
 
 > **The Relay secret scanner false-positives on the runbooks' own psql variable references
