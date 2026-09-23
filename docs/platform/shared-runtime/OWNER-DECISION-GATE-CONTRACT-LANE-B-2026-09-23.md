@@ -2,10 +2,13 @@
 
 Date: 2026-09-23
 Task: `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001`
-Authority designer: Sol
+Provenance: proposed in the Owner identity (commit `959605b`, 2026-09-23 11:06 +0700)
+**before** Sol review; subsequently reviewed by Sol
+(`SOL_GATE_VERDICT = READY_TO_LOCK_WITH_AMENDMENTS`, amendments applied 2026-09-23).
+**Sol is not the author of the original revision.**
 Execution controller: Hermes
 Execution system: Canonical Agent Relay + WSTERA Control Sync
-State: `SOL_DECISION_GATES_LOCKED / OWNER_ONE_TIME_APPROVAL_REQUIRED`
+State: `SOL_REVIEW_PASS / OWNER_ONE_TIME_APPROVAL_REQUIRED`
 
 ## 1. Purpose
 
@@ -23,11 +26,19 @@ to stop an otherwise pre-authorized technical workflow.
 
 For authority/routing questions in Lane B, precedence is:
 
-1. this Owner Decision Gate Contract after one-time Owner approval;
-2. explicit later Owner ruling that names this task;
-3. active Lane-B resume/work-unit brief;
-4. prior Lane-B routing/decision documents;
-5. worker/reviewer prose.
+1. the canonical Agent Relay `SKILL.md` for **Relay execution and safety invariants** — this
+   Lane-B contract does **not** claim precedence over it, and governs task-specific
+   authority/routing only **within** those canonical Relay constraints;
+2. this Owner Decision Gate Contract after one-time Owner approval;
+3. explicit later Owner ruling that names this task;
+4. active Lane-B resume/work-unit brief;
+5. prior Lane-B routing/decision documents;
+6. worker/reviewer prose.
+
+Where this contract and the canonical Relay skill differ on Relay execution behaviour
+(admission/provenance, named-executor invariant, context modes, independent-QA contract,
+failure-recovery ladder, Kanban mechanics), **the canonical skill wins** and this contract
+governs only the task-specific authority/routing decision.
 
 Technical facts from older evidence remain valid when not superseded by measured reality.
 
@@ -192,7 +203,9 @@ Hermes is pre-authorized to:
 Hermes MUST NOT mark final `HOUSE-A PASS` or top-level Owner acceptance by itself.
 ## 12. Automatic closure vs Owner acceptance
 
-Top-level or child tasks MAY close automatically when all are true:
+**Automatic closure applies only to evidence-backed technical stages, child cards, and work
+units** — for example U-R1/U-R2/U-R3, runtime hardening, evidence normalization, and
+source-only remediation. Such a unit MAY close automatically when all are true:
 - scope is source/test/evidence/tooling/docs only;
 - no Owner gate in §8 is crossed;
 - deterministic acceptance checks pass;
@@ -200,14 +213,17 @@ Top-level or child tasks MAY close automatically when all are true:
 - exact revision/evidence is persisted;
 - no open blocker remains.
 
-Examples: U-R1/U-R2/U-R3, runtime hardening, evidence normalization, source-only remediation.
+**Hermes MUST NOT mark the governing Lane-B task, the Secretary task, or any
+Owner-acceptance task `done`.** The governing task
+`HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001` (and its Secretary counterpart) may advance through
+technical completion to `HOUSE-A REVIEW READY`, but:
 
-The governing Lane-B task `HOUSE-SHARED-RUNTIME-LANE-B-CLOSURE-001` may automatically advance
-through technical completion to `HOUSE-A REVIEW READY`, but final `HOUSE-A PASS` requires
-`OWNER-CP-HOUSE-A`.
+- `HOUSE-A PASS` requires `OWNER-CP-HOUSE-A`;
+- the governing Lane-B / Secretary task is closed **only** by explicit Owner acceptance;
+- requesting review (`READY_FOR_GPT_REVIEW` / `HOUSE-A REVIEW READY`) is not closure.
 
-Any child task whose explicit acceptance contract itself says Owner acceptance is required remains
-Owner-gated even if its implementation is technically complete.
+Any child task whose explicit acceptance contract itself says Owner acceptance is required
+remains Owner-gated even if its implementation is technically complete.
 
 ## 13. Forbidden self-authority
 
