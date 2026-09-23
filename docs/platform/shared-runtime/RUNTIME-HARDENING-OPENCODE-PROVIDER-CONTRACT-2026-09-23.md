@@ -109,6 +109,21 @@ Scenario 3→4→5 is the requirement-「restore/reinstall or config drift can b
 from the repo to canonical state」proof. Scenario 9 is the requirement that the dispatcher
 must **not** auto-fix the shared runtime config.
 
+### 5.1 Reinstall simulation — the strongest form of that proof
+
+Run at commit `be21bdb`, after the contract was committed:
+
+| Step | Action | Observed |
+|---|---|---|
+| 1 | Overwrite the live config with the **original pre-Lane-B backup** (`opencode.json.bak-lane-b-20260923`) — i.e. the exact state a reinstall/restore would produce | placeholder `apiKey` present: True; `permissions` present: False |
+| 2 | `verify` | **`FAIL live config stores a credential-like field: providers.ollama.settings.apiKey`**, exit **1** — fail-closed |
+| 3 | `apply` (repo only — no manual editing, no memory of the fix) | `PASS APPLIED canonical config -> …opencode.json` |
+| 4 | `verify` | `PASS OPENCODE_PROVIDER_CONFIG_IN_SYNC` |
+| 5 | `probe` — real OpenCode dispatch | `dispatch returncode=0`, agent said `READY`, `PASS OPENCODE_DISPATCH_PROBE` |
+
+The runtime was returned to the **fully broken original state** and recovered **from the
+repository alone**. That is the persistent-fix property the Owner required.
+
 ## 6. Acceptance gate — evidence table
 
 | # | Requirement | Result | Evidence |
