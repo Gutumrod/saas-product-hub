@@ -166,6 +166,61 @@ export function checkRunbookForbiddenSet(runbookText, forbiddenNames) {
 }
 
 // ---------------------------------------------------------------------------
+// G-RUNBOOK-PRIV-LIST-BOUND  (NEW-DEFECT-10)
+// ---------------------------------------------------------------------------
+
+/**
+ * A generated runbook may render the per-stage exception privileges, but every rendered
+ * privilege list must be exactly what the sole allowlist source (fixture) specifies for that
+ * stage — and nothing else. `generate-runbooks.mjs --check` already proves *on-disk == render*;
+ * this gate closes the residual hole it cannot see: a hand-authored list that is self-consistent
+ * with itself (i.e. written into the file AND the generator left alone), which would still be a
+ * second constant list living in a runbook.
+ *
+ * For every runbook it extracts each `ARRAY['P','P',...]` privilege literal and requires the set
+ * to be a permitted set for that stage: either the stage's declared allowed set, its denied set,
+ * or the full seven-privilege universe (the non-exception fallback). An unknown privilege token —
+ * or a set that matches none of those — is a violation.
+ */
+export function checkRunbookPrivilegeLists(runbookText, stage) {
+  const UNIVERSE = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"];
+  // Sequence privilege primitives are a distinct per-kind set (contract §3a), not a table set.
+  const SEQUENCE_SET = ["SELECT", "USAGE", "UPDATE"];
+  const permitted = [];
+  if (stage && Array.isArray(stage.allowed_privileges) && stage.allowed_privileges.length) {
+    permitted.push([...stage.allowed_privileges].sort());
+  }
+  if (stage && Array.isArray(stage.denied_privileges) && stage.denied_privileges.length) {
+    permitted.push([...stage.denied_privileges].sort());
+  }
+  permitted.push([...UNIVERSE].sort());
+  permitted.push([...SEQUENCE_SET].sort());
+
+  const violations = [];
+  const arrays = [...runbookText.matchAll(/ARRAY\[([^\]]*)\]/g)].map((m) => m[1]);
+  for (const body of arrays) {
+    const toks = [...body.matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
+    if (toks.length === 0) continue;
+    const known = new Set([...UNIVERSE, ...SEQUENCE_SET]);
+    const unknown = toks.filter((t) => !known.has(t));
+    if (unknown.length) {
+      violations.push({ rule: `privilege list carries non-privilege token(s): ${unknown.join(",")}` });
+      continue;
+    }
+    const sorted = [...toks].sort();
+    const matches = permitted.some(
+      (p) => p.length === sorted.length && p.every((v, i) => v === sorted[i]),
+    );
+    if (!matches) {
+      violations.push({
+        rule: `privilege list [${sorted.join(",")}] matches neither the stage's allowed set, its denied set, nor the full universe`,
+      });
+    }
+  }
+  return { ok: violations.length === 0, violations };
+}
+
+// ---------------------------------------------------------------------------
 // G-REVOKE-MIRROR / G-NO-DROP-OWNED
 // ---------------------------------------------------------------------------
 
@@ -332,6 +387,45 @@ export function selftest() {
     ok(!checkRunbookForbiddenSet(secondList, names).ok, "a residual second forbidden-name list is flagged (negative control)");
   }
 
+  // G-RUNBOOK-PRIV-LIST-BOUND negative controls (NEW-DEFECT-10)
+  {
+    const allowlist = loadAllowlist();
+    const liveStage = ((allowlist.stages || {})["H3D-LIVE"] || {}).exceptions?.[0];
+    const liveText = fs.readFileSync(
+      path.join(RUNBOOK_DIR, "lane-b-role-lane_b_rw_live-create.sql"),
+      "utf8",
+    );
+    ok(
+      checkRunbookPrivilegeLists(liveText, liveStage).ok,
+      "real H3D-LIVE runbook privilege lists are bound to the sole source",
+    );
+    // mutation: widen the allowed set with a privilege the stage must NOT hold -> must be flagged
+    const widened = liveText.replace(
+      "ARRAY['SELECT','INSERT','DELETE']",
+      "ARRAY['SELECT','INSERT','DELETE','UPDATE']",
+    );
+    ok(widened !== liveText, "needle sanity: the allowed-set literal is present exactly as expected");
+    ok(
+      !checkRunbookPrivilegeLists(widened, liveStage).ok,
+      "widening an allowed privilege set is flagged (mutation negative control)",
+    );
+    // mutation: a hand-authored extra list outside any permitted set -> must be flagged
+    const extra = liveText + "\n-- ARRAY['SELECT','UPDATE']\n";
+    ok(
+      !checkRunbookPrivilegeLists(extra, liveStage).ok,
+      "a hand-authored extra privilege list is flagged (mutation negative control)",
+    );
+    // mutation: a non-privilege token smuggled into a list -> must be flagged
+    const bogus = liveText.replace(
+      "ARRAY['SELECT','INSERT','DELETE']",
+      "ARRAY['SELECT','INSERT','DELETE','SUPERUSER']",
+    );
+    ok(
+      !checkRunbookPrivilegeLists(bogus, liveStage).ok,
+      "a non-privilege token in a list is flagged (mutation negative control)",
+    );
+  }
+
   // G-REVOKE-MIRROR negative controls against a REAL pair
   {
     const createPath = path.join(RUNBOOK_DIR, "lane-b-role-lane_b_rw_live-create.sql");
@@ -364,7 +458,7 @@ export function selftest() {
   process.stderr.write(
     bad
       ? `\nLANE-B GATES SELFTEST: ${bad} FAILURE(S)\n`
-      : `\nLANE-B GATES SELFTEST PASS (G-NO-BARE-RELNAME, G-ALLOWLIST-SINGLE-SOURCE, G-REVOKE-MIRROR, G-NO-DROP-OWNED)\n`,
+      : `\nLANE-B GATES SELFTEST PASS (G-NO-BARE-RELNAME, G-ALLOWLIST-SINGLE-SOURCE, G-RUNBOOK-PRIV-LIST-BOUND, G-REVOKE-MIRROR, G-NO-DROP-OWNED)\n`,
   );
   return bad;
 }
