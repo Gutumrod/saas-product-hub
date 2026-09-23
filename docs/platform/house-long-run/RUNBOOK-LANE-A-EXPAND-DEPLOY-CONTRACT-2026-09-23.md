@@ -12,7 +12,10 @@ Authority: **PREPARATION ONLY — DO NOT EXECUTE.** This document authorizes not
 > been applied. Live execution still requires the authority guards **and** a future Owner release
 > authorization. The precondition blocker recorded in
 > `FINDING-MIGRATION-RUNNER-CONTRADICTS-BRIEF-2026-09-23.md` is cleared at the mechanism level;
-> its operator-contract level stays open pending focused review and that authorization.
+> its operator-contract level stays open. The first focused independent review returned
+> `CHANGES_REQUIRED` (two blocking findings and one HIGH finding); the helper and the harness were
+> remediated for all three, the second independent review is **pending**, and **`F-OP-01` is not
+> approved** (see §10 and that finding's §8.1).
 > **Nothing in this document is executable authority.**
 
 ---
@@ -109,12 +112,14 @@ verifies the following in this order and exits non-zero with a machine-readable 
 | 1 | `--migration-id` is exactly `0009`/`0010` **and** `--file` equals that id's bound path | `MIGRATION_IDENTITY_UNKNOWN` |
 | 2 | the bytes extracted **from the declared revision** hash to exactly `--expect-sha256` | `FILE_HASH_MISMATCH` |
 | 3 | `--expect-revision` is an exact 40-hex commit present in `--control-repo` | `REVISION_NOT_FOUND` |
-| 4 | applying `0010` requires `--require-evidence` recording a successful `0009` apply for the same target ref | `SEQUENCING_EVIDENCE_MISSING` |
+| 4a | applying `0010` requires `--require-evidence` recording a successful `0009` apply for the same target ref | `SEQUENCING_EVIDENCE_MISSING` |
+| 4b | applying `0010` requires the **same** release evidence to record a live-Worker proof of the 19-argument path for the **same** target ref **and** the **same** task id (`WSTERA-CONTROL-TRUTH-SYNC-001`) | `WORKER_LIVE_PROOF_MISSING` |
 | 5 | `LANE_A_LIVE_DB_AUTHORIZED=YES` is present | `AUTHORITY_GUARD_REFUSAL` |
 | 6 | `--mode apply` additionally requires `LANE_A_PRODUCTION_APPLY_AUTHORIZED=YES` | `AUTHORITY_GUARD_REFUSAL` |
 
 Checks 1–3 compare the file bytes **read out of the revision**, never merely the working-tree file.
-Checks 5–6 read **no** credential and make **no** connection attempt.
+Checks 4a/4b read **no** credential and make **no** connection attempt. Checks 5–6 read **no**
+credential and make **no** connection attempt.
 
 After checks 1–6, and still before any connection, the target is proven by **parsing** the
 credential (never by dialing out): the project reference is the token after the last `.` in the
@@ -130,15 +135,47 @@ The connection string is read **only** from `LANE_A_CONTROL_DATABASE_URL`. It is
 argv, never printed, and never written to evidence. The two environment guards are safety interlocks
 only: they create no authority and **must not** be set before the future Owner Production approval.
 
+### 2.2.1 The `0010` CONTRACT apply sequencing gate, as the helper enforces it
+
+A `0010` apply is **refused unless the release evidence handed in through `--require-evidence` records
+BOTH** of the following, read out of the **same** release-evidence file:
+
+1. a **successful `0009` apply for the same target ref** — the sub-gate recorded as check `4a` in
+   §2.2, refusal classification `SEQUENCING_EVIDENCE_MISSING`; **and**
+2. a **live-Worker proof of the 19-argument `ingest_agent_work_event_atomic` path for the same target
+   ref AND the same task id** (`WSTERA-CONTROL-TRUTH-SYNC-001`) — the sub-gate recorded as check `4b`
+   in §2.2, **refusal classification `WORKER_LIVE_PROOF_MISSING` (exit code 2)**.
+
+A `0009` apply record **never** implies the live-Worker proof. The proof is read explicitly from the
+evidence document and is never inferred from the presence of the `0009` record; evidence that is
+absent, that names a different target ref, or that names a different task id is refused, and an
+incomplete proof record for the right target ref and task id is also refused rather than ignored.
+Both sub-gates are evaluated **before** the authority guards of §2.2 and before the credential
+variable is read, so a refusal at `4b` means no credential was read and no connection was attempted.
+
+Accepted proof shapes (exactly two; anything else is refused): a sibling top-level array
+`{ "worker_live_proofs": [ <proof record>, ... ] }`, or the proof fields carried directly on a record
+of `{ "records": [ ... ] }` (or on the single root object). A proof record must carry the task id, the
+target ref, the observed 19-argument function identity (or a reference to a recorded live ingestion
+proof), the observing command/evidence reference, and a timestamp.
+
+**The reviewed precondition catalog checks still run inside the apply transaction on top of this
+gate.** The gate above is a preflight (`--require-evidence`) condition and it does not replace §2.4.
+For `0010` the same four catalog checks — exactly one 19-argument function, exactly one 17-argument
+overload, `service_role` able to execute the 19-argument path, PUBLIC unable to — are still measured
+**inside** the transaction before the migration SQL runs, and the postconditions are still measured
+inside that same transaction afterwards. The sequencing gate is additional, not a substitute.
+
 ### 2.3 Exact dry-run commands (documented; NOT to be run before authorization)
 
 Both commands below are the **dry-run** form only. They are recorded so the operator step is
 executable and unambiguous, not so it can be run now. Set neither guard until the Owner release
 authorization exists.
 
-0010 additionally requires `--require-evidence` pointing at the release record of a successful 0009
-apply for the same target ref — that requirement applies to `--mode apply`; the dry-run forms below
-are shown without it.
+0010 additionally requires `--require-evidence` pointing at a release evidence document that records
+**both** a successful 0009 apply for the same target ref **and** a live-Worker proof of the 19-argument
+path for the same target ref and task id (§2.2.1) — that requirement applies to `--mode apply`; the
+dry-run forms below are shown without it.
 
 ```text
 # Window 1 — 0009 EXPAND dry-run, from A_EXPAND_REV
@@ -192,7 +229,9 @@ Both phases read the catalog; neither trusts "the file ran" as proof.
 
 These shapes were read out of the reviewed migration files themselves
 (`0009_work_scope_identity.sql` sections 2/4/8, `0010_retire_legacy_work_event_rpc.sql` sections 1/3),
-not assumed. On dry-run, the helper additionally re-asserts after the rollback that the persistent
+not assumed. These are the catalog checks that run **inside** the apply transaction; for `0010` they
+sit on top of the `--require-evidence` sequencing gate of §2.2.1, which is additional and not a
+substitute. On dry-run, the helper additionally re-asserts after the rollback that the persistent
 shape equals the measured pre-run shape. On apply, any failing precondition, statement or
 postcondition rolls back, exits non-zero with `APPLY_FAILED`, and performs **no automatic retry**.
 
@@ -312,8 +351,9 @@ node docs/platform/house-long-run/tools/lane-a-exact-file-postgres-apply.mjs \
   --control-repo D:/AI-Workspace/runtime/worktrees/hub-web-cts001 \
   --evidence-out <path>/lane-a-0010-dryrun.json
 
--- apply: --require-evidence is MANDATORY for 0010 and must point at the release record of the
--- successful 0009 apply for this same target ref (Window 1's lane-a-0009-apply.json).
+-- apply: --require-evidence is MANDATORY for 0010 and must point at a release evidence document that
+-- records BOTH the successful 0009 apply for this same target ref (Window 1's lane-a-0009-apply.json)
+-- AND a live-Worker proof of the 19-argument path for this same target ref and task id (§2.2.1).
 node docs/platform/house-long-run/tools/lane-a-exact-file-postgres-apply.mjs \
   --mode apply --migration-id 0010 \
   --file drizzle/migrations/0010_retire_legacy_work_event_rpc.sql \
@@ -326,11 +366,13 @@ node docs/platform/house-long-run/tools/lane-a-exact-file-postgres-apply.mjs \
   --evidence-out <path>/lane-a-0010-apply.json
 ```
 
-Without a release-evidence record of a successful `0009` apply for this same target ref, the helper
-refuses with `SEQUENCING_EVIDENCE_MISSING` **before** reading any credential or attempting any
-connection. Because 0009 was already applied in Window 1, `0010` is the only new file — asserted by
-that release evidence plus the live catalog preconditions read inside the transaction (§2.4), not by
-a runner.
+Without a release-evidence record of **both** a successful `0009` apply for this same target ref
+**and** a live-Worker proof of the 19-argument path for this same target ref and task id, the helper
+refuses — `SEQUENCING_EVIDENCE_MISSING` when the `0009` apply record is what is missing,
+`WORKER_LIVE_PROOF_MISSING` when the live-Worker proof is what is missing — **before** reading any
+credential or attempting any connection. Because 0009 was already applied in Window 1, `0010` is the
+only new file — asserted by that release evidence plus the live catalog preconditions read inside the
+transaction (§2.4), not by a runner.
 
 `0010` fails closed on its own: if the 19-argument path is absent, or `service_role` cannot execute
 it, or PUBLIC still can, or the legacy overload is not present exactly once, it raises and applies
@@ -410,10 +452,10 @@ Roll back using the pre-install hashes/files recorded in the T4 parity plan.
 | Two reviewed source revisions | ✅ prepared, pushed, parity 0/0 |
 | Application-source equivalence | ✅ measured (empty app diff + byte-identical bundle) |
 | Deterministic gates | ✅ check exit 0 · 28 files / 497 tests · diff --check clean · static 10/10 + 11/11 |
-| Focused independent review | ⏳ in progress (Codex, exact SHAs) |
+| Focused independent review | ⚠️ first review returned **`CHANGES_REQUIRED`** (2 blocking + 1 HIGH) → remediated; second independent review **PENDING** — F-OP-01 not approved |
 | Apply mechanism determined | ✅ resolved by `LANE_A_EXACT_FILE_POSTGRES_TRANSACTION_APPLY_V1` (§2) |
 | Operator helper | ⏳ **prepared, NOT executed** — `tools/lane-a-exact-file-postgres-apply.mjs` |
-| Offline refusal/falsification gates on the helper | ⏳ pending independent verification (no DB required) |
+| Offline refusal/falsification gates on the helper | ✅ harness reproduced locally after remediation — 44/44 PASS in default mode (exit 0) and 44/44 PASS in read-only mode (exit 0); unspawnable cases report `SKIP_UNSPAWNABLE`, never PASS or FAIL |
 | Owner release authorization (`LANE_A_PRODUCTION_RELEASE_V1`) | ❌ **not given** |
 | Production mutation | ❌ none, and none authorized |
 
@@ -429,6 +471,9 @@ that authorization. No `PRODUCTION_READY` and no `OPERATED_STABLE` is claimed an
 - No migration has been applied. `0009` and `0010` remain **authored only**.
 - A successful dry run would still not authorize apply.
 - The mechanism-level blocker is cleared; the **operator-contract** level of
-  `FINDING-MIGRATION-RUNNER-CONTRADICTS-BRIEF-2026-09-23.md` remains open pending focused review
-  and the Owner release authorization.
+  `FINDING-MIGRATION-RUNNER-CONTRADICTS-BRIEF-2026-09-23.md` remains open. The first focused
+  independent review of this amendment returned `CHANGES_REQUIRED` (two blocking findings and one HIGH
+  finding — see that finding's §8.1). The helper and the harness were remediated for all three; the
+  second independent review is **pending**, and `F-OP-01` is therefore **not approved**. The Owner
+  release authorization is still outstanding.
 - The rollback / recovery contract in §9 is unchanged and in force; nothing here weakens it.

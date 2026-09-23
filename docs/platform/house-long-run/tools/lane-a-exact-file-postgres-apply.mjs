@@ -36,8 +36,52 @@
  *     --expect-target-ref <expected Supabase project reference> \
  *     --control-repo <path to the git worktree holding drizzle/migrations> \
  *     [--require-evidence <path to a release-evidence JSON>]   mandatory for --mode apply on 0010 \
+ *         must record BOTH a successful 0009 apply AND a live-Worker proof of the
+ *         19-argument path -- see "0010 APPLY SEQUENCING GATE" below \
  *     [--release-id <release id>]                              optional \
  *     [--evidence-out <path to write the evidence JSON>]        optional
+ *
+ * 0010 APPLY SEQUENCING GATE -- operator-visible preconditions (brief section 10)
+ * ---------------------------------------------------------------------------
+ * Before CONTRACT/0010 may be applied, this helper requires BOTH of the following, read out of
+ * the SAME release-evidence file handed in through --require-evidence:
+ *   (4a) a SUCCESSFUL APPLY of 0009 for the SAME target ref (--expect-target-ref).
+ *        This was the pre-existing gate and is unchanged.
+ *   (4b) a LIVE-WORKER PROOF of the 19-argument path for the SAME target ref AND the SAME
+ *        task id (TASK_ID below).
+ * A 0009 apply record NEVER implies (4b). The proof is read explicitly from the evidence
+ * document and is never inferred from the presence of the 0009 apply record. Proof that is
+ * absent, that names a different target ref, or that names a different task id is refused as
+ * WORKER_LIVE_PROOF_MISSING (exit 2), before the credential variable is read and before any
+ * connection is attempted. An incomplete proof record for the right target ref + task id is
+ * also refused, never ignored.
+ *
+ * ACCEPTED WORKER-LIVE-PROOF SHAPE (exactly these two shapes; anything else is refused)
+ *   Shape 1 -- sibling top-level array:
+ *       { "worker_live_proofs": [ <proof record>, ... ] }
+ *   Shape 2 -- per-record fields: the proof fields sit DIRECTLY on a record of
+ *       { "records": [ ... ] } (or directly on the single root object).
+ *
+ * A <proof record> MUST carry all five of the following, non-empty. Canonical field name first,
+ * accepted aliases in parentheses:
+ *   task_id                   (taskId)
+ *        MUST equal TASK_ID, otherwise the refusal says "different task".
+ *   target_ref                (target_identity.ref, target.ref)
+ *        MUST equal --expect-target-ref, otherwise the refusal says "different target".
+ *   observed_function         (observed_function_identity, fn_identity)
+ *        the observed 19-argument function identity: MUST contain the reviewed RPC name
+ *        'ingest_agent_work_event_atomic' AND establish 19 arguments, either by containing the
+ *        token '19' or by carrying pronargs|arity|argument_count = 19.
+ *        ... OR, INSTEAD of observed_function:
+ *   live_ingestion_proof_ref  (ingestion_proof_ref)
+ *        a non-empty reference to a recorded live ingestion proof.
+ *   observed_by               (observing_command, evidence_ref, command)
+ *        the observing command or the evidence reference.
+ *   observed_at               (timestamp, observedAt)
+ *        the observation timestamp.
+ *
+ * The evaluated proof state is carried outward on `sequencing.worker_live_proof` and therefore
+ * lands in the evidence JSON, so a refusal records whether the worker-live gate was reached.
  *
  * CANONICAL REVIEWED IDENTITIES (from the F-OP-01 brief section 6; not hardcoded here,
  * because --expect-sha256 is an operator-supplied input by contract -- these are the
@@ -55,6 +99,12 @@
  *   2. file bytes extracted FROM --expect-revision hash to --expect-sha256      -> FILE_HASH_MISMATCH
  *   3. --expect-revision is an exact commit present in --control-repo           -> REVISION_NOT_FOUND
  *   4. apply of 0010 requires --require-evidence recording a successful 0009    -> SEQUENCING_EVIDENCE_MISSING
+ *   4a.   ... for the SAME --expect-target-ref (unchanged pre-existing gate)
+ *   4b.   ... AND a live-Worker proof of the 19-argument path for the SAME     -> WORKER_LIVE_PROOF_MISSING
+ *             target ref and the SAME task id. Never inferred from 4a. Both
+ *             4a and 4b are evaluated before check 5, so a refusal here also
+ *             means no 4b proof was proven; the sequencing state carried out
+ *             on the refusal records which sub-gate failed.
  *   5. LANE_A_LIVE_DB_AUTHORIZED=YES must be present                            -> AUTHORITY_GUARD_REFUSAL
  *   6. --mode apply additionally requires LANE_A_PRODUCTION_APPLY_AUTHORIZED=YES -> AUTHORITY_GUARD_REFUSAL
  * Target proof (TARGET_IDENTITY_MISMATCH / TARGET_IDENTITY_UNDETERMINABLE) runs
@@ -126,6 +176,7 @@ export const CLASSIFICATION = Object.freeze({
   FILE_HASH_MISMATCH: { exitCode: 2, kind: 'refusal' },
   REVISION_NOT_FOUND: { exitCode: 2, kind: 'refusal' },
   SEQUENCING_EVIDENCE_MISSING: { exitCode: 2, kind: 'refusal' },
+  WORKER_LIVE_PROOF_MISSING: { exitCode: 2, kind: 'refusal' },
   AUTHORITY_GUARD_REFUSAL: { exitCode: 2, kind: 'refusal' },
   // ── target proof, still pre-connection ─────────────────────────────────────
   TARGET_IDENTITY_MISMATCH: { exitCode: 3, kind: 'refusal' },
@@ -501,6 +552,12 @@ function checkValue(name, observed, predicate, expectedText) {
  *      once, service_role able to execute the 19-argument path, PUBLIC unable to.
  *      (0010 re-asserts these itself in its own section 1; this helper measures the same
  *      facts from outside so the operator sees them before the file runs.)
+ *
+ * These four catalog checks are the ones measured INSIDE the apply transaction. They are
+ * necessary but NOT sufficient: preflight additionally enforces the brief section 10
+ * sequencing gate for 0010 (a successful 0009 apply record for the same target ref, AND a
+ * live-Worker proof of the 19-argument path for the same target ref and task id -- see
+ * "0010 APPLY SEQUENCING GATE" in the file header). The catalog checks below are unchanged.
  */
 export async function measurePreconditions(q, migrationId) {
   const checks = [];
@@ -612,6 +669,195 @@ export function readSequencingEvidence(evidencePath, expectedRef) {
   return { ok: false, reason: 'evidence_has_no_0009_apply_record' };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Worker-live proof of the 19-argument path (brief section 10, gate 4b)
+//
+// The brief requires, before CONTRACT/0010: "new Worker must be proven live on the
+// 19-argument path" and "old Worker/in-flight compatibility window must be closed by
+// measured evidence". Both are PROOF records that must be observed, not inferred. A
+// successful 0009 apply record therefore NEVER satisfies this gate: the caller reads
+// this evaluator in addition to readSequencingEvidence, never instead of it.
+//
+// ACCEPTED SHAPES (documented in the file header; enforced here):
+//   Shape 1  sibling top-level array   { "worker_live_proofs": [ <record>, ... ] }
+//   Shape 2  per-record fields         proof fields directly on a record of { "records": [...] }
+//                                      or directly on the single root object
+//
+// A proof record is accepted only when it carries ALL of: task_id == TASK_ID,
+// target_ref == expectedRef, a 19-argument function observation OR a live ingestion
+// proof reference, an observing command/evidence reference, and a timestamp.
+// Anything else -- including an incomplete record for the right target and task -- is
+// refused, so a partial packet can never be read as proof.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Reviewed 19-argument RPC name. The proof must name the function it observed. */
+const WORKER_LIVE_FN = FN_NAME;
+
+function isNonEmptyString(v) {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function pickString(rec, keys) {
+  for (const k of keys) {
+    if (!Object.prototype.hasOwnProperty.call(rec, k)) continue;
+    const v = rec[k];
+    if (typeof v === 'string' && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
+/**
+ * True when the observed-function value names the reviewed RPC AND establishes the
+ * 19-argument shape. Either the token 19 appears in the identity string, or the record
+ * carries an explicit integer arity field equal to 19.
+ */
+function observedFunctionIs19(fnText, rec) {
+  if (!isNonEmptyString(fnText)) return false;
+  if (!fnText.includes(WORKER_LIVE_FN)) return false;
+  if (/(^|[^0-9])19([^0-9]|$)/.test(fnText)) return true;
+  for (const k of ['pronargs', 'arity', 'argument_count']) {
+    if (Object.prototype.hasOwnProperty.call(rec, k) && Number(rec[k]) === 19) return true;
+  }
+  return false;
+}
+
+/**
+ * Builds the refusal-shaped result for an evidence document that carries no acceptable
+ * worker-live proof. `reason` is one of the three documented refusal reasons; the detail
+ * text names exactly what was missing so the operator never has to guess.
+ */
+function workerProofRefused(reason, detail, candidates) {
+  return {
+    ok: false,
+    reason,
+    detail,
+    expected_task_id: TASK_ID,
+    candidates_examined: candidates,
+    requirement: 'worker_live_proof_19arg_for_same_target_ref_and_task_id',
+  };
+}
+
+/**
+ * Answers exactly one question: does the release-evidence document record a LIVE-WORKER
+ * PROOF of the 19-argument path for this same target ref AND this same task id?
+ * It never runs SQL, never reads the credential and never connects.
+ */
+export function evaluateWorkerLiveProof(evidencePath, expectedRef, expectedTaskId) {
+  const taskId = isNonEmptyString(expectedTaskId) ? expectedTaskId : TASK_ID;
+  let raw;
+  try {
+    raw = fs.readFileSync(evidencePath, 'utf8');
+  } catch (e) {
+    return workerProofRefused('proof_document_unreadable', `evidence_unreadable:${e.code || e.name}`, 0);
+  }
+  let doc;
+  try {
+    doc = JSON.parse(raw);
+  } catch {
+    return workerProofRefused('proof_document_not_json', 'the release-evidence file is not JSON', 0);
+  }
+
+  // Shape 1 -- sibling top-level array. Preferred when present and non-empty.
+  if (doc && !Array.isArray(doc) && Array.isArray(doc.worker_live_proofs)) {
+    return evaluateProofRecords(doc.worker_live_proofs, expectedRef, taskId, 'top_level_worker_live_proofs');
+  }
+
+  // Shape 2 -- per-record fields.
+  const records = Array.isArray(doc) ? doc : (Array.isArray(doc.records) ? doc.records : [doc]);
+  return evaluateProofRecords(records, expectedRef, taskId, 'per_record_fields');
+}
+
+function evaluateProofRecords(records, expectedRef, taskId, source) {
+  let sawAnyCandidate = false;
+  let sawTargetMismatch = false;
+  let sawTaskMismatch = false;
+  let sawIncompleteForThisTargetAndTask = false;
+  let examined = 0;
+
+  for (const rec of records) {
+    if (!rec || typeof rec !== 'object' || Array.isArray(rec)) continue;
+    examined += 1;
+
+    const recTaskId = pickString(rec, ['task_id', 'taskId']);
+    const ref = pickString(rec, ['target_ref'])
+      ?? (rec.target_identity && typeof rec.target_identity === 'object' ? pickString(rec.target_identity, ['ref']) : null)
+      ?? (rec.target && typeof rec.target === 'object' ? pickString(rec.target, ['ref']) : null);
+    const fnText = pickString(rec, ['observed_function', 'observed_function_identity', 'fn_identity']);
+    const ingestionRef = pickString(rec, ['live_ingestion_proof_ref', 'ingestion_proof_ref']);
+    const observedBy = pickString(rec, ['observed_by', 'observing_command', 'evidence_ref', 'command']);
+    const observedAt = pickString(rec, ['observed_at', 'timestamp', 'observedAt']);
+
+    // A record is a CANDIDATE when it looks like a worker-live observation at all --
+    // that is, it names the reviewed RPC or carries a live ingestion proof reference.
+    // Candidates are judged; everything else is simply not a proof record.
+    const namesFn = isNonEmptyString(fnText) && fnText.includes(WORKER_LIVE_FN);
+    if (!namesFn && !isNonEmptyString(ingestionRef)) continue;
+    sawAnyCandidate = true;
+
+    // Order matters for the refusal reason: a proof for a DIFFERENT target or a
+    // DIFFERENT task is reported as such, never as a mere absence.
+    if (ref !== null && ref !== expectedRef) { sawTargetMismatch = true; continue; }
+    if (recTaskId !== null && recTaskId !== taskId) { sawTaskMismatch = true; continue; }
+
+    const hasFunctionProof = namesFn && observedFunctionIs19(fnText, rec);
+    const hasIngestionProof = isNonEmptyString(ingestionRef);
+    const complete = hasFunctionProof || hasIngestionProof;
+    const hasObserver = isNonEmptyString(observedBy);
+    const hasTimestamp = isNonEmptyString(observedAt);
+    const matchesTarget = ref === expectedRef;
+    const matchesTask = recTaskId === taskId;
+
+    if (complete && hasObserver && hasTimestamp && matchesTarget && matchesTask) {
+      return {
+        ok: true,
+        reason: 'worker_live_proof_recorded_for_target_and_task',
+        source,
+        records_examined: examined,
+        evidence_sha256: sha256Hex(Buffer.from(JSON.stringify(rec), 'utf8')),
+        proof: {
+          task_id: recTaskId,
+          target_ref: ref,
+          observed_function: hasFunctionProof ? fnText : null,
+          live_ingestion_proof_ref: hasIngestionProof ? ingestionRef : null,
+          observed_by: observedBy,
+          observed_at: observedAt,
+        },
+      };
+    }
+
+    if (ref === null || matchesTarget) sawIncompleteForThisTargetAndTask = true;
+  }
+
+  if (sawIncompleteForThisTargetAndTask) {
+    return workerProofRefused(
+      'worker_live_proof_record_incomplete',
+      'a worker-live proof record naming this target ref/task id is present but does not carry all of: task id, target ref, the observed 19-argument function identity OR a live ingestion proof reference, the observing command/evidence reference, and a timestamp',
+      examined,
+    );
+  }
+  if (sawTargetMismatch) {
+    return workerProofRefused(
+      'worker_live_proof_recorded_for_a_different_target',
+      'worker-live proof exists in the release evidence but names a different target ref',
+      examined,
+    );
+  }
+  if (sawTaskMismatch) {
+    return workerProofRefused(
+      'worker_live_proof_recorded_for_a_different_task',
+      `worker-live proof exists in the release evidence but names a different task id (expected ${taskId})`,
+      examined,
+    );
+  }
+  return workerProofRefused(
+    sawAnyCandidate ? 'worker_live_proof_record_unusable' : 'worker_live_proof_absent',
+    sawAnyCandidate
+      ? 'worker-live proof record(s) were found but none carried the required fields'
+      : 'the release evidence records no worker-live proof of the 19-argument path at all',
+    examined,
+  );
+}
+
 /**
  * The ordered refusal ladder (checks 1..6). It NEVER reads the credential variable and
  * NEVER opens a connection. It returns either { ok: true, ... } or
@@ -621,6 +867,7 @@ export function evaluateGovernedPreflight(args, env, deps = {}) {
   const revisionExistsFn = deps.revisionExists ?? revisionExists;
   const bytesAtRevisionFn = deps.bytesAtRevision ?? bytesAtRevision;
   const readSequencingEvidenceFn = deps.readSequencingEvidence ?? readSequencingEvidence;
+  const evaluateWorkerLiveProofFn = deps.evaluateWorkerLiveProof ?? evaluateWorkerLiveProof;
   const statIsDirectory = deps.statIsDirectory ?? ((p) => {
     try { return fs.statSync(p).isDirectory(); } catch { return false; }
   });
@@ -699,7 +946,16 @@ export function evaluateGovernedPreflight(args, env, deps = {}) {
   }
 
   // ── Check 4: sequencing evidence, mandatory for apply of 0010 ─────────────
-  let sequencing = { required: false, provided: false, ok: null, reason: 'not_required_for_this_pair' };
+  // Two independently required sub-gates (brief section 10):
+  //   4a  a successful 0009 apply for this same target ref  -> SEQUENCING_EVIDENCE_MISSING
+  //   4b  a live-Worker proof of the 19-argument path for this same target ref AND task id
+  //                                                          -> WORKER_LIVE_PROOF_MISSING
+  // 4b is read explicitly from the evidence document and is NEVER inferred from the
+  // presence of a 0009 apply record.
+  let sequencing = {
+    required: false, provided: false, ok: null, reason: 'not_required_for_this_pair',
+    worker_live_proof_required: false, worker_live_proof: null,
+  };
   const evidenceRequired = args.mode === 'apply' && migration.requiresSequencingEvidenceOnApply === true;
   if (evidenceRequired) {
     sequencing.required = true;
@@ -709,6 +965,8 @@ export function evaluateGovernedPreflight(args, env, deps = {}) {
         { sequencing });
     }
     sequencing.provided = true;
+
+    // ── 4a: successful 0009 apply for this target ref (pre-existing gate) ────
     const evidence = readSequencingEvidenceFn(args['require-evidence'], args['expect-target-ref']);
     sequencing.ok = evidence.ok === true;
     sequencing.reason = evidence.reason;
@@ -719,12 +977,31 @@ export function evaluateGovernedPreflight(args, env, deps = {}) {
         { sequencing });
     }
     sequencing.record = evidence.record ?? null;
+
+    // ── 4b: live-Worker proof of the 19-argument path for this target + task ──
+    sequencing.worker_live_proof_required = true;
+    const workerProof = evaluateWorkerLiveProofFn(args['require-evidence'], args['expect-target-ref'], TASK_ID);
+    sequencing.worker_live_proof = workerProof;
+    if (workerProof.ok !== true) {
+      return fail('WORKER_LIVE_PROOF_MISSING', 'check_4b_worker_live_proof',
+        `release evidence does not record a live-Worker proof of the 19-argument path for target ${args['expect-target-ref']} and task ${TASK_ID} (${workerProof.reason}); a successful 0009 apply record is NOT accepted as this proof (brief section 10)`,
+        { sequencing });
+    }
   } else if (typeof args['require-evidence'] === 'string' && args['require-evidence'].length > 0) {
+    // Informational only: this pair does not require sequencing evidence, so neither
+    // sub-gate can refuse here. Both are still evaluated so the evidence JSON records
+    // the state rather than leaving the operator to guess.
     sequencing.provided = true;
     const evidence = readSequencingEvidenceFn(args['require-evidence'], args['expect-target-ref']);
     sequencing.ok = evidence.ok === true;
     sequencing.reason = evidence.ok ? evidence.reason : `informational_only:${evidence.reason}`;
     sequencing.evidence_sha256 = evidence.evidence_sha256 ?? null;
+    const workerProof = evaluateWorkerLiveProofFn(args['require-evidence'], args['expect-target-ref'], TASK_ID);
+    sequencing.worker_live_proof = {
+      informational_only: true,
+      ok: workerProof.ok === true,
+      reason: workerProof.reason,
+    };
   }
 
   // ── Check 5 / 6: authority guards. No credential read, no connection. ─────

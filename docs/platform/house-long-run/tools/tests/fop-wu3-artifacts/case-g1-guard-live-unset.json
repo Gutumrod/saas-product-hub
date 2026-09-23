@@ -10,8 +10,8 @@
   "file_sha256_expected": "8f88a7d1e4d3777dd0c2adefa999f61799bd50dd1270407fa025f3c4068d3487",
   "helper": {
     "path": "D:\\AI-Workspace\\runtime\\worktrees\\wstera-control-truth-sync-001\\docs\\platform\\house-long-run\\tools\\lane-a-exact-file-postgres-apply.mjs",
-    "sha256": "f3fc4d0cb40ef60bfb97ac05df0623793fe52badeb2db0a07ca83911d7a2453e",
-    "repo_head": "75360add4e11a565be366370d697b2f0f071c580",
+    "sha256": "d87bd4aa938d0d0a853cea84289e182d29e2cafe6237ff2df3e4fb5a3a77398b",
+    "repo_head": "f68af6973c41b55b69e3b46fea555128e0c4c045",
     "present_at_repo_head": false
   },
   "control_repo": "D:/AI-Workspace/runtime/worktrees/hub-web-cts001",
@@ -30,7 +30,9 @@
     "required": false,
     "provided": false,
     "ok": null,
-    "reason": "not_required_for_this_pair"
+    "reason": "not_required_for_this_pair",
+    "worker_live_proof_required": false,
+    "worker_live_proof": null
   },
   "refusal": {
     "reason": "LANE_A_LIVE_DB_AUTHORIZED must be exactly 'YES'; no credential was read and no connection was attempted",
@@ -47,7 +49,7 @@
   "failure_reason": "LANE_A_LIVE_DB_AUTHORIZED must be exactly 'YES'; no credential was read and no connection was attempted",
   "exit_code": 2,
   "final_classification": "AUTHORITY_GUARD_REFUSAL",
-  "generated_at": "2026-09-23T06:38:30.304Z",
+  "generated_at": "2026-09-23T07:01:59.151Z",
   "credential_value_persisted": false,
   "connection_string_persisted": false,
   "raw_stderr_persisted": false

@@ -172,3 +172,30 @@ runbook amendment or this section. No connection was attempted — including for
 paths, which are proven without any connection. No `drizzle-kit` or `db:push` command was executed.
 No production mutation occurred, and the helper has **not** been run. The helper is prepared and NOT
 executed. No `PRODUCTION_READY` and no `OPERATED_STABLE` is claimed.
+
+### 8.1 Review history — appended by work unit `FOP-WU6-DOCS-RECONCILE` (correlation `wstera-cts-001-fop-wu6-20260923`)
+
+Appended only; §1–§7 and the rest of §8 above are unchanged.
+
+1. **Mechanism-design resolved.** The mechanism-level portion of this finding is resolved as recorded
+   above (`LANE_A_EXACT_FILE_POSTGRES_TRANSACTION_APPLY_V1`, implemented by
+   `docs/platform/house-long-run/tools/lane-a-exact-file-postgres-apply.mjs`).
+2. **First independent review returned `CHANGES_REQUIRED`.** The focused independent Codex review of
+   the amendment returned `CHANGES_REQUIRED` with **two blocking findings** and **one HIGH finding**:
+   - *blocking* — the 0010 sequencing gate did not enforce the live-Worker proof of the 19-argument
+     path (only the pre-existing 0009 apply record was enforced);
+   - *blocking* — the harness `PASS` claim did not reproduce in the reviewer's sandbox;
+   - *HIGH* — the harness was not read-only.
+3. **Remediation applied.** The helper and the harness were changed to close all three findings: the
+   0010 apply now refuses with `WORKER_LIVE_PROOF_MISSING` unless the same release evidence records a
+   live-Worker proof of the 19-argument path for the same target ref and task id (the 0009 apply
+   record is never accepted as that proof); the harness now writes nothing inside the repository tree
+   in either mode and deletes its scratch on exit in read-only mode; and cases that need a spawned
+   child report `SKIP_UNSPAWNABLE` — never `FAIL` and never `PASS` — when the environment cannot
+   spawn one, so a sandbox limitation can no longer be reported as a pass or as a failure.
+4. **Second independent review is PENDING.**
+5. **This finding is therefore NOT approved and NOT closed.** `F-OP-01` remains **open at
+   operator-contract level**, and no live access is authorized by this document. The conditions in
+   §8 item 1–2 above still stand: a completed focused review of the remediated artifacts returning
+   `APPROVED`/`APPROVED_WITH_FINDINGS` with no open blocking finding, and the Owner release
+   authorization (`LANE_A_PRODUCTION_RELEASE_V1`).
