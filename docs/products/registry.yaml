@@ -6,7 +6,7 @@
 # locked seven-product engineering sequence and production gates; ROADMAP.md remains
 # historical portfolio context. A target deployment value below
 # is not proof that an app exists, has been admitted to that runtime, or is live.
-# Last Updated: 2026-09-07
+# Last Updated: 2026-09-25
 #
 # WSM / WS01 identity reconciliation (2026-09-07): Owner explicitly approved
 # closing the portfolio identity gap. WS01 is now a canonical product_code in this
@@ -16,16 +16,18 @@
 ## product_id / product_code: owner-approved 2026-08-26, full-portfolio adoption
 # — see docs/platform/PRODUCT_ID_HOSTNAME_NAMESPACE_PROPOSAL.md for the model and
 # decision log. product_id is a permanent internal identity (never reused, never
-# displayed to customers). product_code is a permanent short portfolio code
-# (never recycled even after retirement) used for canonical hostnames of the form
-# <code>.wstera.com. A product code does not itself prove DNS/deployment; each product's
-# host state is recorded separately. `key` remains the existing repo/catalog identifier
+# displayed to customers). product_code is a permanent short portfolio/reference code
+# (never recycled even after retirement) used for internal identity, Control Plane, billing,
+# gates, audit trails, and operations. It is not the required customer-facing hostname.
+# Owner decision 2026-09-25: public names/slugs must be unique and a hosted product's
+# canonical customer-facing host is <slug>.wstera.com. See
+# docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md. `key` remains the existing repo/catalog identifier
 # used elsewhere in this file and in code —
 # it is NOT renamed or replaced by this change. Consistent with the Hub/root-domain
 # note below (owner-confirmed 2026-08-24): wstera.com is the portfolio root: products
-# get subdomains, they do not own it. Host reservation/live state must be recorded per
-# product; DC01 is live at dc01.wstera.com as of 2026-09-07 while reserved hosts remain
-# documentation-only until separately deployed.
+# get subdomains, they do not own it. Public-host reservation/live state must be recorded per
+# product. Existing code-based hosts are legacy compatibility surfaces after 2026-09-25;
+# DC01 remains live at legacy dc01.wstera.com until its explicit migration to doccraft.wstera.com closes.
 # ==============================================================================
 
 version: "1.3"
@@ -37,7 +39,7 @@ repository: "Gutumrod/saas-product-hub"
 # The Hub itself lives at apps/hub-web (repo Gutumrod/hub-web) and is not listed as a product
 # below — it's the storefront, not one of the items for sale. Its domain is wstera.com (root,
 # acquired 2026-08-23 via Cloudflare Registrar); individual products get subdomains under it
-# (e.g. booking.wstera.com), they do not own the root domain. Confirmed by owner 2026-08-24.
+# (e.g. doccraft.wstera.com), they do not own the root domain. Confirmed by owner 2026-08-24.
 
 # ------------------------------------------------------------------------------
 # Release Waves
@@ -68,7 +70,8 @@ products:
     product_code: "BK01"
     delivery_model: "subscription_saas"
     # BK family reserved for the booking product line — see booking_ticket_module
-    # (BK02) below. canonical_host bk01.wstera.com is reserved, not yet live.
+    # (BK02) below. Public slug `service-booking` reserves canonical target
+    # service-booking.wstera.com. Former bk01.wstera.com code-host reservation is superseded and was not live.
     name: "Local Service Booking"
     slug: "service-booking"
     category: "Operations & Scheduling"
@@ -83,10 +86,9 @@ products:
     # modules: list removed 2026-08-18 — products/booking/ has no modules/ folder at
     # all; auth/tenant/billing were built inline instead of copied from modules-hub
     # (confirmed via full portfolio audit, Hermes+AGY, cross-checked against disk)
-    # canonical technical host is bk01.wstera.com (product-code host, PORTFOLIO_PRODUCTION_MASTER_PLAN.md
-    # §10 D1) — the root wstera.com domain (acquired 2026-08-23, Cloudflare Registrar) belongs to
-    # the SaaS Product Hub itself (apps/hub-web), not to booking; a branded alias
-    # (booking.wstera.com) may be added later pointing at the same product. Cloudflare Workers deploy via @opennextjs/cloudflare scaffolded
+    # canonical public application target is service-booking.wstera.com (slug host,
+    # PORTFOLIO_PRODUCTION_MASTER_PLAN.md §10 D1 as revised 2026-09-25). The root wstera.com
+    # belongs to the SaaS Product Hub itself (apps/hub-web), not to booking. Cloudflare Workers deploy via @opennextjs/cloudflare scaffolded
     # (products/booking@e99615d, Worker names wstera-consumer/wstera-admin are brand naming, not
     # a claim on the root domain) but not deployed, subdomain not attached yet. commercial/
     # operations still gated until live; Phase 2 (Hub CTA handoff) blocked until then — see
@@ -462,7 +464,8 @@ products:
     product_id: "prd_f4be6d1a9b544632a527e0e15e485622"
     product_code: "LK01"
     delivery_model: "subscription_saas"
-    # canonical_host lk01.wstera.com reserved (docs-only, no DNS record created).
+    # Public slug `wstera-link` reserves canonical target wstera-link.wstera.com.
+    # Former lk01.wstera.com code-host reservation is superseded; no DNS record was created.
     # Supersedes and replaces the retired "short_url_analytics" entry (product_code
     # SU01, retired 2026-08-26 — owner decision: merge into one product, WSTERA Link
     # as primary). SU01 is retired, not reassigned — do not reissue SU01 to a future
@@ -504,7 +507,8 @@ products:
     product_id: "prd_c3a024781f4e4079815b2399cfe330e0"
     product_code: "PS01"
     delivery_model: "subscription_saas"
-    # canonical_host ps01.wstera.com reserved (docs-only, no DNS record created).
+    # Public slug `pawstia` reserves canonical target pawstia.wstera.com.
+    # Former ps01.wstera.com code-host reservation is superseded; no DNS record was created.
     name: "Pawstia — Pet Management System by WSTERA"
     short_name: "Pawstia PMS"
     slug: "pawstia"
@@ -635,14 +639,15 @@ products:
     product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
     product_code: "DC01"
     delivery_model: "subscription_saas"
-    # canonical_host dc01.wstera.com is LIVE; Public Pilot / PV Gate opened 2026-09-08.
+    # Canonical public target is doccraft.wstera.com under the 2026-09-25 naming policy.
+    # Legacy dc01.wstera.com remains LIVE until explicit hostname migration/compatibility closure.
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"
     tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
-    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production is live at dc01.wstera.com. Public Pilot / PV Gate opened 2026-09-08 at DocCraft checkpoint 70054e7 with real-user evidence collection starting from zero. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
+    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production remains live on legacy dc01.wstera.com pending the separately gated migration to canonical doccraft.wstera.com. Public Pilot / PV Gate opened 2026-09-08 at DocCraft checkpoint 70054e7 with real-user evidence collection starting from zero. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
     deployment_model: "dedicated_runtime"
-    runtime_project: "Cloudflare Workers static assets / dc01.wstera.com"
+    runtime_project: "Cloudflare Workers static assets / legacy dc01.wstera.com; canonical target doccraft.wstera.com pending migration"
     commercial_status: "prototype"
     wave: 1
     path: "products/doccraft"

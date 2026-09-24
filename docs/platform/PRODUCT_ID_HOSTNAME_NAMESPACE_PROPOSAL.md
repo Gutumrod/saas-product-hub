@@ -4,6 +4,11 @@
 **Created:** 2026-08-26  
 **Scope:** SaaS Product Hub / WSTERA product portfolio
 
+> **SUPERSEDED FOR PUBLIC HOSTNAMES — 2026-09-25.** This proposal is retained as historical
+> provenance for `product_id` / `product_code` adoption. Its code-based public-host recommendation
+> is no longer active. Canonical policy is `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`.
+> Do not use the code-host sections below to override the later Owner decision.
+
 ## 1. Problem
 
 Product names such as `booking`, `chat`, `docs`, `crm`, or `pos` describe a category or capability and may be reused by multiple future products.

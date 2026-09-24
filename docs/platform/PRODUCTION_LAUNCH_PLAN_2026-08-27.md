@@ -10,6 +10,11 @@
 `PORTFOLIO_REAUDIT_2026-08-27.md` คือ intake evidence ล่าสุด; `BILLING_CORE_PLAN.md` คือแผนย่อย
 billing ที่แก้ trust boundary แล้ว เอกสารนี้ไม่แทนที่เอกสารใดในสามตัวนั้น
 
+> **Hostname supersession — 2026-09-25:** ข้อความใดใน snapshot นี้ที่อ้าง code-based public host
+> (`<product_code>.wstera.com`) ถูกแทนที่โดย
+> `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`. เก็บข้อความเดิมไว้เป็น historical
+> snapshot ห้ามใช้ย้อนกลับไป override policy ปัจจุบัน.
+
 > **VOID sections — Commander Final Review Gate, 2026-08-27.** ส่วนต่อไปนี้ **เพิกถอน ห้ามนำไปใช้**
 > เพราะจัดลำดับงานด้วย usage/demand ซึ่งขัดกฎเหล็ก CEO 2026-08-27 (`agent-iron-rules.md` — usage
 > น้อยหรือศูนย์ไม่ใช่เหตุผลตัดสโคป/ลด priority/kill งาน infra):

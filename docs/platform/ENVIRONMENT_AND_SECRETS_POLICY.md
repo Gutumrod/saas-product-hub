@@ -171,7 +171,7 @@ do), not a formal rating.
 | `LINE_TARGET_ID` | PS01 | Deployment configuration (`.env`), not a credential | CEO | Not a secret — names a LINE delivery target. Wrong value misroutes notifications; it grants no access on its own. |
 | `CAMERA_REQUESTER_IP_HEADER` | PS01 | Deployment configuration, not a credential | CEO | Not a secret — names which header carries the client IP. Wrong value silently breaks IP-based rate limiting, so treat it as security-relevant configuration even though it is not itself sensitive. |
 | `CAMERA_ALLOWED_FEED_HOSTS` | PS01 | Deployment configuration, not a credential | CEO | Not a secret — an allowlist of permitted camera feed hosts. Over-broad value widens SSRF/feed-source exposure; security-relevant configuration. |
-| `APP_BASE_URL` | PS01 | Deployment configuration, not a credential | CEO | Not a secret — the product's own base URL. Wrong value breaks generated links and callback URLs; per §10 D1 it must point at the product's code host. |
+| `APP_BASE_URL` | PS01 | Deployment configuration, not a credential | CEO | Not a secret — the product's own base URL. Wrong value breaks generated links and callback URLs; per §10 D1 (revised 2026-09-25) it must point at the verified canonical public slug host after migration. |
 | `STRIPE_SECRET_KEY` | BK01, MT01, HC01, billing-core (planned) | Stripe dashboard (per Stripe account/mode); central vault | CEO | Full Stripe account API access for that key's mode (test or live) — create charges/subscriptions, read customer data. |
 | `STRIPE_WEBHOOK_SECRET` | BK01, MT01, HC01, billing-core (planned) | Stripe dashboard (per webhook endpoint) | CEO | Allows forging Stripe webhook payloads, bypassing signature verification. |
 | `STRIPE_PUBLISHABLE_KEY` | BK01, HC01 | Stripe dashboard (public by design) | CEO | Low — meant to be client-visible. |
@@ -207,40 +207,32 @@ could not be fully attributed and are marked `UNVERIFIED` above rather than gues
   `PORTFOLIO_PRODUCTION_MASTER_PLAN.md` §3.1 and `HANDOFF.md`). Products get subdomains; they do not
   own the root domain. `HANDOFF.md` records the root domain was briefly misattributed to `booking` on
   2026-08-24 and corrected the same day.
-- **Canonical hostname rule (§10 D1):** every product's canonical technical host is `<product_code>.wstera.com`
-  (e.g. `bk01.wstera.com`). Stripe redirect URLs, OAuth callbacks and LINE callbacks must point at the
-  code host, because the code never changes even if a brand name does (see PS01/Pawstia, §10 D8, where
-  the brand changed but `PS01` did not). A branded alias (e.g. `pawspace.wstera.com` →PS01, or a future
-  `pawstia.wstera.com`) may be added later pointing at the same product; it blocks nothing.
-- **Reservation status, verified from `registry.yaml` directly (grep for `canonical_host`/`product_code`,
-  not inferred from the master plan's prose):**
+- **Canonical hostname rule (§10 D1, revised 2026-09-25):** every hosted product application
+  uses its approved unique public slug: `<public_slug>.wstera.com`. Public product names and slugs
+  must be unique across the active/reserved portfolio. `product_id` and `product_code` remain
+  permanent internal identifiers and are not required in customer-facing URLs. Canonical policy:
+  `PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`.
+- **Registry/host state:** the registry declares `name` and `slug`; the canonical public host is
+  derived from the slug, so no separate `canonical_host:` YAML field is required by policy.
 
-  | Product | `product_code` | `canonical_host` reservation actually found in `registry.yaml` |
-  |---|---|---|
-  | BK01 `booking` | `BK01` | Reserved by name only in a comment: "canonical_host bk01.wstera.com is reserved, not yet live." No `canonical_host:` YAML key/field exists anywhere in the file. |
-  | LK01 `wstera_link` | `LK01` | Same pattern, comment only: "canonical_host lk01.wstera.com reserved (docs-only, no DNS record created)." |
-  | PS01 `pawspace` | `PS01` | **No `canonical_host` comment or field found for PS01** in this session's read of the registry entry (lines ~494-535). The implied host under the D1 rule would be `ps01.wstera.com`, but the registry does not state it anywhere. |
-  | DC01 `doccraft` | `DC01` | **No `canonical_host` comment or field found for DC01** either. Implied host under D1: `dc01.wstera.com`, not written down anywhere in the registry. |
-  | MT01, CM01, HC01 | `MT01`/`CM01`/`HC01` | Not applicable in the same way — these are one-time source products distributed to buyers, not hosted under a WSTERA subdomain; no `canonical_host` expectation applies. |
+  | Product | Public slug | Canonical public target | Legacy/code-host disposition |
+  |---|---|---|---|
+  | BK01 `booking` | `service-booking` | `service-booking.wstera.com` | Former `bk01.wstera.com` reservation superseded before launch; registry records it was not live. |
+  | LK01 `wstera_link` | `wstera-link` | `wstera-link.wstera.com` | Former `lk01.wstera.com` reservation superseded; registry records no DNS record was created. |
+  | PS01 `pawspace` | `pawstia` | `pawstia.wstera.com` | Former `ps01.wstera.com` reservation superseded; registry records no DNS record was created. |
+  | DC01 `doccraft` | `doccraft` | `doccraft.wstera.com` | `dc01.wstera.com` remains the legacy live host until explicit migration/compatibility closure. |
+  | One-time/source products | as declared when/if hosted | none required by default | No WSTERA app host is required unless a hosted product surface is introduced. |
 
-  **Correction to the brief's framing:** the brief states each product's code host is "already
-  reserved in `registry.yaml`." Verified: this is only actually written down for BK01 and LK01, as
-  free-text comments, not as a structured field. PS01 and DC01 have no such statement anywhere in the
-  registry despite both being subscription-SaaS products the D1 rule applies to. This is a real gap in
-  the registry, not a documentation-reading error — recorded here as a finding for the reviewer, not
-  silently corrected (this brief may not edit `registry.yaml`).
-- **Live-resolution status: `UNVERIFIED` for every hostname, by this brief's own hard rule (no DNS
-  lookups, no network calls permitted).** `HANDOFF.md` states only `wstera.com` itself (the root) is
-  live on Cloudflare Workers as of 2026-08-25, serving an empty catalog. No document read this session
-  states that any `<code>.wstera.com` subdomain has an actual DNS record — `registry.yaml`'s own header
-  comment says explicitly "reservation is documentation-only here; no DNS record has been created for
-  any product, including booking/BK01." Take that as the current ground truth: **zero product
-  subdomains are live**, only the root is.
-- **Callback rule:** Stripe redirect URLs, OAuth callbacks, and LINE callbacks must point at the
-  `<code>.wstera.com` host, never a branded alias — because the code host is permanent and a brand name
-  is not (demonstrated by PS01/Pawstia). No product's Stripe/LINE callback configuration was verified
-  against this rule in this session (would require reading live provider dashboard config, out of
-  scope/impossible without a value-bearing credential).
+- **Live-resolution rule:** repository declarations are not a substitute for DNS/TLS/runtime proof.
+  Before launch or migration, verify the actual Cloudflare route, certificate, HTTPS behavior,
+  security headers, and expected application response on the canonical host. Preserve dated evidence
+  that observed a legacy host at its original time.
+- **Callback/provider rule:** new provider configuration should use the canonical public host where
+  the provider contract requires a WSTERA URL. Existing OAuth callbacks, payment redirect/webhook
+  endpoints, LINE callbacks, QR codes, monitoring, and external links must be inventoried and
+  migrated explicitly. Do not assume redirects are safe for provider callbacks/webhooks; update the
+  provider configuration directly where required and keep the legacy endpoint available until the
+  migration evidence proves it is no longer needed.
 - **Publication gate (§3.1):** no product's destination URL or purchase path may be published on the
   live Hub catalog before that product's own release checkpoint records a CEO `GO`. Verified true today
   by construction: `HANDOFF.md` confirms the Hub's catalog is currently empty and every CTA renders

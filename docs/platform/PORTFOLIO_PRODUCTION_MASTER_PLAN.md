@@ -10,7 +10,7 @@
 
 **Date:** 2026-08-27
 
-**Status:** CEO-approved execution baseline — revision 3 after Commander Final Review Gate
+**Status:** CEO-approved execution baseline — revision 4 after Owner public naming/hostname policy supersession
 
 **Scope:** Engineering, security, operations, product delivery, and launch readiness only
 
@@ -32,10 +32,14 @@ Revision history:
   pre-existing-condition record, the dual-billing runbook obligation, and the billing-core database
   placement decision. Review record: `D:\AI-Workspace\vault\06-Agent-Logs\SaaS-Product-Hub\
   2026-08-27-commander-final-review.md`.
+- **R4:** Owner decision (2026-09-25) supersedes the former code-based public hostname rule in D1.
+  Customer-facing product names/slugs must be unique and hosted product applications use
+  `<public_slug>.wstera.com`; permanent `product_id`/`product_code` remain internal identifiers.
+  Canonical policy: `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`.
 
 ## Current execution checkpoint - 2026-09-03
 
-> **Status overlay, not revision 4.** Revision 3 and CEO decisions D1-D10 remain the execution authority. This section updates only verified gate/dependency state; it does not reopen scope, sequencing rules or owner decisions.
+> **Status overlay retained from 2026-09-03.** Revision 4 and CEO decisions D1-D10 remain the execution authority. This section updates only verified gate/dependency state; it does not reopen scope, sequencing rules or owner decisions.
 
 - **P0a-C1 = PASS (independent reassessment 2026-09-03).** The named CM01 blocker is closed: CM01 owning CI is green on `main@aeaa750` (run `33670789635`) and `hub-web` CI is green at `d8e31c7` (run `33593735430`). Both jobs run on GitHub-hosted runners after `actions/checkout@v4`, satisfying the checkpoint's clean-clone/no-untracked-local requirement. `CI_BASELINE.md` explicitly makes lint advisory/placeholder-only when the proving repository lacks installed lint tooling and assigns that closure to P0b; the missing lint step therefore does not invalidate P0a-C1. Independent evidence and verdict: `docs/platform/REVIEW-P0a-C1-2026-09-03.md`. Residual P0b lint/tooling debt remains blocking only at the per-repository release-readiness gate.
   Residual, non-blocking: three `registry.yaml` `path:` fields added after P0a-B4 remain mixed-case (`products/LINE OA AI Sales & Service Engine`, `products/RentMatrix`, `products/OmniDesk`). Per D5, lowercase them only in the same change that renames the physical directories.
@@ -453,9 +457,10 @@ single front-loaded gate whose slowest repository stalled all seven.
    "payment collection absent" instead of denying both; `ROADMAP.md` describes an HC01 reference
    server and its passing tests as if they exist on the default branch when they exist only on the
    open PR; `ROADMAP.md` §A1 still carries CM01's superseded 2026-08-21 removal against the
-   2026-08-27 seven-product lock; `ROADMAP.md`'s "Project B routing truth" table still routes
-   `booking` to `booking.wstera.com` against the decided code-host convention (§10 D1); DC01's
-   registry description still reports Phase 1–2 against a Phase 4 head; and every mixed-case nested
+   2026-08-27 seven-product lock; `ROADMAP.md`'s "Project B routing truth" table must follow the
+   current public-slug hostname convention (§10 D1, revised 2026-09-25) and must not restore
+   code-host routing from historical evidence; DC01's registry description still reports Phase 1–2
+   against a Phase 4 head; and every mixed-case nested
    path (`products/PawSpace`, `products/DocCraft`, including `registry.yaml`'s `path:` fields) is
    corrected to all-lowercase per §10 D5.
 
@@ -888,7 +893,7 @@ and reruns the relevant gates.
 | R7 | HC01's open branch can be mistaken for production-ready because it contains a server/tests | High | Independent PR disposition; fix failing test, auth/persistence and advisories before integration |
 | R8 | Stale/conflicting status documents can override current code evidence | High | Authority order, exact-commit evidence and same-change documentation updates |
 | R9 | LINE, Google, Stripe, Supabase, Cloudflare and storage failures cross operational boundaries | High | Per-provider timeout/retry/reconciliation/degraded-mode runbooks and alerts |
-| R10 | Naming/path case drift and the PawSpace trademark collision can force late migrations | Low | Hostname settled (§10 D1); path casing all-lowercase (§10 D5); PawSpace renamed to Pawstia (§10 D8) after a clean collision screen — residual: internal rename, social-handle claim, formal TH trademark search before public launch (PS-F) |
+| R10 | Naming/path case drift and the PawSpace trademark collision can force late migrations | Low | Public naming/slug/hostname policy settled (§10 D1, revised 2026-09-25); path casing all-lowercase (§10 D5); PawSpace renamed to Pawstia (§10 D8) after a clean collision screen — residual: internal rename, social-handle claim, formal TH trademark search before public launch (PS-F) |
 | R11 | Hub stores cross-product customer PII beyond its minimal control-plane role | Medium | Data minimization, field purpose, access audit, retention and deletion verification |
 | R12 | Source products can expose WSTERA secrets, unsupported dependencies or unclear IP rights | High | Clean-room packaging, full-history secret scan, license audit, SBOM and buyer acceptance |
 | R13 | No product has a working fulfillment path, so a finished one-time product still cannot be delivered to a buyer | High | L4 built once as the P1 Hub capability with idempotent, revocable, recorded delivery proven at P1-C1 |
@@ -904,17 +909,18 @@ control has executable evidence or the CEO records a named, expiring acceptance.
 
 ### Decided (2026-08-27 unless noted) — implementation must follow these, not re-open them
 
-- **D1. Hostname convention.** The canonical technical host for every product is its product code:
-  `bk01.wstera.com`, `ps01.wstera.com`, `lk01.wstera.com`, `dc01.wstera.com`. This was approved on
-  2026-08-26 with the `product_id`/`product_code` adoption (commit `45e6f23`); `registry.yaml`
-  records the `canonical_host` reservation as a free-text comment for BK01 and LK01, and the same
-  free-text comment was added for PS01 and DC01 under P0a-B4 (`docs/platform/PHASE_P0a_B4_EVIDENCE.md`
-  item 8) — it is not a structured YAML field for any of the four, which is recorded as an open
-  question for the CEO. Stripe redirect URLs, OAuth callbacks and LINE callbacks
-  point at the code host, because the code never changes even when a brand name does. A branded
-  alias (`pawspace.wstera.com` → PS01) may be added later pointing at the same product and blocks
-  nothing. `ROADMAP.md`'s "Project B routing truth" table already reads `bk01.wstera.com` (corrected
-  in commit `4385017`); no residual documentation work remains on that line.
+- **D1. Public product naming and hostname convention — revised 2026-09-25.** The Owner replaced
+  the former product-code public-host rule. Every customer-facing product name and public slug must
+  be unique across the active/reserved WSTERA portfolio; a later product that would collide is
+  renamed before launch. For a hosted product application, the canonical customer-facing host is
+  `<public_slug>.wstera.com`. `product_id` and `product_code` remain permanent internal identifiers
+  and are not required in customer-facing URLs. Published/reserved slugs are not silently recycled.
+  Previously published code hosts are legacy compatibility surfaces and are migrated explicitly;
+  live DNS/routes, OAuth/payment/LINE/provider callbacks, QR codes, monitoring, and redirects must
+  not be bulk-replaced or removed blindly. Canonical rules and migration constraints are defined in
+  `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`. For DC01 the canonical target is
+  `doccraft.wstera.com`; `dc01.wstera.com` remains a legacy live host until a separate migration
+  verifies the new host and records compatibility/sunset disposition.
 - **D2. Hub event trust.** Per-product HMAC keys: each product-event signer holds its own secret,
   bound server-side to exactly one product. The current single shared secret is prohibited in
   production. Asymmetric signing remains a later upgrade option and does not need to be built now,
@@ -1021,10 +1027,11 @@ These decisions are intentionally limited to product/engineering behavior. Prici
 forecasts and revenue decisions stay in the CEO's separate financial plan.
 
 **§10 status:** the decisions that gated the start of work are all made (D1–D8) or deliberately
-deferred with a recorded trigger (D9). Nothing in §10 blocks P0a. Smaller open questions surfaced by
-the P0a work — three CI tooling choices (license audit, secret scan, SAST; commit `27a06c8`) and
-whether `canonical_host` should become a structured `registry.yaml` field (D1) — are tracked in
-their P0a evidence docs, not here, and none blocks P0a-C1.
+deferred with a recorded trigger (D9). Nothing in §10 blocks P0a. D1 is governed by
+`docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`; the canonical public host is derived
+from the approved registry `slug`, so this policy does not require a separate `canonical_host` YAML
+field. Remaining CI tooling choices (license audit, secret scan, SAST; commit `27a06c8`) stay tracked
+in their P0a evidence docs and do not block P0a-C1.
 
 ---
 

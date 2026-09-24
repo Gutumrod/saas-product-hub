@@ -118,13 +118,13 @@ plan; the demand-based reasoning does not.
 
 ### CEO decisions locked — 2026-08-27 (master plan §10)
 
-- **D1 hostname.** Canonical technical host = product code (`bk01.wstera.com`, `ps01.wstera.com`,
-  …). This was already approved 2026-08-26 with `product_id`/`product_code` adoption; the review
-  wrongly re-listed it as open. `registry.yaml` records the `canonical_host` reservation as a
-  free-text comment for BK01 and LK01; the same comment convention was added for PS01 and DC01
-  under P0a-B4 (`docs/platform/PHASE_P0a_B4_EVIDENCE.md`). Branded
-  aliases may be layered on later. `ROADMAP.md`'s routing line was corrected in commit `4385017`;
-  no residual work remains there.
+- **D1 hostname — revised 2026-09-25; former code-host rule superseded.** Canonical customer-facing host for a hosted product is
+  `<public_slug>.wstera.com`; public names and slugs must be unique across active/reserved WSTERA
+  products. `product_id` and `product_code` remain permanent internal identifiers, not required in
+  customer-facing URLs. Existing live code hosts are legacy compatibility surfaces and are not
+  removed blindly; callbacks/provider endpoints/redirects are migrated explicitly. Canonical policy:
+  `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`. DC01 target is
+  `doccraft.wstera.com`; `dc01.wstera.com` remains legacy until its migration closes.
 - **D2 Hub event trust.** Per-product HMAC keys, one secret bound server-side to one product. The
   shared secret does not survive P1. Asymmetric signing stays a later option, not required now.
 - **D3 billing-core database.** `billing_core` is a dedicated schema inside the Hub project
