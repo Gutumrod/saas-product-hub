@@ -90,3 +90,29 @@ Owner decision effective 2026-09-08:
 - Historical or failed evidence must remain clearly labeled and must not be silently rewritten into current truth.
 
 This rule applies to House, product coordinators, agents, Council follow-ups, platform work, and cross-product remediation.
+
+## WSTERA Commercial Rules L-01–L-15 (Owner-locked 2026-09-25)
+
+Canonical source (Thai, wins on conflict): `Gutumrod/second-brain-vault:06-Agent-Logs/WSTERA-House/PLAN-HOUSE-LOCKED-v1-2026-09-25.md` (sha256 `27772B0A…06814A`) and its addenda in `STATUS-HOUSE.md`. This section is a pointer copy; do not edit rule content here without an Owner-approved addendum there.
+
+Applies to every product WSTERA sells (BK01, PS01, DC01, MT01, HC01, WS01, LK01, Module Hub, and any later product).
+
+- **L-01 TH/EN:** every customer-facing UI and every customer-read document (product page, manual/README, integration guide, license/terms/support docs) must exist in both Thai and English. API/function/type names, code comments and error codes stay English-only. Missing either language = not sell-ready.
+- **L-02 Delivery acceptance:** the Owner must personally complete the flow as a customer (CD-01 test mode, CD-02 real money + refund). Agent logs, tests or TEST mode alone never count.
+- **L-03 Payments:** WSTERA collects money through SB01 (central billing) only. Products must not hold Stripe/provider keys or set amounts. Known transitional exception: BK01's own Stripe subscription (Owner-approved, extraction plan applies).
+- **L-04 Ship when ready:** a product/module that is sell-ready may launch alone; do not wait for others or a full bundle.
+- **L-05 Not ready = not shown:** Module Hub items that are not sell-ready do not appear on the site (no Coming Soon, no waitlist). SaaS keeps the existing Coming Soon until 4 SaaS products are really on sale, then remove it.
+- **L-06 No overclaiming:** no fake customer counts, ratings or social proof. A registry "Completed" status is not sell-ready.
+- **L-07 Prices come from the Owner only:** agents never invent prices, discounts, coupons, tax/VAT or renewal prices. Currency follows language: Thai → THB, English → USD. Both prices are fixed numbers set by the Owner (no automatic FX conversion); the customer pays in the currency shown; SB01 billing profiles store both; PromptPay is THB-only; a separate currency switch may come later.
+- **L-08 One storefront, one catalog:** `wstera.com` only; one catalog split by `productKind` (saas/module/pack/bundle) + `billingModel` (subscription/one_time). No parallel catalog database. Business buyers → SaaS Hub; developers → Module Hub.
+- **L-09 Separate customer and staff surfaces:** staff/admin pages stay off the buyer path. `platform.wstera.com` is the Control Plane and must not merge with the storefront.
+- **L-10 Catalog is not financial truth:** no Stripe/provider logic in the storefront as a shortcut; no fake payment or entitlement states.
+- **L-11 Minimum security:** secrets live only on the host / `D:\AI-Workspace\.secrets\` — never in client bundles, docs, logs or fixtures. Hiding a button is not authorization; enforce on the server. Keep security headers. Migrations must be forward-safe and non-destructive unless the Owner approves.
+- **L-12 Solid foundations for future scale:** catalog, billing, auth/security, data model and TH/EN must be designed to grow without a rewrite (long-term plan over current usage).
+- **L-13 Launch support:** text-only support (ticket / bug report / written). No live calls. Consulting/installation is not included and is sold separately.
+- **L-14 Minimum sell-ready bar:** works for real + TH/EN docs (L-01) + Owner customer run passed (L-02) + deliverable + support channel + license/terms or ToS.
+- **L-15 Legal before charging:** source products need a license/terms; SaaS needs ToS + Privacy Policy before any money is collected.
+
+Module Hub only (not required for other products): one-time purchase + 12 months of free updates; unlimited projects, no per-seat pricing; Pack discount 15–25% / Bundle 30–40%; packs grouped by use case; Sell Ready Standard (source, docs, example, integration guide, tests).
+
+Changing any price, license/legal text, payment path, production DB/deploy/secret, security boundary, or repo visibility is a high-risk decision reserved for the Owner.
