@@ -5,7 +5,16 @@
 **Parent branch/HEAD before this closeout:** `master @ c7bf944`
 **Execution authority:** `docs/platform/PORTFOLIO_PRODUCTION_MASTER_PLAN.md` revision 3 + later explicit owner decisions
 **Purpose:** current-state overlay. This file does not replace product PRDs, architecture contracts, gate evidence or historical daily logs.
-**Latest Owner overlay:** 2026-09-08
+**Latest Owner overlay:** 2026-09-25
+
+## 2026-09-25 DC01 Public Hostname Migration Overlay
+
+- DC01 hostname migration = **PASS** at DocCraft `c5190757645c9e7619967820c7f777aca17cea62` (DocCraft `master`).
+- Canonical production: `https://doccraft.wstera.com` = **LIVE**.
+- Legacy `https://dc01.wstera.com` = **LIVE**, compatibility mode **dual-serve** (same Worker `wstera-dc01`, same app; no cross-host redirect).
+- `dc01.wstera.com` must not be redirected or sunset without a draft-migration plan: drafts are browser `localStorage`, scoped per origin.
+- HTTP currently answers `301` to same-host HTTPS on both hosts; the `301` vs `308` contract gap stays a separate open finding.
+- Evidence: DocCraft `docs/HOSTNAME_MIGRATION_DOCCRAFT_2026-09-25.md`. Dated overlays below keep the hostname true at their observation time.
 
 ## 2026-09-08 DC01 Public Pilot / PV Gate Overlay
 
@@ -46,7 +55,7 @@
 | R15 Hub DB least privilege | **OPEN / PRE-DATA GATE** - live Hub runtime must move off Project A `postgres` owner access to scoped `hub_web_app`, with billing-schema denial proof |
 | billing-core migration `0001` | **QA REQUIRED / DO NOT APPLY** |
 | Pawstia Phase 13 | **NOT CLOSED** - verification branch exists; CI failed historical Phase 1 isolation regression before downstream matrix completed |
-| DocCraft / DC01 V1 Gate 6 | **PASS / CLOSED** at reviewed implementation `01115cc908adcbc4224d3d7878f8680da287439e`; production live at `dc01.wstera.com`; Public Pilot / PV Gate **OPENED 2026-09-08** at DocCraft `70054e7`; Phase 7 Cloud/Auth/Supabase remains frozen until PV Gate = PASS |
+| DocCraft / DC01 V1 Gate 6 | **PASS / CLOSED** at reviewed implementation `01115cc908adcbc4224d3d7878f8680da287439e`; production live at canonical `doccraft.wstera.com` (legacy `dc01.wstera.com` dual-serve; hostname migration PASS 2026-09-25 at DocCraft `c519075`); Public Pilot / PV Gate **OPENED 2026-09-08** at DocCraft `70054e7`; Phase 7 Cloud/Auth/Supabase remains frozen until PV Gate = PASS |
 | Payment/billing architecture | **Direction reconciled** - centralized billing-core remains authoritative; 2026-09-01 council adds Stripe-card recurring + PromptPay manual rail + mandatory reconciliation, not a competing core |
 
 ## Historical 2026-09-03 Portfolio Order — superseded by 2026-09-05 Owner overlay
@@ -69,7 +78,7 @@
 | BK01 | Booking | **ACTIVE HEAVY TRACK** by 2026-09-05 Owner overlay. Booking documentation checkpoint `82b297d` (implementation baseline `213360a`); Stage 4 closed; CONT-03 non-DB verification closed; CONT-04/DB-backed gates remain environment-blocked; Order Phase 0A/0B LOCKED with Reuse Gate PASS + MT01 PASS; Order implementation blocked |
 | PS01 | Pawstia | Phase 13 verification not closed; Project B admission not yet authorized |
 | LK01 | WSTERA Link | Pre-build; hybrid billing/PromptPay reconciliation complete; 2026-09-03 gate refresh pushed at `docs/hybrid-billing-promptpay @ ae7c474`. P0a is PASS but LK01 remains behind applicable P0b/P1 + Phase P4 scheduling |
-| DC01 | DocCraft | **V1 Gate 6 PASS / CLOSED** at reviewed implementation `01115cc908adcbc4224d3d7878f8680da287439e`; production live at `dc01.wstera.com`; **Public Pilot / PV Gate OPEN** from DocCraft `70054e7` with zero real-user evidence recorded at launch. Phase 7 Cloud/Auth/Supabase remains gated by PV; Phase 8 billing and Phase 9 post-MVP remain frozen |
+| DC01 | DocCraft | **V1 Gate 6 PASS / CLOSED** at reviewed implementation `01115cc908adcbc4224d3d7878f8680da287439e`; production live at canonical `doccraft.wstera.com` (legacy `dc01.wstera.com` dual-serve; hostname migration PASS 2026-09-25 at DocCraft `c519075`); **Public Pilot / PV Gate OPEN** from DocCraft `70054e7` with zero real-user evidence recorded at launch. Phase 7 Cloud/Auth/Supabase remains gated by PV; Phase 8 billing and Phase 9 post-MVP remain frozen |
 | MT01 | Multi-Tenant AI | Reference server only; deferred to P5/L0-L5 productization |
 | CM01 | Booking Ticket Module | Owning CI green on `main @ aeaa750` (63/63); no longer the P0a-C1 blocker. Remaining CM-D lint debt is P0b |
 | HC01 | Headless Commerce | Deferred to P5 except explicitly authorized HC-A cleanup |

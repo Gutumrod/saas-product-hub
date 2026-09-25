@@ -920,7 +920,9 @@ control has executable evidence or the CEO records a named, expiring acceptance.
   not be bulk-replaced or removed blindly. Canonical rules and migration constraints are defined in
   `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`. For DC01 the canonical target is
   `doccraft.wstera.com`; `dc01.wstera.com` remains a legacy live host until a separate migration
-  verifies the new host and records compatibility/sunset disposition.
+  verifies the new host and records compatibility/sunset disposition. Status 2026-09-25: migration
+  PASS at DocCraft `c5190757645c9e7619967820c7f777aca17cea62` — canonical host LIVE, legacy host LIVE in
+  dual-serve compatibility mode; redirect/sunset not yet decided.
 - **D2. Hub event trust.** Per-product HMAC keys: each product-event signer holds its own secret,
   bound server-side to exactly one product. The current single shared secret is prohibited in
   production. Asymmetric signing remains a later upgrade option and does not need to be built now,

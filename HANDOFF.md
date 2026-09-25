@@ -124,7 +124,8 @@ plan; the demand-based reasoning does not.
   customer-facing URLs. Existing live code hosts are legacy compatibility surfaces and are not
   removed blindly; callbacks/provider endpoints/redirects are migrated explicitly. Canonical policy:
   `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`. DC01 target is
-  `doccraft.wstera.com`; `dc01.wstera.com` remains legacy until its migration closes.
+  `doccraft.wstera.com`, LIVE since the 2026-09-25 migration PASS (DocCraft `c519075`); `dc01.wstera.com` stays
+  LIVE as legacy compatibility (dual-serve) until an explicit redirect/sunset decision.
 - **D2 Hub event trust.** Per-product HMAC keys, one secret bound server-side to one product. The
   shared secret does not survive P1. Asymmetric signing stays a later option, not required now.
 - **D3 billing-core database.** `billing_core` is a dedicated schema inside the Hub project

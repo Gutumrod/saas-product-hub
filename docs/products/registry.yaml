@@ -27,7 +27,8 @@
 # note below (owner-confirmed 2026-08-24): wstera.com is the portfolio root: products
 # get subdomains, they do not own it. Public-host reservation/live state must be recorded per
 # product. Existing code-based hosts are legacy compatibility surfaces after 2026-09-25;
-# DC01 remains live at legacy dc01.wstera.com until its explicit migration to doccraft.wstera.com closes.
+# DC01 hostname migration PASS 2026-09-25 (DocCraft c5190757645c9e7619967820c7f777aca17cea62): canonical
+# doccraft.wstera.com LIVE; legacy dc01.wstera.com LIVE in dual-serve compatibility mode (no redirect/sunset yet).
 # ==============================================================================
 
 version: "1.3"
@@ -639,15 +640,15 @@ products:
     product_id: "prd_d3bd4eca099b4c9599b2a9ecd0cc9652"
     product_code: "DC01"
     delivery_model: "subscription_saas"
-    # Canonical public target is doccraft.wstera.com under the 2026-09-25 naming policy.
-    # Legacy dc01.wstera.com remains LIVE until explicit hostname migration/compatibility closure.
+    # Canonical host doccraft.wstera.com LIVE since 2026-09-25 (migration PASS, DocCraft c5190757645c9e7619967820c7f777aca17cea62).
+    # Legacy dc01.wstera.com stays LIVE, dual-serve; no redirect/sunset while drafts are origin-scoped localStorage.
     name: "DocCraft"
     slug: "doccraft"
     category: "Business Documents & Productivity"
     tagline: "เว็บสร้างเอกสารธุรกิจแบบ modular สำหรับฟรีแลนซ์ ช่าง และธุรกิจขนาดเล็ก"
-    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production remains live on legacy dc01.wstera.com pending the separately gated migration to canonical doccraft.wstera.com. Public Pilot / PV Gate opened 2026-09-08 at DocCraft checkpoint 70054e7 with real-user evidence collection starting from zero. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
+    description: "Local-first DocCraft V1. Gate 6 is PASS/CLOSED at reviewed implementation 01115cc908adcbc4224d3d7878f8680da287439e; production is live on canonical doccraft.wstera.com (hostname migration PASS 2026-09-25 at DocCraft c5190757645c9e7619967820c7f777aca17cea62), with legacy dc01.wstera.com still serving the same app in dual-serve compatibility mode. Public Pilot / PV Gate opened 2026-09-08 at DocCraft checkpoint 70054e7 with real-user evidence collection starting from zero. Phase 7 cloud/auth/Supabase remains gated by PV, with Phase 8 billing and Phase 9 post-MVP still frozen by sequencing."
     deployment_model: "dedicated_runtime"
-    runtime_project: "Cloudflare Workers static assets / legacy dc01.wstera.com; canonical target doccraft.wstera.com pending migration"
+    runtime_project: "Cloudflare Workers static assets (wstera-dc01) / canonical doccraft.wstera.com + legacy dc01.wstera.com dual-serve"
     commercial_status: "prototype"
     wave: 1
     path: "products/doccraft"

@@ -104,6 +104,10 @@ Policy approval does not itself mutate DNS, Cloudflare routes, certificates, run
 provider callbacks, or product source. Those changes require a separate implementation task with
 verification and rollback/compatibility evidence.
 
+Migration status 2026-09-25: **PASS** at DocCraft `c5190757645c9e7619967820c7f777aca17cea62`
+(evidence `docs/HOSTNAME_MIGRATION_DOCCRAFT_2026-09-25.md` in the DocCraft repo). `doccraft.wstera.com`
+is LIVE; `dc01.wstera.com` remains LIVE in dual-serve compatibility mode with no redirect/sunset yet.
+
 ## 8. Authority
 
 When hostname/naming documents conflict, a later explicit Owner decision wins. For public product

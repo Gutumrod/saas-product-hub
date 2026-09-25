@@ -220,7 +220,7 @@ could not be fully attributed and are marked `UNVERIFIED` above rather than gues
   | BK01 `booking` | `service-booking` | `service-booking.wstera.com` | Former `bk01.wstera.com` reservation superseded before launch; registry records it was not live. |
   | LK01 `wstera_link` | `wstera-link` | `wstera-link.wstera.com` | Former `lk01.wstera.com` reservation superseded; registry records no DNS record was created. |
   | PS01 `pawspace` | `pawstia` | `pawstia.wstera.com` | Former `ps01.wstera.com` reservation superseded; registry records no DNS record was created. |
-  | DC01 `doccraft` | `doccraft` | `doccraft.wstera.com` | `dc01.wstera.com` remains the legacy live host until explicit migration/compatibility closure. |
+  | DC01 `doccraft` | `doccraft` | `doccraft.wstera.com` | Canonical LIVE since 2026-09-25 migration PASS (DocCraft `c519075`); `dc01.wstera.com` remains LIVE as legacy compatibility host (dual-serve) until an explicit redirect/sunset decision. |
   | One-time/source products | as declared when/if hosted | none required by default | No WSTERA app host is required unless a hosted product surface is introduced. |
 
 - **Live-resolution rule:** repository declarations are not a substitute for DNS/TLS/runtime proof.
