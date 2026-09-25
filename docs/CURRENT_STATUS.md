@@ -16,6 +16,17 @@
 - HTTP currently answers `301` to same-host HTTPS on both hosts; the `301` vs `308` contract gap stays a separate open finding.
 - Evidence: DocCraft `docs/HOSTNAME_MIGRATION_DOCCRAFT_2026-09-25.md`. Dated overlays below keep the hostname true at their observation time.
 
+### DC01 next actions after hostname canonicalization
+
+1. **Continue Public Pilot / PV evidence collection on the canonical host.** New pilot instructions and links should use `https://doccraft.wstera.com`. Keep `https://dc01.wstera.com` available as legacy dual-serve compatibility while existing browser drafts may still live under that origin.
+2. **Keep Phase 7 Cloud/Auth/Supabase frozen.** Hostname migration closure does not satisfy the PV Gate and does not authorize Phase 7, Phase 8 billing, or Phase 9 work. Those phases still require their existing gates and explicit Owner authorization.
+3. **Handle HTTP `301` vs `308` as a separate transport-contract decision.** Determine whether the intended contract should be restored at Cloudflare zone level or the test/contract should accept the current `301`. Do not reopen or roll back the completed hostname migration solely for this finding.
+4. **Do not redirect or sunset `dc01.wstera.com` yet.** Before cross-host redirect or removal, define and verify a draft-migration path for origin-scoped `localStorage` (for example JSON export/import or an equivalent safe transfer), notify affected pilot users, and prove that existing drafts remain recoverable.
+5. **Preserve canonical source control.** DocCraft `master` is the production source at `c5190757645c9e7619967820c7f777aca17cea62`; future deploys must not start from an older branch or checkpoint. Parent documentation should continue to treat `doccraft.wstera.com` as canonical LIVE and `dc01.wstera.com` as legacy compatibility until an explicit later decision changes that state.
+6. **Protect unrelated local work when synchronizing checkouts.** A checkout that is behind `origin/master` and contains unknown/untracked work must be reconciled without destructive `reset`/`clean`; use an isolated worktree when provenance is uncertain.
+
+**Open Owner decisions:** (a) final HTTP redirect contract: `301` or `308`; (b) timing and method for legacy `dc01.wstera.com` sunset after draft migration is proven.
+
 ## 2026-09-08 DC01 Public Pilot / PV Gate Overlay
 
 - DC01 Public Pilot / PV Gate = **OPEN / EVIDENCE COLLECTION**.
