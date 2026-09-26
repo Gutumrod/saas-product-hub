@@ -98,12 +98,12 @@ Canonical source (Thai, wins on conflict): `Gutumrod/second-brain-vault:06-Agent
 Applies to every product WSTERA sells (BK01, PS01, DC01, MT01, HC01, WS01, LK01, Module Hub, and any later product).
 
 - **L-01 TH/EN:** every customer-facing UI and every customer-read document (product page, manual/README, integration guide, license/terms/support docs) must exist in both Thai and English. API/function/type names, code comments and error codes stay English-only. Missing either language = not sell-ready.
-- **L-02 Delivery acceptance:** the Owner must personally complete the flow as a customer (CD-01 test mode, CD-02 real money + refund). Agent logs, tests or TEST mode alone never count.
+- **L-02 Delivery acceptance:** the Owner must personally complete the flow as a customer (CD-01–CD-04: test mode, then real money + refund; evidence the Owner can see personally; any step the Owner cannot do alone = not passed). Agent logs, tests or TEST mode alone never count.
 - **L-03 Payments:** WSTERA collects money through SB01 (central billing) only. Products must not hold Stripe/provider keys or set amounts. Known transitional exception: BK01's own Stripe subscription (Owner-approved, extraction plan applies).
 - **L-04 Ship when ready:** a product/module that is sell-ready may launch alone; do not wait for others or a full bundle.
 - **L-05 Not ready = not shown:** Module Hub items that are not sell-ready do not appear on the site (no Coming Soon, no waitlist). SaaS keeps the existing Coming Soon until 4 SaaS products are really on sale, then remove it.
 - **L-06 No overclaiming:** no fake customer counts, ratings or social proof. A registry "Completed" status is not sell-ready.
-- **L-07 Prices come from the Owner only:** agents never invent prices, discounts, coupons, tax/VAT or renewal prices. Currency follows language: Thai → THB, English → USD. Both prices are fixed numbers set by the Owner (no automatic FX conversion); the customer pays in the currency shown; SB01 billing profiles store both; PromptPay is THB-only; a separate currency switch may come later.
+- **L-07 Prices come from the Owner only:** agents never invent prices, discounts, coupons, tax/VAT or renewal prices. Currency follows language: Thai → THB, English → USD. Both prices are fixed numbers set by the Owner (no automatic FX conversion); the customer pays in the currency shown; SB01 billing profiles store both; PromptPay is THB-only; a separate currency switch may come later. (Supersedes the earlier "Module Hub primary price in USD, other currencies display-only" rule.)
 - **L-08 One storefront, one catalog:** `wstera.com` only; one catalog split by `productKind` (saas/module/pack/bundle) + `billingModel` (subscription/one_time). No parallel catalog database. Business buyers → SaaS Hub; developers → Module Hub.
 - **L-09 Separate customer and staff surfaces:** staff/admin pages stay off the buyer path. `platform.wstera.com` is the Control Plane and must not merge with the storefront.
 - **L-10 Catalog is not financial truth:** no Stripe/provider logic in the storefront as a shortcut; no fake payment or entitlement states.
@@ -113,6 +113,6 @@ Applies to every product WSTERA sells (BK01, PS01, DC01, MT01, HC01, WS01, LK01,
 - **L-14 Minimum sell-ready bar:** works for real + TH/EN docs (L-01) + Owner customer run passed (L-02) + deliverable + support channel + license/terms or ToS.
 - **L-15 Legal before charging:** source products need a license/terms; SaaS needs ToS + Privacy Policy before any money is collected.
 
-Module Hub only (not required for other products): one-time purchase + 12 months of free updates; unlimited projects, no per-seat pricing; Pack discount 15–25% / Bundle 30–40%; packs grouped by use case; Sell Ready Standard (source, docs, example, integration guide, tests).
+Module Hub only (not required for other products): one-time purchase + 12 months of free updates; unlimited projects, no per-seat pricing; Pack discount 15–25% / Bundle 30–40%; packs grouped by use case; Sell Ready Standard (5 items: source, docs, example, integration guide, tests).
 
 Changing any price, license/legal text, payment path, production DB/deploy/secret, security boundary, or repo visibility is a high-risk decision reserved for the Owner.
