@@ -91,6 +91,18 @@ Owner decision effective 2026-09-08:
 
 This rule applies to House, product coordinators, agents, Council follow-ups, platform work, and cross-product remediation.
 
+## House Governance Rules R-1–R-4 (Owner-approved 2026-09-26)
+
+Canonical source (Thai, wins on conflict): `Gutumrod/second-brain-vault:06-Agent-Logs/WSTERA-House/STATUS-HOUSE.md` Addendum A-4. The caretaker is the Claude session "WSTERA House Kickoff Readiness" (Windows); it is the single recorder of decision documents.
+
+- **R-1 Stay inside the locked documents.** Whoever is assigned to look after this project keeps work inside the latest locked document set. Do not change direction without explicit Owner approval.
+- **R-2 The caretaker steers everyone else.** The caretaker keeps every other agent/session aligned with the plan.
+- **R-3 Who may commit.**
+  - Code/product repositories (this repo, booking, hub-web, modules-hub, pawspace, doccraft, …): commit, push, merge and opening/closing PRs are done **only by the caretaker**, at every significant stage so work survives a machine change. Other agents work in their own worktrees/branches and hand over.
+  - Vault: an agent may commit only files it wrote itself (`git commit -- <file>`, never `add -A`) — its `_claims` file, its own reports/evidence, its own reviews.
+  - Decision/locked documents (STATUS-HOUSE, PLAN, addenda, briefs): caretaker only.
+- **R-4 Report to the caretaker.** Agents/sessions working on caretaker-assigned tasks report to the caretaker for decisions. Owner decisions given in another chat are forwarded to the caretaker to record.
+
 ## WSTERA Commercial Rules L-01–L-15 (Owner-locked 2026-09-25)
 
 Canonical source (Thai, wins on conflict): `Gutumrod/second-brain-vault:06-Agent-Logs/WSTERA-House/PLAN-HOUSE-LOCKED-v1-2026-09-25.md` (sha256 `27772B0A…06814A`) and its addenda in `STATUS-HOUSE.md`. This section is a pointer copy; do not edit rule content here without an Owner-approved addendum there.
