@@ -1,0 +1,8 @@
+name = "wstera-house-runtime-issuer-source-check"
+main = "worker.mjs"
+compatibility_date = "2026-09-28"
+compatibility_flags = ["nodejs_compat"]
+
+# Deliberately no Hyperdrive ID, route, vars, secrets, or deployment environment.
+# Bind the reviewed House-only Hyperdrive and Worker Secrets during the approved
+# live window; this file is only the local source build configuration.
