@@ -53,3 +53,4 @@
 - ยังไม่มี shared rate-limit/audit backing store ที่ผ่าน reuse gate ใน root repo; ต้องยืนยัน datastore/platform boundary และ retention ก่อนสร้าง.
 
 ผลลัพธ์นี้เป็น design-only และไม่อ้าง issuer, BUILD_PASS, hosted config หรือ token issuance ว่าพร้อมใช้งาน.
+
