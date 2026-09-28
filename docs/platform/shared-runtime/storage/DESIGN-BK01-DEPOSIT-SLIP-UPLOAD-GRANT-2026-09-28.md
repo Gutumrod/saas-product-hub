@@ -1,6 +1,8 @@
 # BK01 Deposit Slip Storage Grant — Design and Evidence
 
-วันที่ 2026-09-28 · สถานะ `DESIGN ONLY / IMPLEMENTATION BLOCKED / NO HOSTED PROOF`
+วันที่ 2026-09-28 · สถานะ `SOURCE CANDIDATES IMPLEMENTED / INDEPENDENT REVIEW PENDING / NO HOSTED PROOF`
+
+อัปเดตตามคำตัดสินผู้คุม 2026-09-28 (A-9): เลือก allowlist กลาง House ตามคู่ `(product_code,bucket_id)`; RPC รับ bucket แต่ไม่รับ product; House map role จาก JWT claim. Candidate อยู่บน branch รวม `codex/house-live-window-integration-20260928` และ `codex/bk01-live-window-integration-20260928`; ยังห้าม apply hosted.
 
 ## ตรวจ source จริง
 
@@ -20,20 +22,17 @@
 | signed URL ถูกใช้ครั้งเดียว/หมดอายุ 5 นาที | ไม่พบหลักฐานจาก client source; ห้ามอ้าง. client API ไม่ส่งค่า TTL |
 | MIME/ขนาดราย grant ถูกบังคับตอน bytes เข้าจริง | ยังไม่ยืนยันจาก server source/hosted |
 
-## Candidate enforcement
+## Candidate enforcement ที่เพิ่มบน branch รวม
 
-1. Policy `INSERT` สำหรับ `bk01_runtime` จำกัด `bucket_id='deposit-slips'`, exact `name` ที่ match grant ที่ยังไม่หมดอายุและยังไม่ consume; ไม่มี `UPDATE`/`DELETE` policy และ `upsert=false`.
-2. BEFORE INSERT trigger บน `storage.objects` ทำ atomic check-and-consume กับ capability ของ grant: path ตรง, ไม่หมดอายุ, ยังไม่ใช้, metadata MIME/size อยู่ในขอบเขต; consume ใน transaction เดียวกับ insert เพื่อให้ failure rollback ทั้งคู่. Path จาก BK01 grant เท่านั้น.
-3. Test ว่า request ซ้ำ/path อื่น/หมดอายุ/MIME ผิด/ขนาดเกิน/role อื่นถูก deny. Storage server อาจสร้าง/เติม metadata ตาม pipeline ที่ไม่ตรงกับ PGlite mock จึงต้องมี hosted LAB proof.
-4. Bucket size/MIME caps คงเป็น defense-in-depth; trigger ต้องตรวจค่าจริงที่ Storage เขียน ไม่เชื่อค่าจาก client โดยลำพัง.
+1. House มี `storage_upload_runtime_roles` ผูก runtime role กับ product และ `storage_upload_bucket_allowlist` เก็บคู่ที่อนุญาต; seed เริ่มแค่ `bk01_runtime -> bk01` กับ `(bk01,deposit-slips)`. ไม่มีช่องรับ `product_code` จาก caller.
+2. `register_storage_upload_grant(p_bucket_id,...)` อ่าน JWT role, derive product จาก House map, และปฏิเสธเมื่อไม่มีคู่ allowlist. Registration execute ให้ `bk01_migrator` (owner ของ BK01 SECURITY DEFINER RPC) เท่านั้น; `bk01_runtime` ใช้ narrow Storage policy helper แต่เรียก registration RPC โดยตรงไม่ได้.
+3. House policy กับ BEFORE INSERT trigger ตรวจ role/product/bucket คู่เดียวกันและใช้ exact path, unused/unexpired grant, MIME/size; trigger consume อยู่ใน transaction เดียวกับ Storage insert. SQL เพิ่ม storage schema usage/insert ให้ BK01 runtime หลังตรวจ pre-existing grant และ rollback จะถอนเมื่อไม่มีข้อมูลหรือ config นอก seed.
+4. BK01 migration `20260928120000_bk01_house_upload_grants.sql` เพิ่มการลงทะเบียน House grant ใน transaction ของ `authorize_deposit_slip_upload`; frozen migrations ไม่เปลี่ยนและ RPC return contract คงเดิม. Route ใช้ exact returned object path และ bucket constant ของ BK01.
+5. House isolated proof และ BK01 full-chain PGlite proof ครอบคลุม bucket อื่นปฏิเสธ, BK01 ขอ bucket โปรดักต์อื่นไม่ได้, hypothetical allowlisted product ใช้ bucket ของตัวเองได้, consume/replay denial, rollback guards. หลักฐานเป็น embedded Postgres เท่านั้น.
 
-## Blocker — ownership/contract
+## ยังไม่ยืนยัน — hosted behavior
 
-Grant table ปัจจุบันเป็น `local_service` ของ BK01 แต่ trigger/policy อยู่ใน House-owned `storage` schema. Storage artifact ไม่ควรอ่าน product-private grant table โดยตรง: จะผูก House storage กับ schema ของ product และข้าม platform/product ownership boundary. บรีฟนี้ห้ามแก้ repo booking. จึงยังไม่มีช่องทางให้ BK01 RPC เขียน grant ลง registry ที่ House Storage ใช้ได้โดยไม่เพิ่ม cross-boundary coupling.
-
-ผู้คุมต้องเลือก contract ก่อน implementation: (A) BK01 RPC เรียก House-owned atomic grant RPC ด้วย narrow service boundary, (B) House-owned registry ที่ grant ถูกส่ง/สร้างผ่าน API contract ชัดเจน, หรือ (C) House upload broker. ห้ามเลือกเองใน task นี้.
-
-นอกจากนี้ Storage signed token TTL/replay และ exact metadata timing ต้องตรวจใน LAB live window ก่อนเรียกว่า one-time. PGlite จำลอง Postgres trigger/policy ได้ แต่ไม่จำลอง Storage token issuance, server metadata, signed URL expiration หรือ upload pipeline.
+SQL candidates ไม่ได้พิสูจน์ว่า hosted Supabase รับ privileges/metadata ตาม stand-in นี้, signed URL TTL/replay, เวลา metadata, หรือ upload pipeline จริง. PGlite จำลอง Postgres trigger/policy ได้ แต่ไม่จำลอง Storage token issuance, signed URL expiration หรือ server metadata. ต้อง independent exact-SHA review และ operator live window แยกก่อนเรียก live-ready.
 
 ## Operator proof ที่ต้องเตรียมหลัง contract ตกลง
 
@@ -41,7 +40,9 @@ LAB only. Snapshot bucket/RLS/policy/trigger/function hashes; สร้าง gr
 
 ## References
 
-- `D:/AI-Workspace/runtime/worktrees/bk01-wub/supabase/bk01-migrations/20260927120000_bk01_runtime_route_rpcs.sql` (base `e8a5e5c`)
+- `supabase/bk01-migrations/20260928120000_bk01_house_upload_grants.sql` and `supabase/rollback/20260928120000_bk01_house_upload_grants.rollback.sql` on the combined BK01 candidate branch.
+- `docs/platform/shared-runtime/storage/house_storage_upload_grants.sql` and `docs/platform/shared-runtime/storage/house_storage_upload_grants_rollback.sql` on the combined House candidate branch.
+- `scripts/proofs/lane-b/fixtures/house_storage_upload_grants.sql` is a copy for offline full-chain proof; SHA-256 must match the canonical House SQL before proof run.
 - `D:/AI-Workspace/runtime/worktrees/bk01-wub/node_modules/@supabase/storage-js/src/packages/StorageFileApi.ts` (`@supabase/storage-js` 2.112.0)
 - [Supabase signed upload URL reference](https://supabase.com/docs/reference/python/storage-from-createsigneduploadurl)
 - [Supabase Storage access control](https://supabase.com/docs/guides/storage/security/access-control)
