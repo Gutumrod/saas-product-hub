@@ -13,7 +13,7 @@
 ## ค้างก่อนเปิด LAB
 
 1. Independent reviewer ต้อง review exact branch SHAs และหลักฐานของทุก step.
-2. Lane B live capture ยังเป็น `LIVE_DEFERRED_TO_A1_PREFLIGHT` ที่ H3D source pin นี้. ต้องมีวิธี capture role/effective-reach ที่ approved และผูก target exact ก่อนสร้าง measurement role.
+2. **Superseded on the integration branch:** `tools/shared-runtime/inventory/lane-b-effective-reach.mjs --capture` now implements exact pinned project-ref + direct-host preflight, temporary role cleanup, and provenance-bound external output. Offline preflight tests pass 4/4. This is source-level only; no LAB capture was run. Independent exact-SHA review and a separately authorized live window remain required.
 3. Owner/operator ยังต้องเปิด live window และทำ hosted Auth/Cloudflare Dashboard actions ใน runbook ภายใต้ authorization แยก.
 4. BK01 ยังไม่ได้เรียก House storage registration RPC; ห้าม apply storage grant SQL หรือ probe upload จน follow-up implementation/review เสร็จ.
 

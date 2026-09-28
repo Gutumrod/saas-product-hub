@@ -44,3 +44,16 @@ Set the client row `enabled=false`, disable the corresponding Auth grant, revoke
 ## Offline gate
 
 Run `npm test` in this directory for mocked Auth behavior. This does not prove Supabase hosted hook activation, Worker/Hyperdrive wiring, or a live Auth password grant. No deploy, database apply, Dashboard change, secret creation, or token issuance is authorized by this source package.
+
+## Offline SQL proof outputs
+
+The isolated PGlite proofs require `RUNTIME_ISSUER_SQL_PROOF_OUTPUT` and refuse a missing path. Set it to an absolute file path outside the checkout for each proof:
+
+```powershell
+$env:RUNTIME_ISSUER_SQL_PROOF_OUTPUT = 'D:\AI-Workspace\runtime\relay\house-20260928\live-window-last-mile\house\issuer-h3c-proof.json'
+node test/h3c-allowlist-proof.mjs
+$env:RUNTIME_ISSUER_SQL_PROOF_OUTPUT = 'D:\AI-Workspace\runtime\relay\house-20260928\live-window-last-mile\house\issuer-store-proof.json'
+node test/issuer-store-proof.mjs
+```
+
+These values identify local evidence paths only; they contain no connection URL, token, password, or other credential. Keep generated JSON outside the repository.

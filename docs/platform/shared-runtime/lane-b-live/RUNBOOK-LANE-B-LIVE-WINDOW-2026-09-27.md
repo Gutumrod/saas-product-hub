@@ -37,17 +37,17 @@ node tools/shared-runtime/h3d/lane-b-gates.mjs --check
 Operator ยืนยัน project ref ด้วยช่องทางที่ Owner อนุมัติ แล้วทำ snapshot ก่อน mutation โดยใช้ query จาก pinned H3D source และ query ต่อไปนี้ผ่าน read-only/platform authority:
 
 1. รัน `tools/shared-runtime/h3c/h3c-privilege-snapshot.sql` เพื่อเก็บ PS01 runtime role snapshot ที่ต้องสดไม่เกิน 15 นาทีเมื่อ consume.
-2. รัน `tools/shared-runtime/inventory/lane-b-effective-reach.mjs --capture` เฉพาะเมื่อ operator มี capture implementation/authority ที่ reviewer อนุมัติ. ไฟล์ใน source pin นี้คืน `LIVE_DEFERRED_TO_A1_PREFLIGHT` และ exit 3 โดยตั้งใจ; **ห้ามนับเป็น capture หรือ PASS**. ถ้ายังไม่มี executable capture ที่ผูก exact target และ role ให้หยุดก่อนสร้าง role.
+2. ตั้ง `LANE_B_PROJECT_REF`, `LANE_B_DATABASE_URL`, `LANE_B_STAGE=H3D-LIVE` และ `LANE_B_CAPTURE_OUTPUT` ตาม `tools/shared-runtime/inventory/README.md` ด้วยวิธีรับ credential ที่ Owner อนุมัติ แล้วรัน `node tools/shared-runtime/inventory/lane-b-effective-reach.mjs --capture` จาก checkout ของ combined branch ที่ reviewer อนุมัติ. Preflight ปฏิเสธ project ref ที่ไม่ใช่ LAB และ host ที่ไม่ตรง ref ก่อนสร้าง client/connection. Tool สร้าง measurement role หลัง preflight, วัด catalog privileges, revoke/drop role ใน `finally` และตรวจว่า role หาย; ถ้า cleanup ไม่ผ่านจะคืน non-zero และไม่เขียน artifact. ห้ามรันคำสั่งนี้ใน source-only review.
 3. เก็บ JSON catalog snapshot ของ role attributes/memberships, schema USAGE, relation privileges, function EXECUTE, owners, RLS/policies, triggers และรายการ object ใน `net`/`cron`/`ps01`/`ps01_internal`/`local_service`/`local_service_internal`/`wstera_platform_internal`.
 4. บันทึกก่อน snapshot ของ `local_service_internal.schema_migrations`, BK01 allowlist function set, issuer/client rows, H3C `runtime_token_grants`, storage grant registry counts. เก็บเฉพาะ metadata/count/hash ที่จำเป็น ห้าม dump แถวธุรกิจหรือ secret.
 
-**HOLD:** ถ้า pre-snapshot หาย, target ไม่ตรง, role/object inventory อ่านไม่ครบ, มี writer อื่น, หรือ checker ยังให้ `LIVE_DEFERRED_TO_A1_PREFLIGHT` โดยไม่มี approved replacement capture ให้หยุดโดยไม่เปลี่ยนฐาน.
+**HOLD:** ถ้า pre-snapshot หาย, target ไม่ตรง, role/object inventory อ่านไม่ครบ, มี writer อื่น, preflight/capture ไม่ผ่าน หรือ independent reviewer ยังไม่รับ exact SHA ให้หยุดโดยไม่เปลี่ยนฐาน.
 
 ## 2. สร้างสิทธิ์ชั่วคราวเพื่อวัด Lane B
 
 สร้างเฉพาะ role ที่ตรงกับ stage ใน generated H3D runbook จาก pinned commit. ใช้ operator-controlled ephemeral password entry (psql variable/secret input) และ `VALID UNTIL` ไม่เกินเวลาปิด window. ห้ามพิมพ์ password, ส่งผ่าน command-line literal, เก็บในไฟล์ repo หรือเปิดให้ role อื่นใช้.
 
-- ใช้ create/teardown pair ที่ `docs/platform/shared-runtime/runbooks/lane-b-role-*-create.sql` และ `*-teardown.sql` จาก commit `53346383…`; ให้ reviewer ตรวจ contract/exception ของ stage ก่อน run.
+- ใช้ `lane-b-effective-reach.mjs --capture` สำหรับการวัดและ cleanup role ชั่วคราวอัตโนมัติ. Generated create/teardown SQL ที่ `docs/platform/shared-runtime/runbooks/lane-b-role-*-create.sql` และ `*-teardown.sql` จาก commit `53346383…` เป็น contract reference เท่านั้นสำหรับ flow นี้; ห้ามรันซ้ำหรือสร้าง role เองควบคู่กับ capture. Reviewer ต้องตรวจ contract/exception ของ stage ก่อน window.
 - Pair ของ `H3D-LIVE` มี exception เฉพาะที่ระบุใน fixture allowlist. ห้ามเพิ่ม grant/exception เองเพื่อให้ probe ผ่าน.
 - W role ที่ได้รับ membership/ownership capability เป็นความสามารถด้าน DDL จริง ไม่ใช่สิทธิ์ DML จำกัด. ใช้เฉพาะช่วงวัดและ teardown ทันที.
 - รัน `node tools/shared-runtime/h3d/lane-b-gates.mjs --check` ใน checkout pin ก่อนใช้ generated SQL.
@@ -95,7 +95,7 @@ Rollback operator run order:
 
 ## 6. Storage hold ที่ต้องปิดก่อน live upload probe
 
-BK01 registration integration ยังไม่ทำตามข้อจำกัดของ brief14. ก่อน apply `house_storage_upload_grants.sql` หรือทดลอง signed upload ต้องเพิ่ม registration call ใน `authorize_deposit_slip_upload` transaction, ปฏิเสธการคืน signed capability เมื่อ registration ล้ม, และมี tests สำหรับ replay/path/MIME/size/expiry/other-role. หลัง reviewer อิสระรับ diff และ Owner อนุมัติ scope ใหม่ ให้เพิ่ม stage แยก: exact signed URL, TTL จริง, metadata ที่ `storage.objects` เห็น, successful upload หนึ่งครั้ง, replay denial, failed upload ไม่ consume, แล้ว rollback หลัง registry ว่าง. PGlite proof ปัจจุบันยืนยันเฉพาะ SQL stand-in; ไม่ยืนยัน signed-URL TTL หรือ hosted metadata timing.
+BK01 registration integration อยู่ในขั้นตอน source-only แยกต่างหากและต้องยึด exact RPC contract จาก `README-BK01-UPLOAD-GRANT-FOLLOWUP.md` กับ SQL House ที่ pin ไว้. ก่อน apply `house_storage_upload_grants.sql` หรือทดลอง signed upload ต้องมี registration call ใน `authorize_deposit_slip_upload` transaction, ปฏิเสธการคืน signed capability เมื่อ registration ล้ม, และมี tests สำหรับ replay/path/MIME/size/expiry/other-role. หลัง reviewer อิสระรับ diff และ Owner อนุมัติ scope ใหม่ ให้เพิ่ม stage แยก: exact signed URL, TTL จริง, metadata ที่ `storage.objects` เห็น, successful upload หนึ่งครั้ง, replay denial, failed upload ไม่ consume, แล้ว rollback หลัง registry ว่าง. PGlite proof ยืนยันเฉพาะ SQL stand-in; ไม่ยืนยัน signed-URL TTL หรือ hosted metadata timing.
 
 ## 7. Exit และผู้ตัดสิน
 
