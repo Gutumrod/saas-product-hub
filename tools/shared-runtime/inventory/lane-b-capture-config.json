@@ -1,0 +1,10 @@
+{
+  "lab_project_ref": "ykxlqnshaaxmzzocpjlj",
+  "production_project_ref": "gyleqrjdzwwlqierdwcy",
+  "database_host_template": "db.{project_ref}.supabase.co",
+  "output_env": "LANE_B_CAPTURE_OUTPUT",
+  "project_ref_env": "LANE_B_PROJECT_REF",
+  "database_url_env": "LANE_B_DATABASE_URL",
+  "stage_env": "LANE_B_STAGE",
+  "default_stage": "H3D-LIVE"
+}
