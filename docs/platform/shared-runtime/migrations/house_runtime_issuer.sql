@@ -4,7 +4,6 @@
 -- manager. Never grant it product schema/table privileges.
 
 CREATE SCHEMA IF NOT EXISTS wstera_platform_internal;
-REVOKE ALL ON SCHEMA wstera_platform_internal FROM PUBLIC;
 
 CREATE TABLE wstera_platform_internal.runtime_issuer_clients (
     client_id       text PRIMARY KEY,
@@ -86,7 +85,12 @@ REVOKE ALL ON FUNCTION wstera_platform_internal.consume_runtime_issuer_rate_limi
 GRANT EXECUTE ON FUNCTION wstera_platform_internal.consume_runtime_issuer_rate_limit(text,integer,integer,timestamptz)
     TO wstera_runtime_issuer_login;
 
-REVOKE ALL ON ALL TABLES IN SCHEMA wstera_platform_internal FROM PUBLIC, anon, authenticated, service_role;
+-- Scope ACL changes to the three objects created here; never rewrite grants on
+-- other House-owned tables such as the H3C runtime token registry.
+REVOKE ALL ON wstera_platform_internal.runtime_issuer_clients,
+  wstera_platform_internal.runtime_issuer_rate_limits,
+  wstera_platform_internal.runtime_issuer_audit
+  FROM PUBLIC, anon, authenticated, service_role;
 GRANT USAGE ON SCHEMA wstera_platform_internal TO wstera_runtime_issuer_login;
 GRANT SELECT ON wstera_platform_internal.runtime_issuer_clients TO wstera_runtime_issuer_login;
 GRANT INSERT ON wstera_platform_internal.runtime_issuer_audit TO wstera_runtime_issuer_login;

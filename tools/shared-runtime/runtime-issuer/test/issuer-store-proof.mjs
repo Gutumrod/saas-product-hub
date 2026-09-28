@@ -17,7 +17,10 @@ const query = async (sql) => (await db.query(sql)).rows;
 
 await db.exec(`CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;
 CREATE ROLE wstera_runtime_issuer_login LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
-CREATE SCHEMA ps01; CREATE TABLE ps01.private_probe(secret text);`);
+CREATE SCHEMA ps01; CREATE TABLE ps01.private_probe(secret text);
+CREATE SCHEMA wstera_platform_internal; CREATE TABLE wstera_platform_internal.runtime_token_grants(id integer PRIMARY KEY);
+GRANT USAGE ON SCHEMA wstera_platform_internal TO service_role;
+GRANT SELECT ON wstera_platform_internal.runtime_token_grants TO service_role;`);
 let applyError = null;
 try { await db.exec(sqlSource); } catch (error) { applyError = String(error.message); }
 pass('House issuer schema/function SQL applies in isolation', applyError === null, applyError ?? 'source SQL applied');
@@ -46,6 +49,12 @@ const roleGrants = (await query(`SELECT has_schema_privilege('wstera_runtime_iss
 pass('dedicated login has House-only minimum grants', !roleGrants.product_schema_usage && !roleGrants.product_table_select
   && roleGrants.client_select && !roleGrants.client_update && roleGrants.audit_insert && !roleGrants.audit_update,
   JSON.stringify(roleGrants));
+const unrelatedH3cGrantPreserved = (await query(`SELECT
+  has_schema_privilege('service_role','wstera_platform_internal','USAGE') AS schema_usage,
+  has_table_privilege('service_role','wstera_platform_internal.runtime_token_grants','SELECT') AS token_grant_select`))[0];
+pass('migration preserves pre-existing H3C schema/table grants',
+  unrelatedH3cGrantPreserved.schema_usage && unrelatedH3cGrantPreserved.token_grant_select,
+  JSON.stringify(unrelatedH3cGrantPreserved));
 await db.exec(`INSERT INTO wstera_platform_internal.runtime_issuer_clients
   (client_id,product_code,project_ref,auth_user_id,runtime_role,secret_salt,secret_hash,expires_at)
   VALUES ('client-a','bk01','abcdefghijklmnopqrst','00000000-0000-4000-8000-000000000001','bk01_runtime',
@@ -62,16 +71,23 @@ pass('rollback refuses to delete live client/rate state', populatedRollbackDenie
 
 const emptyDb = new PGlite();
 await emptyDb.exec(`CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;
-CREATE ROLE wstera_runtime_issuer_login LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;`);
+CREATE ROLE wstera_runtime_issuer_login LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+CREATE SCHEMA wstera_platform_internal; CREATE TABLE wstera_platform_internal.runtime_token_grants(id integer PRIMARY KEY);
+GRANT USAGE ON SCHEMA wstera_platform_internal TO service_role;
+GRANT SELECT ON wstera_platform_internal.runtime_token_grants TO service_role;`);
 await emptyDb.exec(sqlSource);
 await emptyDb.exec(rollbackSource);
 const leftovers = (await emptyDb.query(`SELECT
   to_regclass('wstera_platform_internal.runtime_issuer_clients') IS NULL AS clients_gone,
   to_regclass('wstera_platform_internal.runtime_issuer_rate_limits') IS NULL AS rates_gone,
   to_regclass('wstera_platform_internal.runtime_issuer_audit') IS NULL AS audit_gone,
-  to_regprocedure('wstera_platform_internal.consume_runtime_issuer_rate_limit(text,integer,integer,timestamptz)') IS NULL AS function_gone`)).rows[0];
+  to_regprocedure('wstera_platform_internal.consume_runtime_issuer_rate_limit(text,integer,integer,timestamptz)') IS NULL AS function_gone,
+  to_regclass('wstera_platform_internal.runtime_token_grants') IS NOT NULL AS h3c_table_retained,
+  has_table_privilege('service_role','wstera_platform_internal.runtime_token_grants','SELECT') AS h3c_grant_retained,
+  has_schema_privilege('service_role','wstera_platform_internal','USAGE') AS h3c_schema_usage_retained`)).rows[0];
 pass('empty House issuer schema rolls back exactly its owned objects',
-  leftovers.clients_gone && leftovers.rates_gone && leftovers.audit_gone && leftovers.function_gone,
+  leftovers.clients_gone && leftovers.rates_gone && leftovers.audit_gone && leftovers.function_gone
+    && leftovers.h3c_table_retained && leftovers.h3c_grant_retained && leftovers.h3c_schema_usage_retained,
   JSON.stringify(leftovers));
 await emptyDb.close();
 
