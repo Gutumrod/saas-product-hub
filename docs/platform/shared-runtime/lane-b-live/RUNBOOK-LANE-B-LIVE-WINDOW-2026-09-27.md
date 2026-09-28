@@ -114,4 +114,4 @@ BK01 registration integration และ SQL House ผ่าน source/PGlite gat
 - ผู้ลงมือส่ง SHA ของทุก source branch, pre/post snapshots, migration ledger, logs, probe matrix, rollback proof, และรายการ deviation ให้ reviewer.
 - Reviewer ต้องเป็นคนละ agent กับผู้ลงมือ และ bind ผลกับ SHA exact ก่อนให้ PASS ต่อ (ก)–(ง).
 - Operator ลบ role วัดชั่วคราวหลัง probe/rollback, ตรวจไม่มี active session และส่งผลให้ Owner.
-- สถานะสูงสุดของ pack นี้ก่อน live evidence คือ **SOURCE_PACK_READY_WITH_STORAGE_HOLD**; ห้ามเรียก Lane B/PASS, hosted-ready หรือ production-ready จาก offline evidence.
+- สถานะปัจจุบันคือ **SOURCE_READY_PENDING_INDEPENDENT_REVIEW**; เปิด Window 1 ได้หลัง reviewer รับ exact SHA และ Owner พิมพ์ GO เท่านั้น. ห้ามเรียก Lane B/PASS, hosted-ready หรือ production-ready จาก offline evidence.
