@@ -1,0 +1,7 @@
+{
+  "name": "@wstera/house-storage-grant-proof",
+  "private": true,
+  "type": "module",
+  "scripts": { "proof": "node proof.mjs" },
+  "dependencies": { "@electric-sql/pglite": "0.5.8" }
+}
