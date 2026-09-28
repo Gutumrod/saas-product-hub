@@ -1,0 +1,8 @@
+{
+  "name": "@wstera/runtime-issuer",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test test/*.test.mjs", "proof:hook": "node test/h3c-allowlist-proof.mjs", "proof:store": "node test/issuer-store-proof.mjs", "build:check": "wrangler deploy --dry-run" },
+  "dependencies": { "postgres": "3.4.9" },
+  "devDependencies": { "@electric-sql/pglite": "0.5.8", "wrangler": "4.142.0" }
+}
