@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const migration = fs.readFileSync(path.join(root, 'docs/platform/shared-runtime/storage/house_storage_upload_grants.sql'), 'utf8');
+const rollback = fs.readFileSync(path.join(root, 'docs/platform/shared-runtime/storage/house_storage_upload_grants_rollback.sql'), 'utf8');
 const output = process.env.STORAGE_PROOF_OUTPUT;
 if (!output || path.resolve(output).startsWith(`${root}${path.sep}`)) {
   throw new Error('Set STORAGE_PROOF_OUTPUT to a runtime evidence path outside the worktree');
@@ -103,6 +104,20 @@ const counts = (await query(`SELECT (SELECT count(*)::int FROM storage.objects) 
   (SELECT count(*)::int FROM wstera_platform_internal.storage_upload_grants WHERE consumed_at IS NOT NULL) AS consumed`))[0];
 pass('invalid attempts did not consume any unaccepted grant', counts.objects === 1 && counts.consumed === 1,
   JSON.stringify(counts));
+const rollbackDenied = await rejected(rollback);
+pass('rollback refuses while one-time grant rows remain', rollbackDenied);
+await exec('RESET ROLE; DELETE FROM wstera_platform_internal.storage_upload_grants;');
+await exec(rollback);
+const rollbackObjects = (await query(`SELECT
+  to_regclass('wstera_platform_internal.storage_upload_grants') IS NULL AS table_gone,
+  to_regprocedure('wstera_platform_internal.register_bk01_storage_upload_grant(text,text,text,bigint,timestamptz)') IS NULL AS register_gone,
+  NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='wstera_consume_bk01_storage_upload_grant' AND NOT tgisinternal) AS trigger_gone,
+  NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='bk01_deposit_slip_grant_insert') AS policy_gone,
+  NOT has_schema_privilege('bk01_runtime','wstera_platform_internal','USAGE') AS schema_usage_revoked`))[0];
+pass('empty storage grant source rolls back only its owned objects and grant',
+  rollbackObjects.table_gone && rollbackObjects.register_gone && rollbackObjects.trigger_gone
+    && rollbackObjects.policy_gone && rollbackObjects.schema_usage_revoked,
+  JSON.stringify(rollbackObjects));
 
 const proof = { generated_at: new Date().toISOString(), engine: 'PGlite embedded Postgres',
   limits: ['does not emulate Supabase Storage signed URL issuance or token expiry',

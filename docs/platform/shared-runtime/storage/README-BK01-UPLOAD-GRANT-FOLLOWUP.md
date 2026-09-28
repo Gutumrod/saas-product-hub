@@ -17,6 +17,8 @@
 4. Add source tests proving registration rollback when authorization fails, replay rejection, MIME/path/size binding, expiry, and cross-product denial. Re-run the BK01 frozen migration and policy checks without editing its frozen migration files.
 5. Obtain the separate live window and reviewer approval before applying House SQL or issuing any live storage token. Verify the deployed Supabase Storage behavior with the exact signed-upload flow; this PGlite proof does not emulate signed URL authorization or hosted trigger timing.
 
+The forward SQL refuses to run when `bk01_runtime` already has `USAGE` on `wstera_platform_internal`. This prevents rollback from revoking a pre-existing shared-schema grant. Capture and review that effective grant state before applying.
+
 ## Verified offline evidence
 
 `storage-proof/proof.mjs` applies the complete House SQL to isolated PGlite and probes exact valid consume, duplicate rejection, MIME mismatch, oversize, expiry, wrong product role, and non-consumption after rejected probes. Evidence is stored outside the repository by the operator. It proves the SQL behavior in PGlite only; it does not prove a hosted Supabase project or a complete BK01 user flow.

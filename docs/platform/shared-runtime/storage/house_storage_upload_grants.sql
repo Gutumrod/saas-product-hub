@@ -2,6 +2,14 @@
 -- until a separate operator window and independent SQL review authorize it.
 BEGIN;
 
+DO $preflight$
+BEGIN
+    IF has_schema_privilege('bk01_runtime','wstera_platform_internal','USAGE') THEN
+        RAISE EXCEPTION 'BK01 storage grant setup blocked: runtime already has House schema USAGE; review pre-existing grants first';
+    END IF;
+END;
+$preflight$;
+
 CREATE TABLE wstera_platform_internal.storage_upload_grants (
     grant_id       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     product_code   text NOT NULL CHECK (product_code = 'bk01'),
