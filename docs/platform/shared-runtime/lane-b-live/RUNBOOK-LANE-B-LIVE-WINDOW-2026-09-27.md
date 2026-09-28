@@ -6,7 +6,7 @@
 
 | ส่วน | branch / base หรือ immutable source |
 |---|---|
-| BK01 combined source | `integration/house-swarm-1` `42a9c3789f2d7a3be5d703b1b0009529c88bf05f`; pre-last-mile source `298c60dde55205e5cf3f319a69e8a1c1b25db101` contains migrations 1–3 |
+| BK01 runner source (use for both apply intervals) | `codex/bk01-runner-through-20260928` `53fa72dd6fe72f8ff176ce90028827ff96499837` (based on `42a9c3789f2d7a3be5d703b1b0009529c88bf05f`); `--through` is part of this exact source |
 | House live-window source | `codex/house-live-window-integration-20260928` `3713656dc56401895d4b2c99070fad75aa3ef4d8`; issuer and H3C source files below |
 | House storage grant | same House source SHA; `docs/platform/shared-runtime/storage/house_storage_upload_grants.sql` and `_rollback.sql` |
 | H3D static checker | repo `saas-product-hub`, branch `work/house-h3d-h5-20260909`, pinned commit `53346383faa2a87fac483a7a3bf5233a200e295d`, path `tools/shared-runtime/h3d/sql-static-check.mjs` |
@@ -57,11 +57,11 @@ Operator ยืนยัน project ref ด้วยช่องทางที�
 ก่อนแต่ละ mutation ให้ operator ประกาศ step และ reviewer บันทึก go/no-go. ใช้ platform migration runner ที่กำหนดให้; ห้าม paste product migrations ด้วย `postgres`/Dashboard SQL Editor เพราะ runner ต้องตรวจ `SET LOCAL ROLE bk01_migrator`, operator identity, advisory lock, policy, checksum และ ledger.
 
 1. Bootstrap BK01 ด้วย `supabase/shared-runtime/bk01-platform-bootstrap.sql` ผ่าน platform bootstrap procedure ที่อนุมัติ.
-2. ที่ BK01 source `298c60dde55205e5cf3f319a69e8a1c1b25db101`, รัน `npm run db:bk01:plan`; pending ต้องมีเพียง migrations 1–3 ตามตารางด้านล่าง. ใช้ `npm run db:bk01:apply`; ตรวจ ledger/checksum ทั้งสามรายการก่อนเปลี่ยน source checkout.
+2. ที่ BK01 runner source `53fa72dd6fe72f8ff176ce90028827ff96499837`, รัน `npm run db:bk01:plan -- --through 20260927130000_bk01_trial_line_bind.sql`; pending ต้องมี migrations 1–3 ตามตารางด้านล่าง. ใช้ `npm run db:bk01:apply -- --through 20260927130000_bk01_trial_line_bind.sql`; ตรวจ ledger/checksum ทั้งสามรายการ. ห้ามเปลี่ยน source checkout.
 3. Apply House issuer store `docs/platform/shared-runtime/migrations/house_runtime_issuer.sql`; ยืนยัน role `wstera_runtime_issuer_login` เป็น dedicated `NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`, มีเพียง client `SELECT`, atomic rate RPC และ audit `INSERT`; snapshot ต้องยืนยันไม่มี product schema usage/table privileges.
 4. Apply `docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion.sql` หลังเก็บ H3C pre-state. เพิ่มเฉพาะ `bk01_runtime` และคง token cap ไม่เกิน 300 วินาที. ห้ามสร้าง Auth user, เปิด hook หรือออก token ใน Window 1.
 5. Apply `docs/platform/shared-runtime/storage/house_storage_upload_grants.sql`. ยืนยัน initial map มีเฉพาะ `bk01_runtime -> bk01` และ `(bk01,deposit-slips)`; source ปฏิเสธ pre-existing grants ที่ rollback ต้องถอนได้.
-6. เปลี่ยนเป็น BK01 source `42a9c3789f2d7a3be5d703b1b0009529c88bf05f`; `npm run db:bk01:plan` ต้องแสดง pending เพียง `20260928120000_bk01_house_upload_grants.sql` เพราะ migration นี้เรียก House registration RPC จากข้อ 5. ตรวจ checksum แล้วรัน `npm run db:bk01:apply`; plan/apply ซ้ำต้องเป็น no-op. Ledger หลังจบต้องมีครบ 4 migration.
+6. คง BK01 runner source SHA เดิม `53fa72dd6fe72f8ff176ce90028827ff96499837`; `npm run db:bk01:plan` ต้องแสดง pending เพียง `20260928120000_bk01_house_upload_grants.sql` เพราะ migration นี้เรียก House registration RPC จากข้อ 5. ตรวจ checksum แล้วรัน `npm run db:bk01:apply` โดยไม่ระบุ `--through`; plan/apply ซ้ำต้องเป็น no-op. Ledger หลังจบต้องมีครบ 4 migration.
 
 ใช้เฉพาะ migration runner/platform procedure ที่ระบุและ credential LAB ที่ Owner อนุญาตหลัง GO; ห้าม paste product migration ผ่าน Dashboard SQL Editor. Window 1 ห้าม deploy Worker, เปิด Auth hook, สร้าง Auth user, ตั้ง/อ่าน Worker secret หรือออก token. Probe ที่ต้องมี token/session ใหม่ให้หยุดเป็น UNMEASURED และเลื่อนไป Window 2; ห้ามทำ Auth setup เพื่อให้ probe ผ่าน.
 
