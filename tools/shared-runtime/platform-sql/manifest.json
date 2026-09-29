@@ -11,6 +11,7 @@
     {
       "id": "bk01-platform-bootstrap",
       "order": 10,
+      "tx": "wrap",
       "repository": "booking",
       "path": "supabase/shared-runtime/bk01-platform-bootstrap.sql",
       "sha256": "c5feb034a775446efd6aaaac409de78fa159e491e32c98d3a714e95be62bf989",
@@ -22,6 +23,7 @@
     {
       "id": "house-runtime-issuer",
       "order": 20,
+      "tx": "wrap",
       "repository": "house",
       "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer.sql",
       "sha256": "a56443b43b81ce2587599df7ef7c8f5db7ef58cc2a43fc583b37d317a2aaf1dd",
@@ -33,6 +35,7 @@
     {
       "id": "h3c-runtime-role-allowlist-expansion",
       "order": 30,
+      "tx": "self",
       "repository": "house",
       "path": "docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion.sql",
       "sha256": "e17e8cbc3c0b4de063510e9d29ca3e1d77c0a9da2b1013549421480176700d78",
@@ -44,6 +47,7 @@
     {
       "id": "house-storage-upload-grants",
       "order": 40,
+      "tx": "self",
       "repository": "house",
       "path": "docs/platform/shared-runtime/storage/house_storage_upload_grants.sql",
       "sha256": "a14dceefeed6da3911504a522924393d36979d4181b36361149c1106b3b5c4d3",

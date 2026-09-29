@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -16,7 +17,7 @@ const databaseUrl = "postgresql://postgres.ykxlqnshaaxmzzocpjlj:offline-test-pas
 const temporaryDirectories = new Set();
 process.on("exit", () => { for (const directory of temporaryDirectories) fs.rmSync(directory, { recursive: true, force: true }); });
 
-function setup() {
+function setup({ issuerApplied = false } = {}) {
   const evidence = fs.mkdtempSync(path.join(os.tmpdir(), "platform-sql-test-"));
   temporaryDirectories.add(evidence);
   const env = { LANE_B_PROJECT_REF: projectRef, LANE_B_DATABASE_URL: databaseUrl,
@@ -31,7 +32,7 @@ function setup() {
       async query(sql) {
         calls.push(sql);
         if (sql.includes("SELECT to_regclass('local_service_internal.schema_migrations')")) return { rows: [{ ledger_exists: true, local_relations: 22, local_functions: 61 }] };
-        if (sql.includes("runtime_issuer_clients")) return { rows: [{ a: false, b: false, c: false, d: false }] };
+        if (sql.includes("runtime_issuer_clients")) return { rows: [{ a: issuerApplied, b: issuerApplied, c: issuerApplied, d: issuerApplied }] };
         if (sql.includes("runtime_token_grants")) return { rows: [{ constraint_ready: false, function_ready: false }] };
         if (sql.includes("storage_upload_runtime_roles")) return { rows: [{ a: false, b: false, c: false, d: false, e: false }] };
         if (sql.includes("SELECT count(*)::int AS count FROM local_service_internal.schema_migrations")) return { rows: [{ count: 0 }] };
@@ -47,9 +48,11 @@ async function expectCode(action, code) {
 }
 
 function withPlan(ctx, nextEntry) {
+  const nextIndex = MANIFEST.entries.findIndex((entry) => entry.id === nextEntry?.id);
+  const state = Object.fromEntries(MANIFEST.entries.map((entry, index) => [entry.id, index < nextIndex]));
   fs.writeFileSync(path.join(ctx.evidence, "latest-plan.json"), JSON.stringify({
     createdAt: new Date().toISOString(), projectRef, toolGitSha: "", next: nextEntry && { file: nextEntry.path, sha256: nextEntry.sha256 },
-    state: { "bk01-platform-bootstrap": true, "house-runtime-issuer": false, "h3c-runtime-role-allowlist-expansion": false, "house-storage-upload-grants": false },
+    state,
     baseline: { exists: true, rows: 0, entries: [] },
   }));
   const git = requireGitHead();
@@ -65,6 +68,29 @@ test("top-level transaction statements are rejected without flagging DO bodies o
   assert.equal(containsTopLevelTransactionControl("-- BEGIN;\nDO $body$ BEGIN NULL; END; $body$; SELECT 'COMMIT;';"), false);
   assert.equal(containsTopLevelTransactionControl("BEGIN; SELECT 1; COMMIT;"), true);
   assert.equal(containsTopLevelTransactionControl("DO $bk01$ BEGIN NULL; END $bk01$;"), false);
+});
+
+test("self transaction validator accepts one outer BEGIN and final COMMIT while ignoring quoted text", async () => {
+  const { validateTransactionMode } = await import("./apply-platform-sql.mjs");
+  assert.equal(typeof validateTransactionMode, "function", "self-transactional SQL needs a structural validator");
+  assert.doesNotThrow(() => validateTransactionMode(`-- leading comment\nBEGIN;\nSELECT 'COMMIT; SAVEPOINT x', E'ROLLBACK\\\\;';\nDO $body$ BEGIN RAISE NOTICE 'ROLLBACK'; END $body$;\n/* COMMIT; */\nCOMMIT;`, "self"));
+});
+
+test("self transaction validator rejects middle controls and incomplete wrappers", async () => {
+  const { validateTransactionMode } = await import("./apply-platform-sql.mjs");
+  assert.equal(typeof validateTransactionMode, "function", "self-transactional SQL needs a structural validator");
+  for (const sql of [
+    "BEGIN; SELECT 1; COMMIT; SELECT 2;",
+    "BEGIN; SAVEPOINT s; COMMIT;",
+    "BEGIN; SELECT 1;",
+    "DO $$ BEGIN NULL; END $$;",
+    "BEGIN; ROLLBACK; COMMIT;",
+    "BEGIN; BEGIN; COMMIT;",
+    "BEGIN; COMMIT; COMMIT;",
+    "BEGIN; \\echo forbidden\n COMMIT;",
+  ]) assert.throws(() => validateTransactionMode(sql, "self"), { code: "SELF_TRANSACTION_SHAPE_INVALID" });
+  assert.doesNotThrow(() => validateTransactionMode("-- words in a comment: BEGIN; COMMIT;\nSELECT 'BEGIN;';", "wrap"));
+  assert.throws(() => validateTransactionMode("BEGIN; SELECT 1; COMMIT;", "wrap"), { code: "WRAPPED_SQL_TRANSACTION_CONTROL_REJECTED" });
 });
 
 test("non-manifest file rejects before client creation", async () => {
@@ -109,12 +135,106 @@ test("plan inspects state in a read-only transaction and records the next approv
   assert.equal(JSON.parse(fs.readFileSync(path.join(ctx.evidence, "latest-plan.json"), "utf8")).next.sha256, MANIFEST.entries[1].sha256);
 });
 
-test("pinned H3C and storage files with their own transaction are rejected before client creation", async () => {
-  const ctx = setup();
+test("pinned H3C and storage source files satisfy self transaction structure", async () => {
+  const { validateTransactionMode } = await import("./apply-platform-sql.mjs");
+  assert.equal(typeof validateTransactionMode, "function", "self-transactional SQL needs a structural validator");
   for (const entry of MANIFEST.entries.slice(2)) {
-    await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT }), "SQL_TRANSACTION_CONTROL_REJECTED");
+    assert.equal(entry.tx, "self");
+    const sql = fs.readFileSync(path.join(ROOT, entry.path), "utf8");
+    assert.doesNotThrow(() => validateTransactionMode(sql, "self"), entry.path);
   }
-  assert.equal(ctx.clientCreates, 0);
+});
+
+test("self mode executes pinned SQL literally without an outer wrapper", async () => {
+  const ctx = setup({ issuerApplied: true });
+  const manifest = structuredClone(MANIFEST);
+  const entry = manifest.entries[2];
+  assert.equal(entry.tx, "self");
+  withPlan(ctx, entry);
+  let executedSql;
+  const originalCreateClient = ctx.createClient;
+  ctx.createClient = async (...args) => {
+    const client = await originalCreateClient(...args);
+    client.connection = new EventEmitter();
+    client.connectionStatus = "I";
+    const originalQuery = client.query.bind(client);
+    client.query = async (sql, values) => {
+      if (String(sql).includes("-- House platform migration: expand the existing H3C")) {
+        executedSql = sql;
+        client.connectionStatus = "I";
+        client.connection.emit("readyForQuery", { status: "I" });
+        return { rows: [] };
+      }
+      return originalQuery(sql, values);
+    };
+    return client;
+  };
+  await executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest, repoRoot: ROOT, stdout: () => {} });
+  assert.equal(executedSql, fs.readFileSync(path.join(ROOT, entry.path), "utf8"));
+  assert.equal(ctx.calls.includes("BEGIN"), false);
+  assert.equal(ctx.calls.some((sql) => String(sql).startsWith("SET LOCAL statement_timeout")), false);
+});
+
+test("self mode rolls back a mid-file error and verifies idle transaction status", async () => {
+  const ctx = setup({ issuerApplied: true });
+  const manifest = structuredClone(MANIFEST);
+  const entry = manifest.entries[2];
+  assert.equal(entry.tx, "self");
+  withPlan(ctx, entry);
+  const originalCreateClient = ctx.createClient;
+  ctx.createClient = async (...args) => {
+    const client = await originalCreateClient(...args);
+    client.connection = new EventEmitter();
+    client.connectionStatus = "I";
+    const originalQuery = client.query.bind(client);
+    client.query = async (sql, values) => {
+      if (String(sql).includes("-- House platform migration: expand the existing H3C")) {
+        client.connectionStatus = "E";
+        client.connection.emit("readyForQuery", { status: "E" });
+        throw new Error("mid-file statement failed");
+      }
+      if (sql === "ROLLBACK") {
+        ctx.calls.push(sql);
+        client.connectionStatus = "I";
+        client.connection.emit("readyForQuery", { status: "I" });
+        return { rows: [] };
+      }
+      return originalQuery(sql, values);
+    };
+    return client;
+  };
+  await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest, repoRoot: ROOT }), (error) => error.message.includes("mid-file statement failed"));
+  assert.ok(ctx.calls.includes("ROLLBACK"));
+  assert.equal(ctx.calls.some((sql) => String(sql).startsWith("SET LOCAL statement_timeout")), false);
+});
+
+test("self mode fails closed when rollback does not report the idle protocol state", async () => {
+  const ctx = setup({ issuerApplied: true });
+  const manifest = structuredClone(MANIFEST);
+  const entry = manifest.entries[2];
+  assert.equal(entry.tx, "self");
+  withPlan(ctx, entry);
+  const originalCreateClient = ctx.createClient;
+  ctx.createClient = async (...args) => {
+    const client = await originalCreateClient(...args);
+    client.connection = new EventEmitter();
+    const originalQuery = client.query.bind(client);
+    client.query = async (sql, values) => {
+      if (String(sql).includes("-- House platform migration: expand the existing H3C")) {
+        client.connection.emit("readyForQuery", { status: "E" });
+        throw new Error("mid-file statement failed");
+      }
+      if (sql === "ROLLBACK") {
+        ctx.calls.push(sql);
+        client.connection.emit("readyForQuery", { status: "E" });
+        return { rows: [] };
+      }
+      return originalQuery(sql, values);
+    };
+    return client;
+  };
+  await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest, repoRoot: ROOT }), "SELF_TRANSACTION_ROLLBACK_UNVERIFIED");
+  assert.ok(ctx.calls.includes("ROLLBACK"));
 });
 
 test("production project ref rejects before client creation", async () => {

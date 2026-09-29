@@ -40,7 +40,7 @@ function assertManifest(manifest) {
     if (!entry || !/^[a-z0-9-]+$/.test(entry.id || "") || ids.has(entry.id)
       || !Number.isInteger(entry.order) || entry.order <= previousOrder
       || !["house", "booking"].includes(entry.repository) || !safeRelative(entry.path)
-      || !/^[a-f0-9]{64}$/.test(entry.sha256 || "") || !entry.rollback
+      || !["wrap", "self"].includes(entry.tx) || !/^[a-f0-9]{64}$/.test(entry.sha256 || "") || !entry.rollback
       || !safeRelative(entry.rollback.path) || !/^[a-f0-9]{64}$/.test(entry.rollback.sha256 || "")) fail("MANIFEST_INVALID");
     const key = `${entry.repository}:${entry.path}`;
     if (paths.has(key)) fail("MANIFEST_INVALID");
@@ -69,12 +69,18 @@ function readPinnedFile(entry, env, repoRoot, manifest) {
   return { file, bytes, sql: bytes.toString("utf8") };
 }
 
-// Detect top-level transaction statements while ignoring comments, quoted text,
-// identifiers, and dollar-quoted PL/pgSQL bodies (which legitimately contain BEGIN).
-export function containsTopLevelTransactionControl(sql) {
-  const tokens = [];
+const TRANSACTION_COMMANDS = new Set(["BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT", "SAVEPOINT", "RELEASE"]);
+
+function parseTopLevelSql(sql) {
+  if (typeof sql !== "string") fail("SQL_SOURCE_INVALID");
+  const statements = [];
+  let tokens = [];
+  let metaCommand = false;
   let i = 0;
-  let statementStart = true;
+  const finishStatement = () => {
+    if (tokens.length) statements.push(tokens);
+    tokens = [];
+  };
   while (i < sql.length) {
     const c = sql[i];
     if (/\s/.test(c)) { i++; continue; }
@@ -86,26 +92,91 @@ export function containsTopLevelTransactionControl(sql) {
         else if (sql[i] === "*" && sql[i + 1] === "/") { depth--; i += 2; }
         else i++;
       }
+      if (depth) fail("SQL_LEXING_INVALID");
       continue;
     }
-    if (c === "'") { i++; while (i < sql.length) { if (sql[i] === "'") { i++; if (sql[i] === "'") { i++; continue; } break; } if (sql[i] === "\\") i++; i++; } statementStart = false; continue; }
-    if (c === '"') { i++; while (i < sql.length) { if (sql[i] === '"') { i++; if (sql[i] === '"') { i++; continue; } break; } i++; } statementStart = false; continue; }
-    if (c === "$" ) {
-      const match = sql.slice(i).match(/^\$[a-zA-Z_][a-zA-Z0-9_]*\$|^\$\$/);
-      if (match) { const tag = match[0]; i += tag.length; const end = sql.indexOf(tag, i); i = end < 0 ? sql.length : end + tag.length; statementStart = false; continue; }
+    if (c === "'") {
+      if (!tokens.length) tokens.push("<STRING>");
+      const escapePrefix = i > 0 && /[eE]/.test(sql[i - 1]) && (i < 2 || !/[a-zA-Z0-9_$]/.test(sql[i - 2]));
+      i++;
+      let closed = false;
+      while (i < sql.length) {
+        if (sql[i] === "'") {
+          i++;
+          if (sql[i] === "'") { i++; continue; }
+          closed = true; break;
+        }
+        if (escapePrefix && sql[i] === "\\") { i += 2; continue; }
+        i++;
+      }
+      if (!closed) fail("SQL_LEXING_INVALID");
+      continue;
     }
-    if (c === ";") { statementStart = true; i++; continue; }
+    if (c === '"') {
+      if (!tokens.length) tokens.push("<IDENTIFIER>");
+      i++;
+      let closed = false;
+      while (i < sql.length) {
+        if (sql[i] === '"') {
+          i++;
+          if (sql[i] === '"') { i++; continue; }
+          closed = true; break;
+        }
+        i++;
+      }
+      if (!closed) fail("SQL_LEXING_INVALID");
+      continue;
+    }
+    if (c === "$") {
+      const match = sql.slice(i).match(/^\$[a-zA-Z_][a-zA-Z0-9_]*\$|^\$\$/);
+      if (match) {
+        if (!tokens.length) tokens.push("<DOLLAR_LITERAL>");
+        const tag = match[0]; i += tag.length; const end = sql.indexOf(tag, i);
+        if (end < 0) fail("SQL_LEXING_INVALID");
+        i = end + tag.length; continue;
+      }
+    }
+    if (c === ";") { finishStatement(); i++; continue; }
+    if (c === "\\") { metaCommand = true; i++; continue; }
     if (/[a-zA-Z_]/.test(c)) {
       const match = sql.slice(i).match(/^[a-zA-Z_][a-zA-Z0-9_$]*/)[0];
-      if (statementStart) tokens.push(match.toUpperCase());
-      statementStart = false; i += match.length; continue;
+      tokens.push(match.toUpperCase()); i += match.length; continue;
     }
-    statementStart = false; i++;
+    if (!tokens.length) tokens.push(`<${c}>`);
+    i++;
   }
-  return tokens.some((token) => ["BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT", "SAVEPOINT", "RELEASE"].includes(token));
+  finishStatement();
+  const controls = [];
+  for (let index = 0; index < statements.length; index++) {
+    const [first, second] = statements[index];
+    if (TRANSACTION_COMMANDS.has(first) || (first === "PREPARE" && second === "TRANSACTION")) controls.push({ index, command: first });
+  }
+  return { statements, controls, metaCommand };
 }
 
-function assertNoOwnedTransaction(sql) { if (containsTopLevelTransactionControl(sql)) fail("SQL_TRANSACTION_CONTROL_REJECTED"); }
+export function containsTopLevelTransactionControl(sql) {
+  const parsed = parseTopLevelSql(sql);
+  return parsed.controls.length > 0;
+}
+
+export function validateTransactionMode(sql, mode) {
+  if (mode !== "wrap" && mode !== "self") fail("MANIFEST_TRANSACTION_MODE_INVALID");
+  const parsed = parseTopLevelSql(sql);
+  if (mode === "wrap") {
+    if (parsed.controls.length || parsed.metaCommand) fail("WRAPPED_SQL_TRANSACTION_CONTROL_REJECTED");
+    return;
+  }
+  const lastIndex = parsed.statements.length - 1;
+  const begins = parsed.controls.filter(({ command }) => command === "BEGIN");
+  const commits = parsed.controls.filter(({ command }) => command === "COMMIT");
+  const exactBoundary = parsed.statements.length >= 2
+    && parsed.statements[0][0] === "BEGIN"
+    && parsed.statements[lastIndex][0] === "COMMIT"
+    && begins.length === 1 && begins[0].index === 0
+    && commits.length === 1 && commits[0].index === lastIndex
+    && parsed.controls.length === 2;
+  if (!exactBoundary || parsed.metaCommand) fail("SELF_TRANSACTION_SHAPE_INVALID");
+}
 
 function entryForFile(manifest, requested, repoRoot) {
   const normalized = String(requested || "").replaceAll("\\", "/");
@@ -119,7 +190,7 @@ function validateAllPinnedSources(manifest, env, repoRoot, selected) {
   const forward = readPinnedFile(selected, env, repoRoot, manifest);
   const rollback = { ...selected, path: selected.rollback.path, sha256: selected.rollback.sha256 };
   readPinnedFile(rollback, env, repoRoot, manifest);
-  assertNoOwnedTransaction(forward.sql);
+  validateTransactionMode(forward.sql, selected.tx);
   return forward;
 }
 
@@ -303,6 +374,11 @@ export async function executePlatformSql(argv, {
   if (mode === "apply") readAndValidatePlan(evidenceDirectory, selected, projectRef, repoRoot);
   const target = validateCaptureTarget({ projectRef, databaseUrl, config: CAPTURE_CONFIG });
   const client = await createClient(target.connectionConfig);
+  const selfTransactional = mode === "apply" && selected.tx === "self";
+  const protocolConnection = client.connection;
+  let transactionStatus = null;
+  const onReadyForQuery = (message) => { transactionStatus = message?.status || null; };
+  if (selfTransactional && typeof protocolConnection?.on === "function") protocolConnection.on("readyForQuery", onReadyForQuery);
   let connected = false;
   let inTransaction = false;
   let evidence = null;
@@ -341,17 +417,28 @@ export async function executePlatformSql(argv, {
       fail("PLAN_DATABASE_STATE_CHANGED");
     }
     if (!next || next.id !== selected.id) fail(next ? "PLATFORM_SQL_ORDER_REJECTED" : "PLATFORM_SQL_ALREADY_APPLIED");
-    if (containsTopLevelTransactionControl(source.sql)) fail("SQL_TRANSACTION_CONTROL_REJECTED");
-    await client.query("BEGIN"); inTransaction = true;
-    await client.query(`SET LOCAL statement_timeout = '${TIMEOUT_MS}ms'`);
-    await client.query(source.sql);
-    await client.query("COMMIT"); inTransaction = false;
+    if (selfTransactional) {
+      await client.query(source.sql);
+      if (transactionStatus !== "I") fail("SELF_TRANSACTION_END_UNVERIFIED");
+    } else {
+      await client.query("BEGIN"); inTransaction = true;
+      await client.query(`SET LOCAL statement_timeout = '${TIMEOUT_MS}ms'`);
+      await client.query(source.sql);
+      await client.query("COMMIT"); inTransaction = false;
+    }
     evidence.result = "applied";
     writeEvidence(evidenceDirectory, evidence); evidenceWritten = true;
     stdout({ mode: "apply", result: "applied", file: selected.path, sha256: selected.sha256 });
   } catch (error) {
     operationFailed = true;
-    if (inTransaction) {
+    if (selfTransactional && connected) {
+      try {
+        await client.query("ROLLBACK");
+        if (transactionStatus !== "I") fail("SELF_TRANSACTION_ROLLBACK_UNVERIFIED");
+      } catch (rollbackError) {
+        error = Object.assign(new Error("self transaction rollback could not be verified", { cause: rollbackError }), { code: "SELF_TRANSACTION_ROLLBACK_UNVERIFIED" });
+      }
+    } else if (inTransaction) {
       try { await client.query("ROLLBACK"); } catch { /* preserve original failure */ }
       inTransaction = false;
     }
@@ -363,6 +450,7 @@ export async function executePlatformSql(argv, {
     if (connected) {
       try { await client.end(); } catch { /* don't mask query outcome */ }
     }
+    if (typeof protocolConnection?.off === "function") protocolConnection.off("readyForQuery", onReadyForQuery);
     if (evidence && !evidenceWritten) {
       try { writeEvidence(evidenceDirectory, evidence); }
       catch {
