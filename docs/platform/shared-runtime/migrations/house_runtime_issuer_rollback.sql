@@ -23,6 +23,8 @@ BEGIN
 END;
 $issuer_rollback_guard$;
 
+REVOKE USAGE ON SCHEMA wstera_platform_internal FROM wstera_runtime_issuer_login;
+
 DROP FUNCTION wstera_platform_internal.consume_runtime_issuer_rate_limit(text,integer,integer,timestamptz);
 DROP TABLE wstera_platform_internal.runtime_issuer_rate_limits;
 DROP TABLE wstera_platform_internal.runtime_issuer_audit;

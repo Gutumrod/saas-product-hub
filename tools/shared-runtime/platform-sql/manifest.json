@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "booking_repository_sha": "53fa72dd6fe72f8ff176ce90028827ff96499837",
+  "booking_repository_sha": "32df434e1057a83ecbf0c290a659be42f24bbc55",
   "accepted_bk01_ledger": [
     { "filename": "supabase/bk01-migrations/20260926120000_bk01_entitlement_packs.sql", "sha256": "db297ae07f1be3cfba5ec1d5a1fca6e194b4d3188082e533a0f976c8ed005998" },
     { "filename": "supabase/bk01-migrations/20260927120000_bk01_runtime_route_rpcs.sql", "sha256": "744ba05fbee678cd5b0cf6beafc92c43e388432c3b7af841acd3bf4043177b92" },
@@ -18,7 +18,7 @@
       "rollback": {
         "tx": "wrap",
         "path": "supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql",
-        "sha256": "eae564356b516de624fee20b40b6322f6f36c8aed9feb487fa152fdaf04431f0"
+        "sha256": "199681eec523212a658f2aabc0c6076bca087737f57174d82583b1a3d7908457"
       }
     },
     {
@@ -31,7 +31,7 @@
       "rollback": {
         "tx": "self",
         "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_rollback.sql",
-        "sha256": "2bf61d234a75b44364b6e25270e05fc11a72313104bf6b3a3d34c680d77fb7ad"
+        "sha256": "43e01989d42559ddcc1342eb381988e6f79137b59613d01d1925e709272267b5"
       }
     },
     {
@@ -44,7 +44,7 @@
       "rollback": {
         "tx": "self",
         "path": "docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion_rollback.sql",
-        "sha256": "fd187c035ebd168a35e5830ff71d83d8080741b513edb61f498c0fd23c966fec"
+        "sha256": "ea2170d6239e713b487640030544bf7e09308aadc92a3261dfc3bb4e50eef960"
       }
     },
     {
