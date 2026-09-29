@@ -50,19 +50,25 @@ test("accepts a session pooler only when its username binds the pinned LAB ref",
   const target = validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: poolerUrl(), config });
   assert.equal(target.projectRef, config.lab_project_ref);
   assert.equal(target.host, "aws-0-ap-southeast-1.pooler.supabase.com");
+  const withSslMode = validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: `${poolerUrl()}?sslmode=verify-full`, config });
+  assert.deepEqual(withSslMode.connectionConfig.ssl, { rejectUnauthorized: true });
 });
 
 test("pooler capture keeps the admin login and never connects as the measurement role", async () => {
   const url = poolerUrl();
-  let clientUrl;
+  let clientConfig;
   const client = { connect: async () => { throw Object.assign(Error("offline stub"), { code: "OFFLINE_STUB" }); }, end: async () => {} };
   await assert.rejects(captureLiveWithPreflight({
     env: { ...envFor(), URL: url }, config,
     getGitSha: () => "c".repeat(40), getGitStatus: () => "",
-    createClient: async (databaseUrl) => { clientUrl = databaseUrl; return client; },
+    createClient: async (connectionConfig) => { clientConfig = connectionConfig; return client; },
   }), { code: "OFFLINE_STUB" });
-  assert.equal(clientUrl, url);
-  assert.equal(new URL(clientUrl).username, `postgres.${config.lab_project_ref}`);
+  assert.equal(clientConfig.host, "aws-0-ap-southeast-1.pooler.supabase.com");
+  assert.equal(clientConfig.port, "5432");
+  assert.equal(clientConfig.user, `postgres.${config.lab_project_ref}`);
+  assert.equal(clientConfig.database, "postgres");
+  assert.equal(clientConfig.password, "never-print");
+  assert.equal(Object.hasOwn(clientConfig, "connectionString"), false);
 });
 
 test("rejects pooler ref, production, host suffix, and transaction port before creating a connection", async () => {
@@ -77,6 +83,7 @@ test("rejects pooler ref, production, host suffix, and transaction port before c
     let networkConnects = 0;
     await assert.rejects(captureLiveWithPreflight({
       env: { ...envFor(), URL: item.url }, config,
+      getGitSha: () => "d".repeat(40), getGitStatus: () => "",
       createClient: async () => {
         clientConstructions++;
         return { connect: async () => { networkConnects++; }, end: async () => {} };
@@ -84,6 +91,35 @@ test("rejects pooler ref, production, host suffix, and transaction port before c
     }), { code: item.code });
     assert.equal(clientConstructions, 0);
     assert.equal(networkConnects, 0);
+  }
+});
+
+test("rejects effective pg query overrides and unsafe query params before connecting", async () => {
+  const direct = envFor().URL;
+  const cases = [
+    { url: `${poolerUrl()}?user=postgres.${config.production_project_ref}`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${poolerUrl()}?port=6543`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${poolerUrl()}?host=evil.example`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}?host=evil.example`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}?application_name=unexpected`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}?sslmode=disable`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}?sslmode=prefer`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}?sslmode=require`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}?dbname=template1`, code: "DATABASE_QUERY_REJECTED" },
+  ];
+  for (const item of cases) {
+    let clientConstructions = 0;
+    let networkConnects = 0;
+    await assert.rejects(captureLiveWithPreflight({
+      env: { ...envFor(), URL: item.url }, config,
+      getGitSha: () => "d".repeat(40), getGitStatus: () => "",
+      createClient: async () => {
+        clientConstructions++;
+        return { connect: async () => { networkConnects++; }, end: async () => {} };
+      },
+    }), { code: item.code });
+    assert.equal(clientConstructions, 0, item.url);
+    assert.equal(networkConnects, 0, item.url);
   }
 });
 
@@ -95,6 +131,15 @@ test("capture diagnostics include class and message while redacting credentials 
   assert.equal(diagnostic.includes("postgres." + config.lab_project_ref), false);
   assert.equal(diagnostic.includes("aws-0-ap-southeast-1.pooler.supabase.com"), false);
   assert.equal(diagnostic.includes("[redacted]"), true);
+});
+
+test("capture diagnostics redact resolved IP addresses and the LAB project ref", () => {
+  const url = envFor().URL;
+  const diagnostic = safeCaptureDiagnostic(new Error(`ECONNREFUSED 52.8.1.2; peer [2600:1f18:abcd::1]; project ${config.lab_project_ref}`), url);
+  assert.equal(diagnostic.includes("52.8.1.2"), false);
+  assert.equal(diagnostic.includes("2600:1f18:abcd::1"), false);
+  assert.equal(diagnostic.includes(config.lab_project_ref), false);
+  assert.match(diagnostic, /\[IP redacted\]/);
 });
 
 test("matching pinned project and host reach the injected connection stub", async () => {

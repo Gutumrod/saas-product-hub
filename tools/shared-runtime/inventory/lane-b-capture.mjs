@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { parse as parseConnectionString } from "pg-connection-string";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../..");
@@ -25,17 +26,36 @@ export function validateCaptureTarget({ projectRef, databaseUrl, config = CONFIG
   if (!projectRef || projectRef !== expected || projectRef === config.production_project_ref) {
     throw safeError("PROJECT_REF_REJECTED");
   }
+  let url;
+  try { url = new URL(databaseUrl); } catch { throw safeError("DATABASE_URL_INVALID"); }
+  if (!/^postgres(?:ql)?:$/.test(url.protocol)) throw safeError("DATABASE_URL_INVALID");
+  const queryKeys = [...url.searchParams.keys()];
+  if (queryKeys.some((key) => key !== "sslmode")
+    || (url.searchParams.has("sslmode") && (url.searchParams.getAll("sslmode").length !== 1
+      || url.searchParams.get("sslmode") !== "verify-full"))) {
+    throw safeError("DATABASE_QUERY_REJECTED");
+  }
   let parsed;
-  try { parsed = new URL(databaseUrl); } catch { throw safeError("DATABASE_URL_INVALID"); }
-  if (!/^postgres(?:ql)?:$/.test(parsed.protocol) || !parsed.hostname) throw safeError("DATABASE_URL_INVALID");
+  try { parsed = parseConnectionString(databaseUrl); } catch { throw safeError("DATABASE_URL_INVALID"); }
+  if (!parsed.host || !parsed.user || !parsed.password) throw safeError("DATABASE_URL_INVALID");
   const expectedHost = config.database_host_template.replace("{project_ref}", expected).toLowerCase();
-  const hostname = parsed.hostname.toLowerCase();
-  const isDirectHost = hostname === expectedHost && (!parsed.port || parsed.port === "5432");
+  const hostname = parsed.host.toLowerCase();
+  const port = parsed.port || "5432";
+  const isDirectHost = hostname === expectedHost && port === "5432";
   const isSessionPooler = /^aws-\d+-[a-z]{2,}-[a-z]+-\d+\.pooler\.supabase\.com$/.test(hostname)
-    && parsed.port === "5432"
-    && parsed.username === `postgres.${expected}`;
+    && port === "5432"
+    && parsed.user === `postgres.${expected}`;
   if (!isDirectHost && !isSessionPooler) throw safeError("DATABASE_HOST_MISMATCH");
-  return Object.freeze({ projectRef: expected, host: hostname, databaseUrl });
+  if (parsed.database !== "postgres") throw safeError("DATABASE_HOST_MISMATCH");
+  const connectionConfig = Object.freeze({
+    host: hostname,
+    port,
+    user: parsed.user,
+    database: parsed.database,
+    password: parsed.password,
+    ssl: Object.freeze({ rejectUnauthorized: true }),
+  });
+  return Object.freeze({ projectRef: expected, host: hostname, connectionConfig, databaseUrl });
 }
 
 export function safeCaptureDiagnostic(error, databaseUrl) {
@@ -43,7 +63,7 @@ export function safeCaptureDiagnostic(error, databaseUrl) {
   let current = error;
   for (let depth = 0; current && depth < 3; depth++, current = current.cause) {
     let message = typeof current.message === "string" ? current.message : String(current);
-    const secrets = [databaseUrl];
+    const secrets = [databaseUrl, CONFIG.lab_project_ref];
     try {
       const parsed = new URL(databaseUrl);
       secrets.push(parsed.href, parsed.host, parsed.hostname, parsed.username, parsed.password);
@@ -59,6 +79,8 @@ export function safeCaptureDiagnostic(error, databaseUrl) {
     message = message
       .replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/gi, "[connection redacted]")
       .replace(/\b(?:[a-z0-9-]+\.)*(?:pooler\.supabase\.com|supabase\.co)\b/gi, "[host redacted]")
+      .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[IP redacted]")
+      .replace(/\b(?:[a-f0-9]{1,4}:){2,}[a-f0-9:.]*\b/gi, "[IP redacted]")
       .replace(/[\r\n\t]+/g, " ")
       .slice(0, 500);
     const errorClass = current?.constructor?.name || "Error";
@@ -149,13 +171,13 @@ export async function captureLiveWithPreflight(options = {}) {
   if (!/^[0-9a-f]{40}$/i.test(toolGitSha)) throw safeError("TOOL_SHA_UNAVAILABLE");
   const gitStatus = (options.getGitStatus || (() => execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: REPO_ROOT, encoding: "utf8" })))();
   if (gitStatus.trim()) throw safeError("WORKTREE_DIRTY");
-  const createClient = options.createClient || (async (databaseUrl) => {
+  const createClient = options.createClient || (async (connectionConfig) => {
     const { Client } = await import("pg");
-    return new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: true }, statement_timeout: 25000, connectionTimeoutMillis: 10000, application_name: "wstera-lane-b-capture" });
+    return new Client({ ...connectionConfig, statement_timeout: 25000, connectionTimeoutMillis: 10000, application_name: "wstera-lane-b-capture" });
   });
 
   // No client is constructed or connected until project and host validation above pass.
-  const client = await createClient(target.databaseUrl);
+  const client = await createClient(target.connectionConfig);
   let connected = false;
   let measurement = null;
   let primaryError = null;
@@ -212,7 +234,7 @@ export async function captureLiveWithPreflight(options = {}) {
         // connection can still reach the already-validated project/host.
         let cleanupClient;
         try {
-          cleanupClient = await createClient(target.databaseUrl);
+          cleanupClient = await createClient(target.connectionConfig);
           await cleanupClient.connect();
           await dropMeasurementRole(cleanupClient, measurement);
         } catch (cleanupError) {
