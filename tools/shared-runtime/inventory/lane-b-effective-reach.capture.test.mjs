@@ -16,20 +16,32 @@ const config = {
   lab_project_ref: "ykxlqnshaaxmzzocpjlj",
   production_project_ref: "gyleqrjdzwwlqierdwcy",
   database_host_template: "db.{project_ref}.supabase.co",
+  tls_ca_file: "certs/supabase-root-2021.crt",
+  tls_ca_sha256: "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
   output_env: "OUT",
   project_ref_env: "REF",
   database_url_env: "URL",
   stage_env: "STAGE",
   default_stage: "H3D-LIVE",
 };
+const databaseUrl = ({ username, hostname, port = "5432" }) => {
+  const url = new URL("postgresql://placeholder");
+  url.username = username;
+  url.password = "never-print";
+  url.hostname = hostname;
+  url.port = port;
+  url.pathname = "/postgres";
+  url.searchParams.set("sslmode", "verify-full");
+  return url.toString();
+};
 const envFor = (ref = config.lab_project_ref, hostRef = config.lab_project_ref, output = path.join(os.tmpdir(), `lane-b-${crypto.randomUUID()}.json`)) => ({
   REF: ref,
-  URL: `postgresql://operator:never-print@db.${hostRef}.supabase.co:5432/postgres`,
+  URL: databaseUrl({ username: "operator", hostname: `db.${hostRef}.supabase.co` }),
   OUT: output,
   STAGE: "H3D-LIVE",
 });
 const poolerUrl = (usernameRef = config.lab_project_ref, hostname = "aws-0-ap-southeast-1.pooler.supabase.com", port = "5432") =>
-  `postgresql://postgres.${usernameRef}:never-print@${hostname}:${port}/postgres`;
+  databaseUrl({ username: `postgres.${usernameRef}`, hostname, port });
 
 test("rejects wrong and production project refs before creating a connection", async () => {
   for (const ref of ["otherproject123456789012", config.production_project_ref]) {
@@ -43,15 +55,17 @@ test("rejects a mismatched database host before creating a connection", async ()
   let connects = 0;
   await assert.rejects(captureLiveWithPreflight({ env: envFor(config.lab_project_ref, config.production_project_ref), config, createClient: async () => { connects++; throw Error("unexpected"); } }), { code: "DATABASE_HOST_MISMATCH" });
   assert.equal(connects, 0);
-  assert.throws(() => validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: `postgresql://operator:secret@db.${config.lab_project_ref}.supabase.co:6543/postgres`, config }), { code: "DATABASE_HOST_MISMATCH" });
+  assert.throws(() => validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: databaseUrl({ username: "operator", hostname: `db.${config.lab_project_ref}.supabase.co`, port: "6543" }), config }), { code: "DATABASE_HOST_MISMATCH" });
 });
 
 test("accepts a session pooler only when its username binds the pinned LAB ref", () => {
   const target = validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: poolerUrl(), config });
   assert.equal(target.projectRef, config.lab_project_ref);
   assert.equal(target.host, "aws-0-ap-southeast-1.pooler.supabase.com");
-  const withSslMode = validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: `${poolerUrl()}?sslmode=verify-full`, config });
-  assert.deepEqual(withSslMode.connectionConfig.ssl, { rejectUnauthorized: true });
+  const withSslMode = validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: poolerUrl(), config });
+  assert.equal(withSslMode.connectionConfig.ssl.rejectUnauthorized, true);
+  assert.equal(withSslMode.connectionConfig.ssl.servername, "aws-0-ap-southeast-1.pooler.supabase.com");
+  assert.deepEqual(withSslMode.connectionConfig.ssl.ca, fs.readFileSync(new URL("./certs/supabase-root-2021.crt", import.meta.url)));
 });
 
 test("pooler capture keeps the admin login and never connects as the measurement role", async () => {
@@ -67,6 +81,9 @@ test("pooler capture keeps the admin login and never connects as the measurement
   assert.equal(clientConfig.port, "5432");
   assert.equal(clientConfig.user, `postgres.${config.lab_project_ref}`);
   assert.equal(clientConfig.database, "postgres");
+  assert.equal(clientConfig.ssl.rejectUnauthorized, true);
+  assert.equal(clientConfig.ssl.servername, "aws-0-ap-southeast-1.pooler.supabase.com");
+  assert.deepEqual(clientConfig.ssl.ca, fs.readFileSync(new URL("./certs/supabase-root-2021.crt", import.meta.url)));
   assert.equal(clientConfig.password, "never-print");
   assert.equal(Object.hasOwn(clientConfig, "connectionString"), false);
 });
@@ -97,15 +114,16 @@ test("rejects pooler ref, production, host suffix, and transaction port before c
 test("rejects effective pg query overrides and unsafe query params before connecting", async () => {
   const direct = envFor().URL;
   const cases = [
-    { url: `${poolerUrl()}?user=postgres.${config.production_project_ref}`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${poolerUrl()}?port=6543`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${poolerUrl()}?host=evil.example`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${direct}?host=evil.example`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${direct}?application_name=unexpected`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${direct}?sslmode=disable`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${direct}?sslmode=prefer`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${direct}?sslmode=require`, code: "DATABASE_QUERY_REJECTED" },
-    { url: `${direct}?dbname=template1`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${poolerUrl()}&user=postgres.${config.production_project_ref}`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${poolerUrl()}&port=6543`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${poolerUrl()}&host=evil.example`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}&host=evil.example`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}&application_name=unexpected`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct.replace("?sslmode=verify-full", "")}?sslmode=disable`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct.replace("?sslmode=verify-full", "")}?sslmode=prefer`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct.replace("?sslmode=verify-full", "")}?sslmode=require`, code: "DATABASE_QUERY_REJECTED" },
+    { url: `${direct}&dbname=template1`, code: "DATABASE_QUERY_REJECTED" },
+    { url: direct.replace("?sslmode=verify-full", ""), code: "DATABASE_QUERY_REJECTED" },
   ];
   for (const item of cases) {
     let clientConstructions = 0;
@@ -120,6 +138,21 @@ test("rejects effective pg query overrides and unsafe query params before connec
     }), { code: item.code });
     assert.equal(clientConstructions, 0, item.url);
     assert.equal(networkConnects, 0, item.url);
+  }
+});
+
+test("rejects unavailable and hash-mismatched pinned CA before constructing a client", async () => {
+  const cases = [
+    { config: { ...config, tls_ca_file: "certs/not-present.crt" }, code: "TLS_CA_UNAVAILABLE" },
+    { config: { ...config, tls_ca_sha256: "0".repeat(64) }, code: "TLS_CA_HASH_MISMATCH" },
+  ];
+  for (const item of cases) {
+    let clientConstructions = 0;
+    await assert.rejects(captureLiveWithPreflight({
+      env: envFor(), config: item.config,
+      createClient: async () => { clientConstructions++; throw Error("unexpected"); },
+    }), { code: item.code });
+    assert.equal(clientConstructions, 0);
   }
 });
 
@@ -191,4 +224,37 @@ test("capture errors still revoke and drop the temporary role in finally", async
   assert.ok(calls.some((sql) => sql.startsWith("DROP ROLE")));
   assert.equal(calls.some((sql) => /never-print/.test(sql)), false);
   assert.equal(fs.existsSync(output), false);
+});
+
+test("cleanup reconnect uses the same pinned CA and validated SNI", async () => {
+  const configs = [];
+  let roleChecks = 0;
+  const makeClient = () => ({
+    connect: async () => {},
+    query: async (sql) => {
+      if (sql.includes("pg_roles") && sql.includes("SELECT 1")) {
+        roleChecks++;
+        if (roleChecks === 2) throw Object.assign(Error("cleanup verify failed"), { code: "CLEANUP_VERIFY_STUB" });
+        return { rows: [] };
+      }
+      if (sql.includes("current_user")) throw Object.assign(Error("capture stop"), { code: "CAPTURE_STOP_STUB" });
+      return { rows: [] };
+    },
+    end: async () => {},
+  });
+  await assert.rejects(captureLiveWithPreflight({
+    env: envFor(), config,
+    getGitSha: () => "e".repeat(40), getGitStatus: () => "",
+    createClient: async (connectionConfig) => {
+      configs.push(connectionConfig);
+      return makeClient();
+    },
+  }), { code: "CAPTURE_STOP_STUB" });
+  assert.equal(configs.length, 2);
+  assert.equal(configs[0], configs[1]);
+  for (const clientConfig of configs) {
+    assert.deepEqual(clientConfig.ssl.ca, fs.readFileSync(new URL("./certs/supabase-root-2021.crt", import.meta.url)));
+    assert.equal(clientConfig.ssl.rejectUnauthorized, true);
+    assert.equal(clientConfig.ssl.servername, `db.${config.lab_project_ref}.supabase.co`);
+  }
 });

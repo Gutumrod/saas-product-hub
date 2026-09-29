@@ -2,6 +2,8 @@
   "lab_project_ref": "ykxlqnshaaxmzzocpjlj",
   "production_project_ref": "gyleqrjdzwwlqierdwcy",
   "database_host_template": "db.{project_ref}.supabase.co",
+  "tls_ca_file": "certs/supabase-root-2021.crt",
+  "tls_ca_sha256": "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
   "output_env": "LANE_B_CAPTURE_OUTPUT",
   "project_ref_env": "LANE_B_PROJECT_REF",
   "database_url_env": "LANE_B_DATABASE_URL",

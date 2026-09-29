@@ -8,6 +8,26 @@ import { parse as parseConnectionString } from "pg-connection-string";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../..");
 const CONFIG = JSON.parse(fs.readFileSync(path.join(HERE, "lane-b-capture-config.json"), "utf8"));
+function readPinnedCa(config) {
+  const relativeFile = config.tls_ca_file;
+  const expectedSha256 = config.tls_ca_sha256;
+  if (typeof relativeFile !== "string" || !relativeFile
+    || path.isAbsolute(relativeFile)
+    || typeof expectedSha256 !== "string" || !/^[a-f0-9]{64}$/.test(expectedSha256)) {
+    throw safeError("TLS_CA_CONFIG_INVALID");
+  }
+  const caPath = path.resolve(HERE, relativeFile);
+  const relativeToInventory = path.relative(HERE, caPath);
+  if (relativeToInventory === ".." || relativeToInventory.startsWith(`..${path.sep}`) || path.isAbsolute(relativeToInventory)) {
+    throw safeError("TLS_CA_CONFIG_INVALID");
+  }
+  let ca;
+  try { ca = fs.readFileSync(caPath); } catch { throw safeError("TLS_CA_UNAVAILABLE"); }
+  const actualSha256 = crypto.createHash("sha256").update(ca).digest("hex");
+  if (actualSha256 !== expectedSha256) throw safeError("TLS_CA_HASH_MISMATCH");
+  if (!ca.toString("ascii").includes("-----BEGIN CERTIFICATE-----")) throw safeError("TLS_CA_INVALID");
+  return ca;
+}
 const identifier = (value) => {
   if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw Object.assign(new Error("invalid identifier"), { code: "INVALID_IDENTIFIER" });
   return `"${value}"`;
@@ -30,9 +50,9 @@ export function validateCaptureTarget({ projectRef, databaseUrl, config = CONFIG
   try { url = new URL(databaseUrl); } catch { throw safeError("DATABASE_URL_INVALID"); }
   if (!/^postgres(?:ql)?:$/.test(url.protocol)) throw safeError("DATABASE_URL_INVALID");
   const queryKeys = [...url.searchParams.keys()];
-  if (queryKeys.some((key) => key !== "sslmode")
-    || (url.searchParams.has("sslmode") && (url.searchParams.getAll("sslmode").length !== 1
-      || url.searchParams.get("sslmode") !== "verify-full"))) {
+  if (queryKeys.length !== 1 || queryKeys[0] !== "sslmode"
+    || url.searchParams.getAll("sslmode").length !== 1
+    || url.searchParams.get("sslmode") !== "verify-full") {
     throw safeError("DATABASE_QUERY_REJECTED");
   }
   let parsed;
@@ -47,13 +67,14 @@ export function validateCaptureTarget({ projectRef, databaseUrl, config = CONFIG
     && parsed.user === `postgres.${expected}`;
   if (!isDirectHost && !isSessionPooler) throw safeError("DATABASE_HOST_MISMATCH");
   if (parsed.database !== "postgres") throw safeError("DATABASE_HOST_MISMATCH");
+  const ca = readPinnedCa(config);
   const connectionConfig = Object.freeze({
     host: hostname,
     port,
     user: parsed.user,
     database: parsed.database,
     password: parsed.password,
-    ssl: Object.freeze({ rejectUnauthorized: true }),
+    ssl: Object.freeze({ ca, rejectUnauthorized: true, servername: hostname }),
   });
   return Object.freeze({ projectRef: expected, host: hostname, connectionConfig, databaseUrl });
 }
