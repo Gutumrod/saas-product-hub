@@ -319,8 +319,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         process.stdout.write(`${ok ? "CAPTURED_PASS" : "CAPTURED_REVIEW_REQUIRED"}: ${outputPath} sha256=${outputSha256}\n`);
         if (!ok) process.exitCode = 1;
       },
-      (error) => {
-        process.stderr.write(`CAPTURE REJECTED: ${error.code || "CAPTURE_FAILED"}\n`);
+      async (error) => {
+        const { safeCaptureDiagnostic } = await import("./lane-b-capture.mjs");
+        const diagnostic = safeCaptureDiagnostic(error, process.env.LANE_B_DATABASE_URL);
+        const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,64}$/.test(error.code) ? error.code : "CAPTURE_FAILED";
+        process.stderr.write(`CAPTURE REJECTED: ${code} (${diagnostic})\n`);
         process.exitCode = 1;
       },
     );

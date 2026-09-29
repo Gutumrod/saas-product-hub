@@ -11,7 +11,7 @@ const identifier = (value) => {
   if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw Object.assign(new Error("invalid identifier"), { code: "INVALID_IDENTIFIER" });
   return `"${value}"`;
 };
-const safeError = (code) => Object.assign(new Error("capture failed"), { code });
+const safeError = (code, cause) => Object.assign(new Error("capture failed", cause ? { cause } : undefined), { code });
 const stableJson = (value) => {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   if (value && typeof value === "object") {
@@ -29,8 +29,42 @@ export function validateCaptureTarget({ projectRef, databaseUrl, config = CONFIG
   try { parsed = new URL(databaseUrl); } catch { throw safeError("DATABASE_URL_INVALID"); }
   if (!/^postgres(?:ql)?:$/.test(parsed.protocol) || !parsed.hostname) throw safeError("DATABASE_URL_INVALID");
   const expectedHost = config.database_host_template.replace("{project_ref}", expected).toLowerCase();
-  if (parsed.hostname.toLowerCase() !== expectedHost || (parsed.port && parsed.port !== "5432")) throw safeError("DATABASE_HOST_MISMATCH");
-  return Object.freeze({ projectRef: expected, host: parsed.hostname.toLowerCase(), databaseUrl });
+  const hostname = parsed.hostname.toLowerCase();
+  const isDirectHost = hostname === expectedHost && (!parsed.port || parsed.port === "5432");
+  const isSessionPooler = /^aws-\d+-[a-z]{2,}-[a-z]+-\d+\.pooler\.supabase\.com$/.test(hostname)
+    && parsed.port === "5432"
+    && parsed.username === `postgres.${expected}`;
+  if (!isDirectHost && !isSessionPooler) throw safeError("DATABASE_HOST_MISMATCH");
+  return Object.freeze({ projectRef: expected, host: hostname, databaseUrl });
+}
+
+export function safeCaptureDiagnostic(error, databaseUrl) {
+  const parts = [];
+  let current = error;
+  for (let depth = 0; current && depth < 3; depth++, current = current.cause) {
+    let message = typeof current.message === "string" ? current.message : String(current);
+    const secrets = [databaseUrl];
+    try {
+      const parsed = new URL(databaseUrl);
+      secrets.push(parsed.href, parsed.host, parsed.hostname, parsed.username, parsed.password);
+      for (const encoded of [parsed.username, parsed.password]) {
+        if (encoded) {
+          try { secrets.push(decodeURIComponent(encoded)); } catch { /* keep encoded form only */ }
+        }
+      }
+    } catch { /* malformed URLs are reported through the generic validator error */ }
+    for (const secret of [...new Set(secrets.filter(Boolean))].sort((a, b) => b.length - a.length)) {
+      message = message.split(secret).join("[redacted]");
+    }
+    message = message
+      .replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/gi, "[connection redacted]")
+      .replace(/\b(?:[a-z0-9-]+\.)*(?:pooler\.supabase\.com|supabase\.co)\b/gi, "[host redacted]")
+      .replace(/[\r\n\t]+/g, " ")
+      .slice(0, 500);
+    const errorClass = current?.constructor?.name || "Error";
+    parts.push(`${errorClass}: ${message || "(no message)"}`);
+  }
+  return parts.join("; caused by ");
 }
 
 function privilegeNames(kind) {
@@ -193,7 +227,7 @@ export async function captureLiveWithPreflight(options = {}) {
       catch (error) { primaryError ||= error; }
     }
   }
-  if (primaryError) throw safeError(primaryError.code || "CAPTURE_QUERY_FAILED");
+  if (primaryError) throw safeError(primaryError.code || "CAPTURE_QUERY_FAILED", primaryError);
 
   const outputBytes = `${stableJson(data)}\n`;
   const outputSha256 = crypto.createHash("sha256").update(outputBytes, "utf8").digest("hex");

@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { captureLiveWithPreflight, validateCaptureTarget } from "./lane-b-capture.mjs";
+import { captureLiveWithPreflight, safeCaptureDiagnostic, validateCaptureTarget } from "./lane-b-capture.mjs";
 
 const stableJson = (value) => {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -28,6 +28,8 @@ const envFor = (ref = config.lab_project_ref, hostRef = config.lab_project_ref, 
   OUT: output,
   STAGE: "H3D-LIVE",
 });
+const poolerUrl = (usernameRef = config.lab_project_ref, hostname = "aws-0-ap-southeast-1.pooler.supabase.com", port = "5432") =>
+  `postgresql://postgres.${usernameRef}:never-print@${hostname}:${port}/postgres`;
 
 test("rejects wrong and production project refs before creating a connection", async () => {
   for (const ref of ["otherproject123456789012", config.production_project_ref]) {
@@ -42,6 +44,57 @@ test("rejects a mismatched database host before creating a connection", async ()
   await assert.rejects(captureLiveWithPreflight({ env: envFor(config.lab_project_ref, config.production_project_ref), config, createClient: async () => { connects++; throw Error("unexpected"); } }), { code: "DATABASE_HOST_MISMATCH" });
   assert.equal(connects, 0);
   assert.throws(() => validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: `postgresql://operator:secret@db.${config.lab_project_ref}.supabase.co:6543/postgres`, config }), { code: "DATABASE_HOST_MISMATCH" });
+});
+
+test("accepts a session pooler only when its username binds the pinned LAB ref", () => {
+  const target = validateCaptureTarget({ projectRef: config.lab_project_ref, databaseUrl: poolerUrl(), config });
+  assert.equal(target.projectRef, config.lab_project_ref);
+  assert.equal(target.host, "aws-0-ap-southeast-1.pooler.supabase.com");
+});
+
+test("pooler capture keeps the admin login and never connects as the measurement role", async () => {
+  const url = poolerUrl();
+  let clientUrl;
+  const client = { connect: async () => { throw Object.assign(Error("offline stub"), { code: "OFFLINE_STUB" }); }, end: async () => {} };
+  await assert.rejects(captureLiveWithPreflight({
+    env: { ...envFor(), URL: url }, config,
+    getGitSha: () => "c".repeat(40), getGitStatus: () => "",
+    createClient: async (databaseUrl) => { clientUrl = databaseUrl; return client; },
+  }), { code: "OFFLINE_STUB" });
+  assert.equal(clientUrl, url);
+  assert.equal(new URL(clientUrl).username, `postgres.${config.lab_project_ref}`);
+});
+
+test("rejects pooler ref, production, host suffix, and transaction port before creating a connection", async () => {
+  const cases = [
+    { url: poolerUrl("anotherproject123456789012"), code: "DATABASE_HOST_MISMATCH" },
+    { url: poolerUrl(config.production_project_ref), code: "DATABASE_HOST_MISMATCH" },
+    { url: poolerUrl(config.lab_project_ref, "aws-0-ap-southeast-1.pooler.supabase.net"), code: "DATABASE_HOST_MISMATCH" },
+    { url: poolerUrl(config.lab_project_ref, "aws-0-ap-southeast-1.pooler.supabase.com", "6543"), code: "DATABASE_HOST_MISMATCH" },
+  ];
+  for (const item of cases) {
+    let clientConstructions = 0;
+    let networkConnects = 0;
+    await assert.rejects(captureLiveWithPreflight({
+      env: { ...envFor(), URL: item.url }, config,
+      createClient: async () => {
+        clientConstructions++;
+        return { connect: async () => { networkConnects++; }, end: async () => {} };
+      },
+    }), { code: item.code });
+    assert.equal(clientConstructions, 0);
+    assert.equal(networkConnects, 0);
+  }
+});
+
+test("capture diagnostics include class and message while redacting credentials and hosts", () => {
+  const url = poolerUrl();
+  const diagnostic = safeCaptureDiagnostic(new Error(`connect failed at ${url} (aws-0-ap-southeast-1.pooler.supabase.com)`), url);
+  assert.match(diagnostic, /^Error: connect failed at \[redacted\]/);
+  assert.equal(diagnostic.includes("never-print"), false);
+  assert.equal(diagnostic.includes("postgres." + config.lab_project_ref), false);
+  assert.equal(diagnostic.includes("aws-0-ap-southeast-1.pooler.supabase.com"), false);
+  assert.equal(diagnostic.includes("[redacted]"), true);
 });
 
 test("matching pinned project and host reach the injected connection stub", async () => {
