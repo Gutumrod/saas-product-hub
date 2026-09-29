@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { captureLiveWithPreflight, safeCaptureDiagnostic, validateCaptureTarget } from "./lane-b-capture.mjs";
+import { captureLiveWithPreflight, defaultCreateClient, safeCaptureDiagnostic, validateCaptureTarget } from "./lane-b-capture.mjs";
 
 const stableJson = (value) => {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -257,4 +257,17 @@ test("cleanup reconnect uses the same pinned CA and validated SNI", async () => 
     assert.equal(clientConfig.ssl.rejectUnauthorized, true);
     assert.equal(clientConfig.ssl.servername, `db.${config.lab_project_ref}.supabase.co`);
   }
+});
+
+test("default pg client factory constructs a real pg.Client without connecting", async () => {
+  const ca = "-----BEGIN CERTIFICATE-----\nplaceholder\n-----END CERTIFICATE-----\n";
+  const client = await defaultCreateClient({
+    host: "aws-1-ap-southeast-1.pooler.supabase.com", port: 5432, user: "postgres.ykxlqnshaaxmzzocpjlj",
+    password: "never-print", database: "postgres",
+    ssl: { ca, rejectUnauthorized: true, servername: "aws-1-ap-southeast-1.pooler.supabase.com" },
+  });
+  assert.equal(typeof client.connect, "function");
+  assert.equal(client.connectionParameters.host, "aws-1-ap-southeast-1.pooler.supabase.com");
+  assert.equal(client.connectionParameters.ssl.rejectUnauthorized, true);
+  assert.equal(client.connectionParameters.ssl.ca, ca);
 });

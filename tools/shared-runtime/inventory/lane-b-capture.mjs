@@ -41,6 +41,14 @@ const stableJson = (value) => {
   return JSON.stringify(value);
 };
 
+// pg is CommonJS: under ESM dynamic import its classes live on the default export only.
+export async function defaultCreateClient(connectionConfig) {
+  const pg = await import("pg");
+  const Client = pg.Client ?? pg.default?.Client;
+  if (typeof Client !== "function") throw safeError("PG_CLIENT_UNAVAILABLE");
+  return new Client({ ...connectionConfig, statement_timeout: 25000, connectionTimeoutMillis: 10000, application_name: "wstera-lane-b-capture" });
+}
+
 export function validateCaptureTarget({ projectRef, databaseUrl, config = CONFIG }) {
   const expected = config.lab_project_ref;
   if (!projectRef || projectRef !== expected || projectRef === config.production_project_ref) {
@@ -192,10 +200,7 @@ export async function captureLiveWithPreflight(options = {}) {
   if (!/^[0-9a-f]{40}$/i.test(toolGitSha)) throw safeError("TOOL_SHA_UNAVAILABLE");
   const gitStatus = (options.getGitStatus || (() => execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: REPO_ROOT, encoding: "utf8" })))();
   if (gitStatus.trim()) throw safeError("WORKTREE_DIRTY");
-  const createClient = options.createClient || (async (connectionConfig) => {
-    const { Client } = await import("pg");
-    return new Client({ ...connectionConfig, statement_timeout: 25000, connectionTimeoutMillis: 10000, application_name: "wstera-lane-b-capture" });
-  });
+  const createClient = options.createClient || defaultCreateClient;
 
   // No client is constructed or connected until project and host validation above pass.
   const client = await createClient(target.connectionConfig);
