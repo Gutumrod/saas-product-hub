@@ -16,6 +16,7 @@
       "path": "supabase/shared-runtime/bk01-platform-bootstrap.sql",
       "sha256": "c5feb034a775446efd6aaaac409de78fa159e491e32c98d3a714e95be62bf989",
       "rollback": {
+        "tx": "wrap",
         "path": "supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql",
         "sha256": "eae564356b516de624fee20b40b6322f6f36c8aed9feb487fa152fdaf04431f0"
       }
@@ -28,6 +29,7 @@
       "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer.sql",
       "sha256": "a56443b43b81ce2587599df7ef7c8f5db7ef58cc2a43fc583b37d317a2aaf1dd",
       "rollback": {
+        "tx": "self",
         "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_rollback.sql",
         "sha256": "2bf61d234a75b44364b6e25270e05fc11a72313104bf6b3a3d34c680d77fb7ad"
       }
@@ -40,6 +42,7 @@
       "path": "docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion.sql",
       "sha256": "e17e8cbc3c0b4de063510e9d29ca3e1d77c0a9da2b1013549421480176700d78",
       "rollback": {
+        "tx": "self",
         "path": "docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion_rollback.sql",
         "sha256": "fd187c035ebd168a35e5830ff71d83d8080741b513edb61f498c0fd23c966fec"
       }
@@ -52,6 +55,7 @@
       "path": "docs/platform/shared-runtime/storage/house_storage_upload_grants.sql",
       "sha256": "a14dceefeed6da3911504a522924393d36979d4181b36361149c1106b3b5c4d3",
       "rollback": {
+        "tx": "self",
         "path": "docs/platform/shared-runtime/storage/house_storage_upload_grants_rollback.sql",
         "sha256": "6b88ddf116e889be788f30819c4fa1b6988009aeaa48a53396c0f17e117b6c30"
       }

@@ -10,6 +10,8 @@ const REPO_ROOT = path.resolve(HERE, "../../..");
 const MANIFEST_PATH = path.join(HERE, "manifest.json");
 const CAPTURE_CONFIG = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "tools/shared-runtime/inventory/lane-b-capture-config.json"), "utf8"));
 const TIMEOUT_MS = 25_000;
+// Stable signed-int key pair shared by every platform SQL operator on this database.
+const ADVISORY_LOCK_KEY = [1_347_245_890, 2_026_092_929];
 
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function sha256(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex"); }
@@ -35,16 +37,19 @@ function assertManifest(manifest) {
   }
   const ids = new Set();
   const paths = new Set();
+  const rollbackPaths = new Set();
   let previousOrder = -Infinity;
   for (const entry of manifest.entries) {
     if (!entry || !/^[a-z0-9-]+$/.test(entry.id || "") || ids.has(entry.id)
       || !Number.isInteger(entry.order) || entry.order <= previousOrder
       || !["house", "booking"].includes(entry.repository) || !safeRelative(entry.path)
       || !["wrap", "self"].includes(entry.tx) || !/^[a-f0-9]{64}$/.test(entry.sha256 || "") || !entry.rollback
-      || !safeRelative(entry.rollback.path) || !/^[a-f0-9]{64}$/.test(entry.rollback.sha256 || "")) fail("MANIFEST_INVALID");
+      || !["wrap", "self"].includes(entry.rollback.tx)
+      || !safeRelative(entry.rollback.path) || !/^[a-f0-9]{64}$/.test(entry.rollback.sha256 || "")
+      || rollbackPaths.has(`${entry.repository}:${entry.rollback.path}`)) fail("MANIFEST_INVALID");
     const key = `${entry.repository}:${entry.path}`;
     if (paths.has(key)) fail("MANIFEST_INVALID");
-    ids.add(entry.id); paths.add(key); previousOrder = entry.order;
+    ids.add(entry.id); paths.add(key); rollbackPaths.add(`${entry.repository}:${entry.rollback.path}`); previousOrder = entry.order;
   }
 }
 function gitHead(root) {
@@ -186,12 +191,21 @@ function entryForFile(manifest, requested, repoRoot) {
   return entry;
 }
 
+function entryForRollbackFile(manifest, requested) {
+  const normalized = String(requested || "").replaceAll("\\", "/");
+  const entry = manifest.entries.find((candidate) => candidate.rollback.path === normalized
+    || `${candidate.repository}/${candidate.rollback.path}` === normalized);
+  if (!entry) fail("SQL_ROLLBACK_FILE_NOT_IN_MANIFEST");
+  return entry;
+}
+
 function validateAllPinnedSources(manifest, env, repoRoot, selected) {
   const forward = readPinnedFile(selected, env, repoRoot, manifest);
   const rollback = { ...selected, path: selected.rollback.path, sha256: selected.rollback.sha256 };
-  readPinnedFile(rollback, env, repoRoot, manifest);
+  const rollbackSource = readPinnedFile(rollback, env, repoRoot, manifest);
   validateTransactionMode(forward.sql, selected.tx);
-  return forward;
+  validateTransactionMode(rollbackSource.sql, selected.rollback.tx);
+  return { forward, rollback: rollbackSource };
 }
 
 async function queryOne(client, sql, values = []) {
@@ -306,14 +320,20 @@ function toolSha(repoRoot) { return gitHead(repoRoot); }
 function ensureExternalEvidenceDirectory(env) {
   const dir = env.PLATFORM_SQL_EVIDENCE_DIR;
   if (!dir || !path.isAbsolute(dir)) fail("EVIDENCE_DIRECTORY_REQUIRED");
-  fs.mkdirSync(dir, { recursive: true });
-  const relative = path.relative(REPO_ROOT, path.resolve(dir));
+  const absoluteDirectory = path.resolve(dir);
+  const relative = path.relative(REPO_ROOT, absoluteDirectory);
   if (!relative.startsWith("..") && !path.isAbsolute(relative)) fail("EVIDENCE_DIRECTORY_MUST_BE_EXTERNAL");
-  return path.resolve(dir);
+  fs.mkdirSync(absoluteDirectory, { recursive: true });
+  const realDirectory = fs.realpathSync(absoluteDirectory);
+  const realRelative = path.relative(fs.realpathSync(REPO_ROOT), realDirectory);
+  if (!realRelative.startsWith("..") && !path.isAbsolute(realRelative)) fail("EVIDENCE_DIRECTORY_MUST_BE_EXTERNAL");
+  return realDirectory;
 }
 
 function writeEvidence(directory, record) {
-  const name = `${record.file.replace(/[^a-zA-Z0-9_-]/g, "_")}-${record.at.replace(/[-:.]/g, "")}.json`;
+  const stem = String(record.file || record.attemptedFile || "preconnect").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const operation = String(record.operation || "evidence").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const name = `${operation}-${stem}-${record.at.replace(/[-:.]/g, "")}-${crypto.randomBytes(4).toString("hex")}.json`;
   const destination = path.join(directory, name);
   const temporary = `${destination}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(record, null, 2)}\n`, { flag: "wx" });
@@ -333,12 +353,46 @@ function readAndValidatePlan(directory, selected, projectRef, repoRoot) {
   catch { fail("FRESH_PLAN_REQUIRED"); }
   const age = Date.now() - Date.parse(plan.createdAt);
   if (!Number.isFinite(age) || age < 0 || age > 15 * 60 * 1000
-    || plan.projectRef !== projectRef || plan.toolGitSha !== toolSha(repoRoot)
-    || plan.next?.file !== selected.path || plan.next?.sha256 !== selected.sha256) fail("PLAN_ORDER_OR_STALENESS_REJECTED");
+    || plan.projectRef !== projectRef || plan.toolGitSha !== toolSha(repoRoot)) fail("PLAN_ORDER_OR_STALENESS_REJECTED");
   return plan;
 }
 
-function renderPlan(entries, state, objects, next, baseline) {
+function readMutationHistory(directory, manifest) {
+  let names;
+  try { names = fs.readdirSync(directory).filter((name) => name.endsWith(".json") && name !== "latest-plan.json"); }
+  catch { return []; }
+  const records = [];
+  for (const name of names) {
+    let record;
+    try { record = JSON.parse(fs.readFileSync(path.join(directory, name), "utf8")); }
+    catch { fail("EVIDENCE_HISTORY_INVALID"); }
+    if (!record || typeof record !== "object" || Array.isArray(record)) fail("EVIDENCE_HISTORY_INVALID");
+    const operation = record.operation || (record.result === "applied" ? "apply" : null);
+    if (!["apply", "rollback"].includes(operation) || !["applied", "rolled_back"].includes(record.result)) continue;
+    if ((operation === "apply" && record.result !== "applied") || (operation === "rollback" && record.result !== "rolled_back")) fail("EVIDENCE_HISTORY_INVALID");
+    const entry = manifest.entries.find((candidate) => candidate.path === record.file && candidate.sha256 === record.sha256);
+    if (!entry || !Number.isFinite(Date.parse(record.at))) fail("EVIDENCE_HISTORY_INVALID");
+    records.push({ entry, operation, at: Date.parse(record.at) });
+  }
+  records.sort((a, b) => a.at - b.at);
+  for (let index = 1; index < records.length; index++) {
+    if (records[index - 1].at === records[index].at) fail("EVIDENCE_HISTORY_INVALID");
+  }
+  const active = [];
+  for (const record of records) {
+    if (record.operation === "apply" && record.entry) {
+      if (active.some((entry) => entry.id === record.entry.id) || (active.length && active.at(-1).order >= record.entry.order)) fail("EVIDENCE_HISTORY_INVALID");
+      active.push(record.entry);
+    }
+    else if (record.operation === "rollback") {
+      if (active.at(-1)?.id !== record.entry?.id) fail("EVIDENCE_HISTORY_INVALID");
+      active.pop();
+    }
+  }
+  return active;
+}
+
+function renderPlan(entries, state, objects, next, baseline, rollbackEntry) {
   return {
     mode: "plan-read-only",
     localServiceBaseline: { relations: Number(baseline.local_relations), functions: Number(baseline.local_functions) },
@@ -346,35 +400,47 @@ function renderPlan(entries, state, objects, next, baseline) {
     bootstrapKeyObjects: baseline.key_objects,
     entries: entries.map((entry) => ({ file: entry.path, sha256: entry.sha256, applied: Boolean(state[entry.id]), keyObjects: objects[entry.id] })),
     next: next ? { file: next.path, sha256: next.sha256 } : null,
+    rollback: rollbackEntry ? { file: rollbackEntry.rollback.path, sha256: rollbackEntry.rollback.sha256, forwardFile: rollbackEntry.path } : null,
   };
 }
 
-export async function executePlatformSql(argv, {
+async function executePlatformSqlInternal(argv, {
   env = process.env,
   manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8")),
   repoRoot = REPO_ROOT,
   createClient = defaultCreateClient,
   stdout = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`),
-} = {}) {
+} = {}, stateContext) {
   assertManifest(manifest);
   const [mode, ...args] = argv;
-  if (mode !== "plan" && mode !== "apply") fail("USAGE: plan | apply --file <manifest-path> --confirm <sha256>");
+  if (mode !== "plan" && mode !== "apply" && mode !== "rollback") fail("USAGE: plan | apply --file <manifest-path> --confirm <sha256> | rollback --file <rollback-manifest-path> --confirm <sha256>");
   let selected = null;
-  let source = null;
-  if (mode === "apply") {
-    if (args.length !== 4 || args[0] !== "--file" || args[2] !== "--confirm") fail("USAGE: apply --file <manifest-path> --confirm <sha256>");
-    selected = entryForFile(manifest, args[1], repoRoot);
-    if (args[3] !== selected.sha256) fail("CONFIRMATION_HASH_MISMATCH");
-    source = validateAllPinnedSources(manifest, env, repoRoot, selected);
+  let operationSource = null;
+  if (mode === "apply" || mode === "rollback") {
+    if (args.length !== 4 || args[0] !== "--file" || args[2] !== "--confirm") fail(`USAGE: ${mode} --file <manifest-path> --confirm <sha256>`);
+    selected = mode === "apply" ? entryForFile(manifest, args[1], repoRoot) : entryForRollbackFile(manifest, args[1]);
+    const expectedHash = mode === "apply" ? selected.sha256 : selected.rollback.sha256;
+    if (args[3] !== expectedHash) fail("CONFIRMATION_HASH_MISMATCH");
+    operationSource = validateAllPinnedSources(manifest, env, repoRoot, selected);
   } else if (args.length) fail("USAGE: plan");
 
   const projectRef = env[CAPTURE_CONFIG.project_ref_env];
   const databaseUrl = env[CAPTURE_CONFIG.database_url_env];
   const evidenceDirectory = ensureExternalEvidenceDirectory(env);
-  if (mode === "apply") readAndValidatePlan(evidenceDirectory, selected, projectRef, repoRoot);
+  const history = readMutationHistory(evidenceDirectory, manifest);
+  const latestApplied = history.at(-1) || null;
+  if (mode === "apply" || mode === "rollback") {
+    const plan = readAndValidatePlan(evidenceDirectory, selected, projectRef, repoRoot);
+    const plannedFile = mode === "apply" ? plan.next?.file : plan.rollback?.file;
+    const plannedHash = mode === "apply" ? plan.next?.sha256 : plan.rollback?.sha256;
+    if (plannedFile !== (mode === "apply" ? selected.path : selected.rollback.path)
+      || plannedHash !== (mode === "apply" ? selected.sha256 : selected.rollback.sha256)
+      || (mode === "rollback" && plan.rollback?.forwardFile !== selected.path)) fail("PLAN_ORDER_OR_STALENESS_REJECTED");
+    if (mode === "rollback" && latestApplied?.id !== selected.id) fail("ROLLBACK_NOT_LATEST_APPLIED");
+  }
   const target = validateCaptureTarget({ projectRef, databaseUrl, config: CAPTURE_CONFIG });
   const client = await createClient(target.connectionConfig);
-  const selfTransactional = mode === "apply" && selected.tx === "self";
+  const selfTransactional = (mode === "apply" && selected.tx === "self") || (mode === "rollback" && selected.rollback.tx === "self");
   const protocolConnection = client.connection;
   let transactionStatus = null;
   const onReadyForQuery = (message) => { transactionStatus = message?.status || null; };
@@ -384,28 +450,42 @@ export async function executePlatformSql(argv, {
   let evidence = null;
   let evidenceWritten = false;
   let operationFailed = false;
+  let lockAcquired = false;
+  let successOutput = null;
   try {
-    if (mode === "apply") {
+    if (mode === "apply" || mode === "rollback") {
       evidence = {
         file: selected.path,
         sha256: selected.sha256,
+        operation: mode,
+        rollbackFile: selected.rollback.path,
+        rollbackSha256: selected.rollback.sha256,
         toolGitSha: toolSha(repoRoot),
         at: new Date().toISOString(),
         result: "failed",
         redactedError: null,
-        provenance: { mode: "platform-sql-apply", projectRef: target.projectRef, sourceRepository: selected.repository },
+        provenance: { mode: `platform-sql-${mode}`, projectRef: target.projectRef, sourceRepository: selected.repository },
       };
     }
+    stateContext.connectionAttempted = true;
     await client.connect(); connected = true;
+    if (mode === "apply" || mode === "rollback") {
+      const lock = await queryOne(client, "SELECT pg_try_advisory_lock($1, $2) AS acquired", ADVISORY_LOCK_KEY);
+      if (lock.acquired !== true) fail("PLATFORM_SQL_ADVISORY_LOCK_UNAVAILABLE");
+      lockAcquired = true;
+    }
     if (mode === "plan") await client.query("BEGIN READ ONLY");
     const { state, objects, baseline } = await readState(client);
     state.objectPresence = objects;
     const next = determineNext(manifest, state, baseline);
     if (mode === "plan") {
       await client.query("ROLLBACK");
-      const result = renderPlan(manifest.entries, state, objects, next, baseline);
+      const active = readMutationHistory(evidenceDirectory, manifest);
+      const rollbackEntry = active.at(-1) || null;
+      const result = renderPlan(manifest.entries, state, objects, next, baseline, rollbackEntry);
       const plan = { createdAt: new Date().toISOString(), projectRef: target.projectRef,
-        toolGitSha: toolSha(repoRoot), next: result.next, state: Object.fromEntries(Object.entries(state).filter(([key]) => key !== "objectPresence")), baseline: result.existingMigrationLedger };
+        toolGitSha: toolSha(repoRoot), next: result.next, rollback: result.rollback,
+        state: Object.fromEntries(Object.entries(state).filter(([key]) => key !== "objectPresence")), baseline: result.existingMigrationLedger };
       writeLatestPlan(evidenceDirectory, plan);
       stdout(result);
       return;
@@ -416,19 +496,23 @@ export async function executePlatformSql(argv, {
       || canonicalJson(validatedPlan.baseline) !== canonicalJson(renderPlan(manifest.entries, state, objects, next, baseline).existingMigrationLedger)) {
       fail("PLAN_DATABASE_STATE_CHANGED");
     }
-    if (!next || next.id !== selected.id) fail(next ? "PLATFORM_SQL_ORDER_REJECTED" : "PLATFORM_SQL_ALREADY_APPLIED");
+    if (mode === "apply" && (!next || next.id !== selected.id)) fail(next ? "PLATFORM_SQL_ORDER_REJECTED" : "PLATFORM_SQL_ALREADY_APPLIED");
+    if (mode === "rollback") {
+      const laterEntriesApplied = manifest.entries.some((entry) => entry.order > selected.order && state[entry.id]);
+      if (!state[selected.id] || laterEntriesApplied || latestApplied?.id !== selected.id) fail("ROLLBACK_NOT_LATEST_APPLIED");
+    }
     if (selfTransactional) {
-      await client.query(source.sql);
+      await client.query(mode === "apply" ? operationSource.forward.sql : operationSource.rollback.sql);
       if (transactionStatus !== "I") fail("SELF_TRANSACTION_END_UNVERIFIED");
     } else {
       await client.query("BEGIN"); inTransaction = true;
       await client.query(`SET LOCAL statement_timeout = '${TIMEOUT_MS}ms'`);
-      await client.query(source.sql);
+      await client.query(mode === "apply" ? operationSource.forward.sql : operationSource.rollback.sql);
       await client.query("COMMIT"); inTransaction = false;
     }
-    evidence.result = "applied";
+    evidence.result = mode === "apply" ? "applied" : "rolled_back";
     writeEvidence(evidenceDirectory, evidence); evidenceWritten = true;
-    stdout({ mode: "apply", result: "applied", file: selected.path, sha256: selected.sha256 });
+    successOutput = { mode, result: mode === "apply" ? "applied" : "rolled_back", file: mode === "apply" ? selected.path : selected.rollback.path, sha256: mode === "apply" ? selected.sha256 : selected.rollback.sha256 };
   } catch (error) {
     operationFailed = true;
     if (selfTransactional && connected) {
@@ -444,8 +528,15 @@ export async function executePlatformSql(argv, {
     }
     if (evidence) evidence.redactedError = safeCaptureDiagnostic(error, databaseUrl);
     if (error?.code && /^[A-Z][A-Z0-9_]{0,80}$/.test(error.code)) throw new Error(error.code);
+    if (error?.code && /^[0-9A-Z]{5}$/.test(error.code)) throw new Error(`${error.code}: ${evidence?.redactedError || "database operation failed"}`);
     throw new Error(evidence?.redactedError || "PLATFORM_SQL_OPERATION_FAILED");
   } finally {
+    if (lockAcquired) {
+      try {
+        const unlock = await queryOne(client, "SELECT pg_advisory_unlock($1, $2) AS unlocked", ADVISORY_LOCK_KEY);
+        if (unlock.unlocked !== true) stateContext.unlockError = "PLATFORM_SQL_ADVISORY_UNLOCK_FAILED";
+      } catch { stateContext.unlockError = "PLATFORM_SQL_ADVISORY_UNLOCK_FAILED"; }
+    }
     if (mode === "plan" && connected) { /* successful plan already rolled back */ }
     if (connected) {
       try { await client.end(); } catch { /* don't mask query outcome */ }
@@ -458,11 +549,48 @@ export async function executePlatformSql(argv, {
       }
     }
   }
+  if (stateContext.unlockError) throw new Error(stateContext.unlockError);
+  if (successOutput) stdout(successOutput);
+}
+
+function errorCode(error) {
+  const code = error?.code || error?.cause?.code;
+  if (code && /^[A-Z][A-Z0-9_]{0,80}$/.test(code)) return code;
+  if (code && /^[0-9A-Z]{5}$/.test(code)) return code;
+  const message = String(error?.message || "");
+  return /^[A-Z][A-Z0-9_]{0,80}$/.test(message) ? message : "PLATFORM_SQL_OPERATION_FAILED";
+}
+
+export async function executePlatformSql(argv, dependencies = {}) {
+  const stateContext = { connectionAttempted: false, lockAcquired: false, unlockError: null };
+  try {
+    return await executePlatformSqlInternal(argv, dependencies, stateContext);
+  } catch (error) {
+    if (!stateContext.connectionAttempted) {
+      const env = dependencies.env || process.env;
+      try {
+        const directory = ensureExternalEvidenceDirectory(env);
+        const repoRoot = dependencies.repoRoot || REPO_ROOT;
+        const code = errorCode(error);
+        writeEvidence(directory, {
+          operation: "preconnect-rejected",
+          code,
+          at: new Date().toISOString(),
+          toolGitSha: toolSha(repoRoot),
+        });
+      } catch { /* invalid evidence destination cannot safely receive a record */ }
+    }
+    if (stateContext.unlockError) throw new Error(stateContext.unlockError);
+    const code = errorCode(error);
+    if (code !== "PLATFORM_SQL_OPERATION_FAILED" && code !== error?.message) throw new Error(code, { cause: error });
+    throw error;
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   executePlatformSql(process.argv.slice(2)).catch((error) => {
-    const message = /^[A-Z][A-Z0-9_]{0,80}$/.test(error?.message || "") ? error.message : "PLATFORM_SQL_OPERATION_FAILED";
+    const message = /^[A-Z][A-Z0-9_]{0,80}$/.test(error?.message || "")
+      || /^[0-9A-Z]{5}: /.test(error?.message || "") ? error.message : "PLATFORM_SQL_OPERATION_FAILED";
     process.stderr.write(`${message}\n`);
     process.exitCode = 1;
   });

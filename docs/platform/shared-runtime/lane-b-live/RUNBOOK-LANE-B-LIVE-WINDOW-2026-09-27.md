@@ -114,12 +114,14 @@ House dependency files ที่ต้อง bind กับ `3713656dc56401895d4
 
 Rollback operator run order:
 
+สำหรับ rollback ของ platform SQL ในรายการ House ด้านล่าง ต้องตั้ง `PLATFORM_SQL_EVIDENCE_DIR` เดิม แล้วรัน `node tools/shared-runtime/platform-sql/apply-platform-sql.mjs plan` ก่อนทุกไฟล์. ตรวจ `rollback.file` และ `rollback.sha256` ในผล plan ให้ตรงไฟล์ที่ต้องย้อน จากนั้นใช้ `node tools/shared-runtime/platform-sql/apply-platform-sql.mjs rollback --file <rollback.file> --confirm <rollback.sha256 จาก plan>`. Tool ยอมรับเฉพาะคู่ rollback ที่ pin ใน manifest, ใช้ plan สด, ลำดับล่าสุดใน evidence, preflight และ advisory lock; ห้าม paste SQL หรือรัน rollback platform SQL ด้วยช่องทางอื่น. Guard ที่ SQL ส่งกลับเมื่อยังมีข้อมูลเป็น STOP; ห้ามฝืนหรือลบข้อมูล.
+
 1. หยุดการออก signed upload capability และตรวจ grant registry. ห้ามลบ grant row ด้วยมือ; House rollback ปฏิเสธถ้ายังมี active grant/config ที่ไม่ใช่ seed.
-2. รัน BK01 rollback `20260928120000_bk01_house_upload_grants.rollback.sql` แล้ว House `house_storage_upload_grants_rollback.sql`; ทั้งคู่ต้องผ่าน guard และคืนเฉพาะ state ที่ source chain เพิ่ม.
-3. เอา BK01 role row ออกจาก `runtime_token_grants`, ตรวจไม่มี BK01 role grant เหลือ แล้วใช้ `h3c_runtime_role_allowlist_expansion_rollback.sql`.
-4. ใช้ `house_runtime_issuer_rollback.sql` หลัง client/rate/audit tables เป็น 0; มันปฏิเสธเมื่อยังมี state. เก็บ dedicated login role/shared schema ไว้ให้ platform owner ตัดสินแยก.
+2. รัน BK01 rollback `20260928120000_bk01_house_upload_grants.rollback.sql` ด้วย BK01 runner แล้ว House `house_storage_upload_grants_rollback.sql` ด้วย platform SQL rollback command ด้านบน; ทั้งคู่ต้องผ่าน guard และคืนเฉพาะ state ที่ source chain เพิ่ม.
+3. เอา BK01 role row ออกจาก `runtime_token_grants`, ตรวจไม่มี BK01 role grant เหลือ แล้วใช้ `h3c_runtime_role_allowlist_expansion_rollback.sql` ด้วย platform SQL rollback command.
+4. ใช้ `house_runtime_issuer_rollback.sql` ด้วย platform SQL rollback command หลัง client/rate/audit tables เป็น 0; มันปฏิเสธเมื่อยังมี state. เก็บ dedicated login role/shared schema ไว้ให้ platform owner ตัดสินแยก.
 5. รัน BK01 rollback ตามลำดับย้อน timestamp: `20260927130000_bk01_trial_line_bind.rollback.sql`, `20260927120000_bk01_runtime_route_rpcs.rollback.sql`, `20260926120000_bk01_entitlement_packs.rollback.sql`. แต่ละไฟล์ transaction เดียว; ถ้ามีข้อมูลที่ guard ปฏิเสธ **ห้ามฝืน/ลบข้อมูล**.
-6. รัน `supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql` เฉพาะหลัง product migration ledger กลับเป็น 0; script จะปฏิเสธถ้ายังมี applied migration.
+6. รัน `supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql` ด้วย platform SQL rollback command เฉพาะหลัง product migration ledger กลับเป็น 0; script จะปฏิเสธถ้ายังมี applied migration.
 7. Teardown role วัดชั่วคราวด้วย teardown SQL คู่ที่ pinned ไว้. ตรวจ `pg_stat_activity` ไม่มี session ของ role และยืนยัน role ถูก DROP.
 8. เก็บ post-rollback snapshot แบบเดียวกับ baseline. ต้องตรงทุก catalog/privilege row ยกเว้นความต่างที่ Owner อนุมัติและบันทึกไว้ก่อน window; mismatch = FAIL, ห้ามปิด PASS.
 
