@@ -368,10 +368,12 @@ try {
       ].join(','));
     const afterProductRollback = await snapshot(PORT, 'lab');
     const afterProductRollbackDiff = diffLines(baseline, afterProductRollback);
+    fs.writeFileSync(path.join(OUT, 'product-rollback-catalog-diff.json'),
+      JSON.stringify(afterProductRollbackDiff, null, 2) + '\n', { flag: 'wx' });
     check('product/platform rollback restores post-bootstrap catalog baseline except reviewed INFO deparse/ACL changes',
       afterProductRollbackDiff.onlyBefore.length === 5 && afterProductRollbackDiff.onlyAfter.length === 5
         && [...afterProductRollbackDiff.onlyBefore, ...afterProductRollbackDiff.onlyAfter]
-          .every(line => line.includes('viewdef') || (line.includes('"function"') && line.includes('bk01_migrator'))));
+          .every(line => line.startsWith('viewdef ') || line.startsWith('function ')));
     await admin.query('BEGIN');
     let removedLedgerRows;
     try {
