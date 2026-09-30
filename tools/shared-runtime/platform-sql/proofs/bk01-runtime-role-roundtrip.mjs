@@ -29,6 +29,14 @@ assert.ok(path.isAbsolute(BOOKING) && path.isAbsolute(PRODUCT) && path.isAbsolut
 assert.ok(Number.isInteger(PORT) && PORT > 1024 && PORT < 65536);
 assert.equal(execFileSync('git', ['-C', BOOKING, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   '32df434e1057a83ecbf0c290a659be42f24bbc55');
+if (PRODUCT !== BOOKING) {
+  assert.equal(execFileSync('git', ['-C', PRODUCT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    'c5e6650d9c3e46c76d05e27fdcf76f49da62ffd1', 'A11 rollback proof requires the reviewed H1 product SHA');
+  assert.equal(execFileSync('git', ['-C', PRODUCT, 'status', '--porcelain'], { encoding: 'utf8' }).trim(), '',
+    'A11 product source must be clean at the exact pin');
+}
+assert.equal(execFileSync('git', ['-C', ROOT, 'status', '--porcelain'], { encoding: 'utf8' }).trim(), '',
+  'platform SQL source must be clean at its exact pin');
 assert.ok(!fs.existsSync(path.join(OUT, 'roundtrip.json')), 'evidence must be a fresh destination');
 fs.mkdirSync(OUT, { recursive: true });
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -188,6 +196,36 @@ try {
       { cwd: PRODUCT, env: runnerEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     check('second actual BK01 runner apply is a no-op with all five checksums in the ledger',
       (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 5);
+    const finalForwardLedger = (await admin.query(`SELECT filename, source_sha256 FROM local_service_internal.schema_migrations
+      ORDER BY filename`)).rows;
+    const ledgerPins = new Map(manifest.accepted_bk01_ledger.map(entry => [entry.filename, entry]));
+    for (const filename of productMigrations) {
+      const pin = ledgerPins.get(`supabase/bk01-migrations/${filename}`);
+      assert.ok(pin?.rollback?.filename && /^[0-9a-f]{64}$/.test(pin.rollback.sha256),
+        `manifest rollback pin missing for ${filename}`);
+      assert.equal(hash(fs.readFileSync(path.join(PRODUCT, 'supabase/bk01-migrations', filename))), pin.sha256,
+        `forward checksum mismatch for ${filename}`);
+      assert.equal(hash(fs.readFileSync(path.join(PRODUCT, pin.rollback.filename))), pin.rollback.sha256,
+        `rollback checksum mismatch for ${filename}`);
+    }
+    const rollbackActors = [];
+    const applyProductRollback = async (filename, expectedCurrentUser) => {
+      const pin = ledgerPins.get(`supabase/bk01-migrations/${filename}`);
+      assert.ok(pin, `forward pin missing for rollback of ${filename}`);
+      const before = (await admin.query('SELECT current_user, session_user')).rows[0];
+      assert.equal(before.session_user, 'postgres', 'product rollback must retain the platform postgres login');
+      if (expectedCurrentUser === 'bk01_migrator') await admin.query('SET ROLE bk01_migrator');
+      try {
+        const actor = (await admin.query('SELECT current_user, session_user')).rows[0];
+        assert.equal(actor.current_user, expectedCurrentUser, `wrong rollback identity for ${filename}`);
+        assert.equal(actor.session_user, 'postgres');
+        await admin.query(fs.readFileSync(path.join(PRODUCT, pin.rollback.filename), 'utf8'));
+        rollbackActors.push({ filename, current_user: actor.current_user, session_user: actor.session_user,
+          rollback_sha256: pin.rollback.sha256, result: 'COMMIT' });
+      } finally {
+        if (expectedCurrentUser === 'bk01_migrator') await admin.query('RESET ROLE');
+      }
+    };
     const acl = await admin.query(`SELECT pg_get_userbyid(p.proowner) AS owner, coalesce(p.proacl::text,'<default>') AS acl
       FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
       WHERE n.nspname='local_service' AND p.proname='generate_link_token' AND pg_get_function_identity_arguments(p.oid)=''`);
@@ -199,6 +237,7 @@ try {
     check('migration 5 preserves generate_link_token owner and exact ACL',
       Boolean(generateLinkTokenBefore) && generateLinkTokenBefore.owner === acl.rows[0]?.owner
         && generateLinkTokenBefore.acl === acl.rows[0]?.acl);
+    await admin.query('BEGIN');
     await admin.query(`
       INSERT INTO local_service.shops(id,name,slug,line_oa_id,require_deposit,default_deposit_amount)
       VALUES ('10000000-0000-4000-8000-000000000001','A11 Proof Shop','a11-proof-shop','@a11-proof',true,50),
@@ -230,7 +269,7 @@ try {
       'a11-proof-trial','${trialBooking.booking_code}','${trialBooking.link_token}',
       'U22222222222222222222222222222222')`);
     check('bk01_line_bind_booking_trial executes with the replacement pg_catalog lease generator', trialBind.rows[0].claimed);
-    await admin.query('BEGIN');
+    await admin.query('SAVEPOINT upload_probe');
     let uploadHashMatches = false;
     try {
       await admin.query("SELECT set_config('request.jwt.claim.role','bk01_runtime',true)");
@@ -244,9 +283,10 @@ try {
           FROM local_service.deposit_slip_upload_grants b
           JOIN wstera_platform_internal.storage_upload_grants h ON h.object_path=b.object_path
           WHERE b.id=$2`, [uploadGrant.grant_token,uploadGrant.grant_id])).rows[0].valid;
-      await admin.query('COMMIT');
+      await admin.query('RELEASE SAVEPOINT upload_probe');
     } catch (error) {
-      await admin.query('ROLLBACK');
+      await admin.query('ROLLBACK TO SAVEPOINT upload_probe');
+      await admin.query('RELEASE SAVEPOINT upload_probe');
       throw error;
     }
     check('authorize_deposit_slip_upload and House registration execute; stored SHA-256 matches both registries', uploadHashMatches);
@@ -257,33 +297,119 @@ try {
         FROM (SELECT encode(pg_catalog.sha256(pg_catalog.uuid_send(pg_catalog.gen_random_uuid())
                     || pg_catalog.uuid_send(pg_catalog.gen_random_uuid())),'hex') AS token
               FROM generate_series(1,64)) samples`)).rows[0].valid);
-    check('catalog function reference gate returns no bk01_migrator-owned forbidden schema dependencies',
-      (await admin.query(fs.readFileSync(path.join(ROOT, 'tools/shared-runtime/platform-sql/proofs/bk01-no-foreign-schema-refs.sql'), 'utf8')))[0].rows.length === 0);
+    await admin.query('SET search_path = pg_catalog');
+    const catalogGate = await admin.query(fs.readFileSync(path.join(ROOT,
+      'tools/shared-runtime/platform-sql/proofs/bk01-no-foreign-schema-refs.sql'), 'utf8'));
+    const catalogGateResults = Array.isArray(catalogGate)
+      ? catalogGate.filter(result => result.fields?.length > 0) : [catalogGate];
+    const gateSearchPath = (await admin.query('SELECT current_setting(\'search_path\') AS value')).rows[0].value;
+    check('catalog gate fixes search_path and returns no bk01_migrator-owned forbidden schema dependencies',
+      gateSearchPath === 'pg_catalog, extensions, auth, storage, net, cron, local_service, local_service_internal, public'
+        && catalogGateResults.length === 2
+        && catalogGateResults[0].rows.length === 0
+        && catalogGateResults[1].rows.length === 3
+        && catalogGateResults[1].rows.every(row => row.owner === 'postgres'));
     const policyParity = [];
     for (const [legacyClaim, claims] of [
       ['00000000-0000-4000-8000-000000000001', ''],
       ['', '{"sub":"00000000-0000-4000-8000-000000000002"}'],
     ]) {
-      await admin.query('BEGIN');
+      await admin.query('SAVEPOINT policy_probe');
       try {
         await admin.query("SELECT set_config('request.jwt.claim.sub',$1,true), set_config('request.jwt.claims',$2,true)", [legacyClaim, claims]);
         policyParity.push((await admin.query(`SELECT COALESCE(
           NULLIF(current_setting('request.jwt.claim.sub',true),''),
           (NULLIF(current_setting('request.jwt.claims',true),'')::jsonb->>'sub'))::uuid = auth.uid() AS equivalent`)).rows[0].equivalent);
-      } finally { await admin.query('ROLLBACK'); }
+      } finally { await admin.query('ROLLBACK TO SAVEPOINT policy_probe'); await admin.query('RELEASE SAVEPOINT policy_probe'); }
     }
     check('shop_users policy JWT expression is equivalent to auth.uid for legacy and JSON claims', policyParity.every(Boolean));
     check('legacy rollback exceptions link_staff_user and submit_deposit_slip remain postgres-owned',
       (await admin.query(`SELECT count(*)=3 AND bool_and(pg_get_userbyid(p.proowner)='postgres') AS valid
         FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
         WHERE n.nspname='local_service' AND p.proname IN ('link_staff_user','submit_deposit_slip')`)).rows[0].valid);
+    await admin.query('ROLLBACK');
+    check('forward proof fixtures were rolled back before migration recovery',
+      (await admin.query("SELECT count(*)::int AS n FROM local_service.shops WHERE id IN ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002')")).rows[0].n === 0
+      && (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 5);
+
+    // Exercise every pinned product rollback as the identity named in the live runbook.
+    await applyProductRollback('20260930120000_bk01_link_token_no_extensions.sql', 'postgres');
+    await applyProductRollback('20260928120000_bk01_house_upload_grants.sql', 'bk01_migrator');
+    for (const id of ['house-storage-upload-grants', 'h3c-runtime-role-allowlist-expansion', 'house-runtime-issuer']) {
+      const entry = manifest.entries.find(item => item.id === id);
+      assert.ok(entry, `missing platform rollback prerequisite ${id}`);
+      await run(['plan']);
+      await reverse(entry);
+      check(`platform rollback ${id} executes before dependent product recovery`, true);
+    }
+    await applyProductRollback('20260927130000_bk01_trial_line_bind.sql', 'bk01_migrator');
+    await applyProductRollback('20260927120000_bk01_runtime_route_rpcs.sql', 'bk01_migrator');
+    const frozenMigration1Rollback = execFileSync('git', ['-C', PRODUCT, 'show',
+      'fb455a6d3876dfcb9db31079700e1c0c1bffb4ac:supabase/rollback/20260926120000_bk01_entitlement_packs.rollback.sql'],
+      { encoding: 'utf8' });
+    await assert.rejects(() => admin.query(frozenMigration1Rollback), error => {
+      assert.equal(error.code, '42501');
+      assert.match(error.message, /add_ticket_timeline_entry/i);
+      return true;
+    });
+    await admin.query('ROLLBACK');
+    check('non-vacuous regression: original migration 1 rollback fails with 42501 as postgres non-superuser', true);
+    await applyProductRollback('20260926120000_bk01_entitlement_packs.sql', 'postgres');
+    check('fixed product rollback chain executed 5→4→3→2→1 as runbook identities', rollbackActors.length === 5
+      && rollbackActors.map(item => item.filename).join(',') === [
+        '20260930120000_bk01_link_token_no_extensions.sql',
+        '20260928120000_bk01_house_upload_grants.sql',
+        '20260927130000_bk01_trial_line_bind.sql',
+        '20260927120000_bk01_runtime_route_rpcs.sql',
+        '20260926120000_bk01_entitlement_packs.sql',
+      ].join(','));
+    const afterProductRollback = await snapshot(PORT, 'lab');
+    const afterProductRollbackDiff = diffLines(baseline, afterProductRollback);
+    check('product/platform rollback restores post-bootstrap catalog baseline except reviewed INFO deparse/ACL changes',
+      afterProductRollbackDiff.onlyBefore.length === 5 && afterProductRollbackDiff.onlyAfter.length === 5
+        && [...afterProductRollbackDiff.onlyBefore, ...afterProductRollbackDiff.onlyAfter]
+          .every(line => line.includes('viewdef') || (line.includes('"function"') && line.includes('bk01_migrator'))));
+    await admin.query('BEGIN');
+    let removedLedgerRows;
+    try {
+      await admin.query('SET LOCAL ROLE bk01_migrator');
+      const ledgerActor = (await admin.query('SELECT current_user, session_user')).rows[0];
+      assert.equal(ledgerActor.current_user, 'bk01_migrator');
+      assert.equal(ledgerActor.session_user, 'postgres');
+      const expectedLedger = productMigrations.map(filename => {
+        const entry = ledgerPins.get(`supabase/bk01-migrations/${filename}`);
+        return { filename, source_sha256: entry.sha256 };
+      }).sort((a, b) => a.filename.localeCompare(b.filename));
+      const currentLedger = (await admin.query(`SELECT filename, source_sha256 FROM local_service_internal.schema_migrations
+        ORDER BY filename`)).rows;
+      assert.deepEqual(currentLedger, expectedLedger, 'refuse ledger cleanup unless exactly the accepted five files/checksums remain');
+      removedLedgerRows = await admin.query(`DELETE FROM local_service_internal.schema_migrations
+        WHERE filename = ANY($1::text[]) RETURNING filename`, [productMigrations]);
+      assert.equal(removedLedgerRows.rowCount, 5, 'only the five rolled-back BK01 ledger rows should be deleted');
+      await admin.query('COMMIT');
+    } catch (error) {
+      await admin.query('ROLLBACK');
+      throw error;
+    }
+    check('postgres SET ROLE bk01_migrator removes exactly five stale ledger rows before bootstrap rollback',
+      (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 0);
+    await run(['plan']);
+    await reverse(bootstrap);
+    const recoveredPlan = await run(['plan']);
+    check('bootstrap rollback succeeds only after ledger cleanup and leaves managed role as last platform step',
+      recoveredPlan.next.file === bootstrap.path && recoveredPlan.rollback.file === role.rollback.path);
+    await reverse(role);
+    const fullRollbackFinal = await snapshot(PORT, 'lab');
+    const fullRollbackDelta = diffLines(baseline, fullRollbackFinal);
+    check('product and platform rollback chain returns database to pre-role baseline',
+      fullRollbackDelta.onlyBefore.length === 0 && fullRollbackDelta.onlyAfter.length === 0);
   }
   if (PRODUCT !== BOOKING) {
-    const result = { result: 'LOCAL_PG17_A11_FORWARD_CHAIN_PASS', checks, at: new Date().toISOString(),
+    const result = { result: 'LOCAL_PG17_A11_FORWARD_AND_PRODUCT_ROLLBACK_PASS', checks, at: new Date().toISOString(),
       server_version: (await admin.query('SHOW server_version')).rows[0].server_version,
       product_source_head: execFileSync('git', ['-C', PRODUCT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       platform_tool_head: execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-      migrations: (await admin.query('SELECT filename,source_sha256 FROM local_service_internal.schema_migrations ORDER BY filename')).rows,
+      migrations: finalForwardLedger,
       extensions_public_usage: false, bk01_migrator_extensions_usage: false,
       function_execution: { generate_link_token: '64 calls; ten uppercase hex; distinct',
         create_booking_hold: 'executed twice: deposit hold and non-deposit trial booking',
@@ -291,6 +417,12 @@ try {
         authorize_deposit_slip_upload: 'executed; BK01 + House stored SHA-256 matched',
         upload_token_hash: '64 samples; 64 lowercase hex; pg_catalog.sha256 equals pgcrypto SHA-256',
       },
+      product_rollback_chain: rollbackActors,
+      migration_1_regression: { original_rollback_result: '42501 permission denied for function add_ticket_timeline_entry',
+        fixed_rollback_result: 'COMMIT as postgres non-superuser',
+        post_bootstrap_catalog_diff: afterProductRollbackDiff },
+      ledger_cleanup: { identity: 'postgres SET ROLE bk01_migrator', rows_deleted: removedLedgerRows.rowCount },
+      final_full_rollback_delta: fullRollbackDelta,
       loopback_only: true, input_sha256: { scaffold: hash(fs.readFileSync(path.join(HERE, 'scaffold.sql'))),
         foreign_schema_gate: hash(fs.readFileSync(path.join(HERE, 'bk01-no-foreign-schema-refs.sql'))) } };
     fs.writeFileSync(path.join(OUT, 'a11-roundtrip.json'), JSON.stringify(result, null, 2) + '\n', { flag: 'wx' });

@@ -1,4 +1,7 @@
 -- Read-only A11 catalog gate. Run after BK01 migrations as a platform observer.
+-- Keep deparsing stable even when the caller has an empty or hostile search_path.
+SET search_path = pg_catalog, extensions, auth, storage, net, cron,
+                  local_service, local_service_internal, public;
 -- Any returned row is a failure except the two separately asserted postgres-owned
 -- rollback functions: link_staff_user(uuid,text) and submit_deposit_slip(...).
 WITH object_refs(object_name, object_owner, object_kind, definition) AS (
