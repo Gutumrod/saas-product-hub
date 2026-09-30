@@ -1,6 +1,6 @@
 -- Copy-and-own: second-brain-vault 7281e93, tools/platform-sql-review-claude/a7/scaffold.sql.
 -- LOCAL TEST ONLY; use a fresh disposable cluster, never a hosted database.
--- LAB-shaped scaffold for the A6 roundtrip (local disposable Postgres 16). Mirrors booking's wu1_e2e.mjs scaffold,
+-- LAB-shaped scaffold for the A11 roundtrip (local disposable PostgreSQL 17). Mirrors booking's wu1_e2e.mjs scaffold,
 -- but with REAL pgcrypto / uuid-ossp / btree_gist / pg_trgm instead of stubs.
 create role anon nologin;
 create role authenticated nologin;
@@ -15,7 +15,9 @@ create role wstera_runtime_issuer_login login noinherit nosuperuser nocreatedb n
 -- A9: bk01_runtime is deliberately absent; the real platform SQL must create it.
 
 create schema extensions;
-grant usage on schema extensions to public;
+-- Deliberately no PUBLIC USAGE. The platform actor and application roles may
+-- use extension objects; bk01_migrator must have no path through this schema.
+grant usage on schema extensions to postgres, anon, authenticated, service_role, supabase_auth_admin;
 create extension pgcrypto schema extensions;
 create extension "uuid-ossp" schema extensions;
 create extension btree_gist schema extensions;

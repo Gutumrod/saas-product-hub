@@ -1,4 +1,4 @@
-# A10 — BK01 managed runtime role proof (source-only)
+# A10/A11 — BK01 managed runtime role and no-extension proof (source-only)
 
 บรีฟ: Second Brain `06-Agent-Logs/WSTERA-House/briefs/codex-parallel-20260927/18-LIVE-WINDOW-1-OPERATOR.md` ส่วน A9 ที่ vault `7281e93`. เป้าหมายคือซ่อม prerequisite ที่ขาดของ boundary เดิม ไม่เพิ่ม runtime identity แบบ LOGIN หรือสิทธิ์ใหม่. **Reuse Gate: N/A — pure remediation ของ NOLOGIN boundary ที่ล็อกแล้ว** ตาม `docs/platform/MODULE-REUSE-POLICY.md`; ไม่ได้ bootstrap สินค้าใหม่หรือเพิ่ม service. การสร้าง role เป็นของแพลตฟอร์ม; booking bootstrap/runner ยังคง frozen source เดิม.
 
@@ -18,15 +18,17 @@ Copy date: 2026-09-30. Immutable vault source: `7281e932d9721ff9fc8219da5e732501
 
 1. ใช้ PostgreSQL **17** cluster ใหม่ bound เฉพาะ `127.0.0.1`, initdb ด้วย initial superuser `supabase_admin`, port ว่าง. Proof สร้าง role `postgres` และ database `lab`; ถ้ามีอยู่แล้วจะล้ม ไม่ reset/drop ฐานเดิม. ห้ามใช้ LAB/production/server ของงานอื่น. PG16 หรือ cluster ที่ใช้ initial superuser ชื่อ postgres ไม่ตรง contract และต้องปฏิเสธ.
 2. ที่ worktree ของ candidate นี้ รัน `npm ci --ignore-scripts` ใน `tools/shared-runtime`.
-3. รัน:
+3. สำหรับ A10 role-only proof รัน:
 
 ```powershell
 node tools/shared-runtime/platform-sql/proofs/bk01-runtime-role-roundtrip.mjs --booking-root <absolute-booking-worktree-at-32df434> --port <loopback-port> --evidence <fresh-absolute-external-directory>
 ```
 
+สำหรับ A11 ให้เพิ่ม `--product-root <absolute-worktree-at-codex/bk01-no-extensions-20260930>`. Current candidate pin: `fb455a6d3876dfcb9db31079700e1c0c1bffb4ac`. `--booking-root` ยังคง checkout `32df434e1057a83ecbf0c290a659be42f24bbc55` เพื่อให้ platform bootstrap ใช้ pin เดิม; `--product-root` ใช้อ่าน legacy chain และรัน BK01 candidate runner จริง. โหมดนี้ต่อ platform role/bootstrap/issuer/H3C/storage ตาม manifest, ตรวจ extensions ไม่มี PUBLIC USAGE และ `bk01_migrator` ไม่มี USAGE, จากนั้น apply migration 1–5 ทีละไฟล์และ apply ซ้ำ. มันเรียก `generate_link_token`, `create_booking_hold` สองเส้นทาง, normal/trial LINE bind และ upload grant/House registration; ตรวจ SHA-256, owner/ACL, และ foreign-schema catalog gate.
+
 4. หยุด PostgreSQL ของ cluster ทดสอบใน `finally` และเก็บ logs/evidence นอก repo. Fixture cluster และ raw evidence ห้าม commit ลง vault/repo.
 
-Proof สร้าง baseline จาก legacy migration จริง 30 ไฟล์ + H3C baseline, ยืนยัน 22 relation/61 function และไม่มี role BK01. เครื่องมือจริงยังทำ target validation กับ URL ปลอมของ test; injected pg client ทุก connection ต่อ `127.0.0.1` เท่านั้น ไม่อ่าน `.secrets` หรือรับ hosted credential.
+Proof สร้าง baseline จาก legacy migration จริง 30 ไฟล์ + H3C baseline, ยืนยัน 22 relation/61 function และไม่มี role BK01. เครื่องมือจริงยังทำ target validation กับ URL ปลอมของ test; injected pg client ทุก connection ต่อ `127.0.0.1` เท่านั้น ไม่อ่าน `.secrets` หรือรับ hosted credential. โหมด A11 ทิ้ง fixture state ไว้เฉพาะใน disposable local cluster; ห้ามนำ cluster/evidence ไปใช้กับ LAB.
 
 ## Acceptance
 
@@ -36,6 +38,7 @@ Proof สร้าง baseline จาก legacy migration จริง 30 ไฟ
 - tool บังคับ role ก่อน bootstrap และย้อน bootstrap ก่อน role.
 - role → bootstrap → rollback bootstrap → rollback role คืน catalog/data snapshot = baseline, ยกเว้น ACL NULL→explicit PostgreSQL default ที่ A7 ยอมรับ; ฟังก์ชัน `is_platform_admin()`/`is_shop_member()` ให้ผลเดิม; ไม่เหลือ role/idle transaction.
 - หลักฐานเก็บ snapshot ทั้ง normalized และ raw พร้อม `raw_delta` เพื่อให้ reviewer ตรวจ ACL exception เอง; ไม่ซ่อนความต่าง raw.
+- A11 local PG17 forward proof ต้องแสดง migration 1–5 แยก transaction, second apply no-op, token/ACL equivalence, `create_booking_hold`, normal/trial LINE bind และ House upload registration ผ่าน; catalog gate ต้องไม่มี forbidden refs ใน objects ที่ bk01_migrator เป็นเจ้าของ.
 - `npm run test:platform-sql`, `npm run selftest` และ syntax/diff checks ผ่าน.
 
 ## A10 actor และ rollback exception

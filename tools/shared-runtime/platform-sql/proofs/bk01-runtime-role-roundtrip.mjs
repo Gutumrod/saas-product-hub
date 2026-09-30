@@ -1,4 +1,4 @@
-// Source-only A10 proof. Every real connection is hard-coded to loopback.
+// Source-only A10/A11 proof. Every real connection is hard-coded to loopback.
 // A fresh cluster is required; this creates database lab and never drops a database.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -15,15 +15,17 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../../..');
 const argv = process.argv.slice(2);
 const values = {};
-assert.equal(argv.length, 6, 'usage: --booking-root <absolute> --port <local-port> --evidence <absolute>');
+assert.ok(argv.length === 6 || argv.length === 8,
+  'usage: --booking-root <absolute-at-32df434> [--product-root <absolute-A11-branch>] --port <local-port> --evidence <absolute>');
 for (let i = 0; i < argv.length; i += 2) {
-  assert.ok(['--booking-root', '--port', '--evidence'].includes(argv[i]));
+  assert.ok(['--booking-root', '--product-root', '--port', '--evidence'].includes(argv[i]));
   assert.equal(values[argv[i]], undefined); values[argv[i]] = argv[i + 1];
 }
 const BOOKING = values['--booking-root'];
+const PRODUCT = values['--product-root'] ?? BOOKING;
 const PORT = Number(values['--port']);
 const OUT = values['--evidence'];
-assert.ok(path.isAbsolute(BOOKING) && path.isAbsolute(OUT));
+assert.ok(path.isAbsolute(BOOKING) && path.isAbsolute(PRODUCT) && path.isAbsolute(OUT));
 assert.ok(Number.isInteger(PORT) && PORT > 1024 && PORT < 65536);
 assert.equal(execFileSync('git', ['-C', BOOKING, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   '32df434e1057a83ecbf0c290a659be42f24bbc55');
@@ -73,16 +75,17 @@ try {
   admin = await createClient(); await admin.connect();
   await admin.query(fs.readFileSync(path.join(HERE, 'scaffold.sql'), 'utf8'));
   await admin.end(); admin = await createClient(); await admin.connect();
-  const migrations = fs.readdirSync(path.join(BOOKING, 'supabase/migrations')).filter(x => x.endsWith('.sql')).sort();
+  const migrations = fs.readdirSync(path.join(PRODUCT, 'supabase/migrations')).filter(x => x.endsWith('.sql')).sort();
   check('real frozen legacy chain has 30 migrations', migrations.length === 30);
-  for (const file of migrations) await admin.query(fs.readFileSync(path.join(BOOKING, 'supabase/migrations', file), 'utf8'));
+  for (const file of migrations) await admin.query(fs.readFileSync(path.join(PRODUCT, 'supabase/migrations', file), 'utf8'));
   await admin.query(fs.readFileSync(path.join(ROOT, 'docs/platform/shared-runtime/migrations/h3c_auth_runtime_token_support.sql'), 'utf8'));
   await supervisor.connect();
   await supervisor.query('ALTER ROLE postgres NOSUPERUSER');
   await supervisor.query('GRANT anon TO postgres WITH INHERIT FALSE, SET TRUE');
-  const actor = (await admin.query("SELECT current_user,session_user,rolsuper,rolcreaterole FROM pg_roles WHERE rolname=current_user")).rows[0];
-  check('actual tool actor postgres is non-superuser with CREATEROLE on PostgreSQL 17',
-    actor.current_user === 'postgres' && actor.session_user === 'postgres' && actor.rolsuper === false && actor.rolcreaterole === true);
+  const actor = (await admin.query("SELECT current_user,session_user,rolsuper,rolcreaterole,rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0];
+  check('actual tool actor postgres is non-superuser with CREATEROLE and BYPASSRLS on PostgreSQL 17',
+    actor.current_user === 'postgres' && actor.session_user === 'postgres' && actor.rolsuper === false
+      && actor.rolcreaterole === true && actor.rolbypassrls === true);
   const baseline = await snapshot(PORT, 'lab');
   const rawBaseline = await rawSnapshot();
   const baselineProbe = async () => (await admin.query("SELECT local_service.is_platform_admin() AS platform_admin, local_service.is_shop_member('00000000-0000-0000-0000-000000000001') AS shop_member")).rows[0];
@@ -143,6 +146,156 @@ try {
   check('plan after role creation selects unchanged bootstrap', (await run(['plan'])).next.file === bootstrap.path);
   await apply(bootstrap);
   check('frozen bootstrap commits after role prerequisite', (await admin.query("SELECT to_regclass('local_service_internal.schema_migrations') IS NOT NULL AS ready")).rows[0].ready);
+  check('bk01_migrator has no USAGE on extensions and PUBLIC has no USAGE',
+    !(await admin.query("SELECT has_schema_privilege('bk01_migrator','extensions','USAGE') AS migrator, EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].migrator
+    && !(await admin.query("SELECT EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].public);
+  if (PRODUCT !== BOOKING) {
+    for (const id of ['house-runtime-issuer', 'h3c-runtime-role-allowlist-expansion', 'house-storage-upload-grants']) {
+      const entry = manifest.entries.find(item => item.id === id);
+      assert.ok(entry, `missing manifest prerequisite ${id}`);
+      const current = await run(['plan']);
+      assert.equal(current.next.file, entry.path, `platform plan must select ${id}`);
+      await apply(entry);
+      check(`platform prerequisite ${id} applies before BK01 upload integration`, true);
+    }
+    const runnerEnv = { ...process.env,
+      BK01_PLATFORM_DATABASE_URL: `postgresql://postgres@127.0.0.1:${PORT}/lab`,
+      BK01_SHARED_RUNTIME_ENV: 'local', BK01_RELEASE_ID: 'A11-local-roundtrip',
+      BK01_REPO_ROOT: undefined, PGOPTIONS: undefined };
+    delete runnerEnv.BK01_REPO_ROOT;
+    delete runnerEnv.PGOPTIONS;
+    const runner = path.join(PRODUCT, 'scripts/bk01-migrate.mjs');
+    const productMigrations = fs.readdirSync(path.join(PRODUCT, 'supabase/bk01-migrations'))
+      .filter(name => name.endsWith('.sql')).sort();
+    check('A11 BK01 stream contains five timestamp-ordered migrations', productMigrations.length === 5
+      && productMigrations.at(-1) === '20260930120000_bk01_link_token_no_extensions.sql');
+    let generateLinkTokenBefore = null;
+    for (const filename of productMigrations) {
+      const args = [runner, 'plan', '--through', filename];
+      const planText = execFileSync(process.execPath, args, { cwd: PRODUCT, env: runnerEnv, encoding: 'utf8' });
+      assert.ok(planText.includes(filename), `runner plan did not select ${filename}`);
+      execFileSync(process.execPath, [runner, 'apply', '--through', filename],
+        { cwd: PRODUCT, env: runnerEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      const ledger = await admin.query('SELECT filename FROM local_service_internal.schema_migrations ORDER BY filename');
+      check(`actual BK01 runner applies ${filename} as a separate interval`, ledger.rows.at(-1)?.filename === filename);
+      if (filename === '20260928120000_bk01_house_upload_grants.sql') {
+        generateLinkTokenBefore = (await admin.query(`SELECT pg_get_userbyid(p.proowner) AS owner, coalesce(p.proacl::text,'<default>') AS acl
+          FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+          WHERE n.nspname='local_service' AND p.proname='generate_link_token' AND pg_get_function_identity_arguments(p.oid)=''`)).rows[0];
+      }
+    }
+    execFileSync(process.execPath, [runner, 'apply'],
+      { cwd: PRODUCT, env: runnerEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    check('second actual BK01 runner apply is a no-op with all five checksums in the ledger',
+      (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 5);
+    const acl = await admin.query(`SELECT pg_get_userbyid(p.proowner) AS owner, coalesce(p.proacl::text,'<default>') AS acl
+      FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE n.nspname='local_service' AND p.proname='generate_link_token' AND pg_get_function_identity_arguments(p.oid)=''`);
+    check('generate_link_token is callable and returns distinct ten-character uppercase hex tokens',
+      (await admin.query(`SELECT bool_and(token ~ '^[0-9A-F]{10}$') AS valid, count(DISTINCT token)=64 AS unique
+        FROM (SELECT local_service.generate_link_token() AS token FROM generate_series(1,64)) tokens`)).rows[0].valid
+      && (await admin.query(`SELECT count(DISTINCT token)=64 AS unique FROM
+        (SELECT local_service.generate_link_token() AS token FROM generate_series(1,64)) tokens`)).rows[0].unique);
+    check('migration 5 preserves generate_link_token owner and exact ACL',
+      Boolean(generateLinkTokenBefore) && generateLinkTokenBefore.owner === acl.rows[0]?.owner
+        && generateLinkTokenBefore.acl === acl.rows[0]?.acl);
+    await admin.query(`
+      INSERT INTO local_service.shops(id,name,slug,line_oa_id,require_deposit,default_deposit_amount)
+      VALUES ('10000000-0000-4000-8000-000000000001','A11 Proof Shop','a11-proof-shop','@a11-proof',true,50),
+             ('10000000-0000-4000-8000-000000000002','A11 Trial Shop','a11-trial-shop',NULL,false,0);
+      INSERT INTO local_service.services(id,shop_id,name,duration_minutes,price,deposit_amount,is_active)
+      VALUES ('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Proof Service',30,100,50,true),
+             ('20000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','Trial Service',30,100,NULL,true);
+      INSERT INTO local_service.staff(id,shop_id,name,is_active)
+      VALUES ('30000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Proof Staff',true),
+             ('30000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','Trial Staff',true);
+      INSERT INTO local_service.staff_schedules(shop_id,staff_id,day_of_week,is_working_day,work_start,work_end,break_start,break_end)
+      SELECT shop_id,id,extract(dow from current_date+14)::int,true,'00:00','23:59',NULL,NULL
+        FROM local_service.staff WHERE id IN ('30000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000002')
+    `);
+    const depositBooking = (await admin.query(`SELECT local_service.create_booking_hold(
+      '10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001',
+      'A11 Customer','0812345678',NULL,current_date+14,'09:00',NULL) AS booking`)).rows[0].booking;
+    const trialBooking = (await admin.query(`SELECT local_service.create_booking_hold(
+      '10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000002',
+      'A11 Trial Customer','0812345679',NULL,current_date+14,'09:00',NULL) AS booking`)).rows[0].booking;
+    check('actual create_booking_hold executes legacy token caller on both deposit and trial paths',
+      depositBooking.status === 'hold' && trialBooking.status === 'confirmed'
+        && /^[0-9A-F]{10}$/.test(depositBooking.link_token) && /^[0-9A-F]{10}$/.test(trialBooking.link_token));
+    const normalBind = await admin.query(`SELECT claimed FROM local_service.bk01_line_bind_booking(
+      'a11-proof-normal','${depositBooking.booking_code}','${depositBooking.link_token}',
+      '10000000-0000-4000-8000-000000000001','U11111111111111111111111111111111')`);
+    check('bk01_line_bind_booking executes with the replacement pg_catalog lease generator', normalBind.rows[0].claimed);
+    const trialBind = await admin.query(`SELECT claimed FROM local_service.bk01_line_bind_booking_trial(
+      'a11-proof-trial','${trialBooking.booking_code}','${trialBooking.link_token}',
+      'U22222222222222222222222222222222')`);
+    check('bk01_line_bind_booking_trial executes with the replacement pg_catalog lease generator', trialBind.rows[0].claimed);
+    await admin.query('BEGIN');
+    let uploadHashMatches = false;
+    try {
+      await admin.query("SELECT set_config('request.jwt.claim.role','bk01_runtime',true)");
+      const upload = await admin.query(`SELECT * FROM local_service.authorize_deposit_slip_upload(
+        '${depositBooking.booking_id}','${depositBooking.link_token}','image/png',1024)`);
+      const uploadGrant = upload.rows[0];
+      uploadHashMatches = /^[0-9a-f]{64}$/.test(uploadGrant.grant_token)
+        && (await admin.query(`SELECT
+          b.grant_token_hash=encode(pg_catalog.sha256(convert_to($1,'UTF8')),'hex')
+          AND h.grant_token_hash=b.grant_token_hash AS valid
+          FROM local_service.deposit_slip_upload_grants b
+          JOIN wstera_platform_internal.storage_upload_grants h ON h.object_path=b.object_path
+          WHERE b.id=$2`, [uploadGrant.grant_token,uploadGrant.grant_id])).rows[0].valid;
+      await admin.query('COMMIT');
+    } catch (error) {
+      await admin.query('ROLLBACK');
+      throw error;
+    }
+    check('authorize_deposit_slip_upload and House registration execute; stored SHA-256 matches both registries', uploadHashMatches);
+    check('32-byte upload-token construction remains 64 hex chars and matches pgcrypto SHA-256',
+      (await admin.query(`SELECT bool_and(length(token)=64 AND token ~ '^[0-9a-f]{64}$'
+          AND encode(pg_catalog.sha256(convert_to(token,'UTF8')),'hex')
+              = encode(extensions.digest(convert_to(token,'UTF8'),'sha256'),'hex')) AS valid
+        FROM (SELECT encode(pg_catalog.sha256(pg_catalog.uuid_send(pg_catalog.gen_random_uuid())
+                    || pg_catalog.uuid_send(pg_catalog.gen_random_uuid())),'hex') AS token
+              FROM generate_series(1,64)) samples`)).rows[0].valid);
+    check('catalog function reference gate returns no bk01_migrator-owned forbidden schema dependencies',
+      (await admin.query(fs.readFileSync(path.join(ROOT, 'tools/shared-runtime/platform-sql/proofs/bk01-no-foreign-schema-refs.sql'), 'utf8')))[0].rows.length === 0);
+    const policyParity = [];
+    for (const [legacyClaim, claims] of [
+      ['00000000-0000-4000-8000-000000000001', ''],
+      ['', '{"sub":"00000000-0000-4000-8000-000000000002"}'],
+    ]) {
+      await admin.query('BEGIN');
+      try {
+        await admin.query("SELECT set_config('request.jwt.claim.sub',$1,true), set_config('request.jwt.claims',$2,true)", [legacyClaim, claims]);
+        policyParity.push((await admin.query(`SELECT COALESCE(
+          NULLIF(current_setting('request.jwt.claim.sub',true),''),
+          (NULLIF(current_setting('request.jwt.claims',true),'')::jsonb->>'sub'))::uuid = auth.uid() AS equivalent`)).rows[0].equivalent);
+      } finally { await admin.query('ROLLBACK'); }
+    }
+    check('shop_users policy JWT expression is equivalent to auth.uid for legacy and JSON claims', policyParity.every(Boolean));
+    check('legacy rollback exceptions link_staff_user and submit_deposit_slip remain postgres-owned',
+      (await admin.query(`SELECT count(*)=3 AND bool_and(pg_get_userbyid(p.proowner)='postgres') AS valid
+        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+        WHERE n.nspname='local_service' AND p.proname IN ('link_staff_user','submit_deposit_slip')`)).rows[0].valid);
+  }
+  if (PRODUCT !== BOOKING) {
+    const result = { result: 'LOCAL_PG17_A11_FORWARD_CHAIN_PASS', checks, at: new Date().toISOString(),
+      server_version: (await admin.query('SHOW server_version')).rows[0].server_version,
+      product_source_head: execFileSync('git', ['-C', PRODUCT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      platform_tool_head: execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      migrations: (await admin.query('SELECT filename,source_sha256 FROM local_service_internal.schema_migrations ORDER BY filename')).rows,
+      extensions_public_usage: false, bk01_migrator_extensions_usage: false,
+      function_execution: { generate_link_token: '64 calls; ten uppercase hex; distinct',
+        create_booking_hold: 'executed twice: deposit hold and non-deposit trial booking',
+        line_binding: 'normal and trial RPCs returned claimed=true',
+        authorize_deposit_slip_upload: 'executed; BK01 + House stored SHA-256 matched',
+        upload_token_hash: '64 samples; 64 lowercase hex; pg_catalog.sha256 equals pgcrypto SHA-256',
+      },
+      loopback_only: true, input_sha256: { scaffold: hash(fs.readFileSync(path.join(HERE, 'scaffold.sql'))),
+        foreign_schema_gate: hash(fs.readFileSync(path.join(HERE, 'bk01-no-foreign-schema-refs.sql'))) } };
+    fs.writeFileSync(path.join(OUT, 'a11-roundtrip.json'), JSON.stringify(result, null, 2) + '\n', { flag: 'wx' });
+    console.log(JSON.stringify({ result: result.result, checks, migrations: result.migrations.length }));
+  } else {
   await run(['plan']);
   await assert.rejects(() => reverse(role), { message: 'PLAN_ORDER_OR_STALENESS_REJECTED' });
   check('tool refuses role rollback ahead of bootstrap', true);
@@ -179,6 +332,7 @@ try {
   fs.writeFileSync(path.join(OUT, 'snapshot-before-raw.txt'), rawBaseline.join('\n') + '\n', { flag: 'wx' });
   fs.writeFileSync(path.join(OUT, 'snapshot-after-raw.txt'), rawFinal.join('\n') + '\n', { flag: 'wx' });
   console.log(JSON.stringify({ result: result.result, checks, delta: 0 }));
+  }
 } finally {
   await Promise.allSettled([admin?.end(), supervisor.end(), postgres.end()]);
 }
