@@ -154,6 +154,7 @@ try {
   check('plan after role creation selects unchanged bootstrap', (await run(['plan'])).next.file === bootstrap.path);
   await apply(bootstrap);
   check('frozen bootstrap commits after role prerequisite', (await admin.query("SELECT to_regclass('local_service_internal.schema_migrations') IS NOT NULL AS ready")).rows[0].ready);
+  const postBootstrapBaseline = await snapshot(PORT, 'lab');
   check('bk01_migrator has no USAGE on extensions and PUBLIC has no USAGE',
     !(await admin.query("SELECT has_schema_privilege('bk01_migrator','extensions','USAGE') AS migrator, EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].migrator
     && !(await admin.query("SELECT EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].public);
@@ -367,7 +368,7 @@ try {
         '20260926120000_bk01_entitlement_packs.sql',
       ].join(','));
     const afterProductRollback = await snapshot(PORT, 'lab');
-    const afterProductRollbackDiff = diffLines(baseline, afterProductRollback);
+    const afterProductRollbackDiff = diffLines(postBootstrapBaseline, afterProductRollback);
     fs.writeFileSync(path.join(OUT, 'product-rollback-catalog-diff.json'),
       JSON.stringify(afterProductRollbackDiff, null, 2) + '\n', { flag: 'wx' });
     console.log('catalog-delta-after-product-rollback:', JSON.stringify(afterProductRollbackDiff));
