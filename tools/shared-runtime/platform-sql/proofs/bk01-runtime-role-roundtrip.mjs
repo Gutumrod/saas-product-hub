@@ -72,6 +72,11 @@ const rawSnapshot = async () => {
 const postgres = new pg.Client({ host: '127.0.0.1', port: PORT, user: 'supabase_admin', database: 'postgres' });
 const supervisor = new pg.Client({ host: '127.0.0.1', port: PORT, user: 'supabase_admin', database: 'lab' });
 let admin;
+let finalForwardLedger;
+let rollbackActors;
+let afterProductRollbackDiff;
+let removedLedgerRows;
+let fullRollbackDelta;
 try {
   await postgres.connect();
   const version = Number((await postgres.query('SHOW server_version_num')).rows[0].server_version_num);
@@ -197,7 +202,7 @@ try {
       { cwd: PRODUCT, env: runnerEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     check('second actual BK01 runner apply is a no-op with all five checksums in the ledger',
       (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 5);
-    const finalForwardLedger = (await admin.query(`SELECT filename, source_sha256 FROM local_service_internal.schema_migrations
+    finalForwardLedger = (await admin.query(`SELECT filename, source_sha256 FROM local_service_internal.schema_migrations
       ORDER BY filename`)).rows;
     const ledgerPins = new Map(manifest.accepted_bk01_ledger.map(entry => [entry.filename, entry]));
     for (const filename of productMigrations) {
@@ -209,7 +214,7 @@ try {
       assert.equal(hash(fs.readFileSync(path.join(PRODUCT, pin.rollback.filename))), pin.rollback.sha256,
         `rollback checksum mismatch for ${filename}`);
     }
-    const rollbackActors = [];
+    rollbackActors = [];
     const applyProductRollback = async (filename, expectedCurrentUser) => {
       const pin = ledgerPins.get(filename);
       assert.ok(pin, `forward pin missing for rollback of ${filename}`);
@@ -368,7 +373,6 @@ try {
         '20260926120000_bk01_entitlement_packs.sql',
       ].join(','));
     await admin.query('BEGIN');
-    let removedLedgerRows;
     try {
       await admin.query('SET LOCAL ROLE bk01_migrator');
       const ledgerActor = (await admin.query('SELECT current_user, session_user')).rows[0];
@@ -392,7 +396,7 @@ try {
     check('postgres SET ROLE bk01_migrator removes exactly five stale ledger rows before bootstrap rollback',
       (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 0);
     const afterProductRollback = await snapshot(PORT, 'lab');
-    const afterProductRollbackDiff = diffLines(postBootstrapBaseline, afterProductRollback);
+    afterProductRollbackDiff = diffLines(postBootstrapBaseline, afterProductRollback);
     fs.writeFileSync(path.join(OUT, 'product-rollback-catalog-diff.json'),
       JSON.stringify(afterProductRollbackDiff, null, 2) + '\n', { flag: 'wx' });
     const parse = line => ({ kind: line.slice(0, line.indexOf(' ')), value: JSON.parse(line.slice(line.indexOf(' ') + 1)) });
@@ -430,7 +434,7 @@ try {
       recoveredPlan.next.file === bootstrap.path && recoveredPlan.rollback.file === role.rollback.path);
     await reverse(role);
     const fullRollbackFinal = await snapshot(PORT, 'lab');
-    const fullRollbackDelta = diffLines(baseline, fullRollbackFinal);
+    fullRollbackDelta = diffLines(baseline, fullRollbackFinal);
     console.log('full-rollback-catalog-delta:', JSON.stringify(fullRollbackDelta));
     const fullBefore = fullRollbackDelta.onlyBefore.map(parse);
     const fullAfter = fullRollbackDelta.onlyAfter.map(parse);
