@@ -431,6 +431,7 @@ try {
     await reverse(role);
     const fullRollbackFinal = await snapshot(PORT, 'lab');
     const fullRollbackDelta = diffLines(baseline, fullRollbackFinal);
+    console.log('full-rollback-catalog-delta:', JSON.stringify(fullRollbackDelta));
     check('product and platform rollback chain returns database to pre-role baseline',
       fullRollbackDelta.onlyBefore.length === 0 && fullRollbackDelta.onlyAfter.length === 0);
   }
