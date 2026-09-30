@@ -241,6 +241,26 @@ async function readState(client) {
   }
   const state = {};
   const objects = {};
+  const runtimeRole = await queryOne(client, `SELECT r.rolname, r.rolsuper, r.rolinherit,
+    r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolbypassrls, r.rolconfig,
+    EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid) AS member_of_other_role,
+    EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members WHERE roleid=r.oid OR grantor=r.oid) AS has_members,
+    EXISTS (SELECT 1 FROM pg_catalog.pg_shdepend
+      WHERE refclassid='pg_catalog.pg_authid'::regclass AND refobjid=r.oid) AS has_dependencies
+    FROM pg_catalog.pg_roles r WHERE r.rolname='bk01_runtime'`);
+  const runtimeRoleExists = runtimeRole.rolname === "bk01_runtime";
+  if (runtimeRoleExists) {
+    const settings = [...(runtimeRole.rolconfig || [])].sort();
+    if (["rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolbypassrls"]
+      .some((attribute) => runtimeRole[attribute] !== false)
+      || canonicalJson(settings) !== canonicalJson(["lock_timeout=8s", "statement_timeout=8s"])
+      || runtimeRole.member_of_other_role
+      || (!baseline.ledger_exists && (runtimeRole.has_members || runtimeRole.has_dependencies))) {
+      fail("EXISTING_BK01_RUNTIME_ROLE_CONFLICT");
+    }
+  }
+  state["bk01-runtime-role"] = runtimeRoleExists;
+  objects["bk01-runtime-role"] = { roleExists: runtimeRoleExists, attributes: runtimeRoleExists ? runtimeRole : null };
   state["bk01-platform-bootstrap"] = Boolean(baseline.ledger_exists);
   objects["bk01-platform-bootstrap"] = { schemaMigrationsTable: Boolean(baseline.ledger_exists) };
   const issuer = await queryOne(client, `SELECT

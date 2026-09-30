@@ -13,6 +13,10 @@ import { safeCaptureDiagnostic } from "../inventory/lane-b-capture.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../../..");
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(HERE, "manifest.json"), "utf8"));
+const BOOTSTRAP = MANIFEST.entries.find(e => e.id === "bk01-platform-bootstrap");
+const ISSUER = MANIFEST.entries.find(e => e.id === "house-runtime-issuer");
+const H3C = MANIFEST.entries.find(e => e.id === "h3c-runtime-role-allowlist-expansion");
+const STORAGE = MANIFEST.entries.find(e => e.id === "house-storage-upload-grants");
 const projectRef = "ykxlqnshaaxmzzocpjlj";
 const databaseUrl = "postgresql://postgres.ykxlqnshaaxmzzocpjlj:offline-test-password@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=verify-full";
 const temporaryDirectories = new Set();
@@ -34,7 +38,8 @@ function setup({ issuerApplied = false } = {}) {
         calls.push(sql);
         if (String(sql).includes("pg_try_advisory_lock")) return { rows: [{ acquired: true }] };
         if (String(sql).includes("pg_advisory_unlock")) return { rows: [{ unlocked: true }] };
-        if (sql.includes("SELECT to_regclass('local_service_internal.schema_migrations')")) return { rows: [{ ledger_exists: true, local_relations: 22, local_functions: 61 }] };
+        if (sql.includes("SELECT to_regclass('local_service_internal.schema_migrations')")) return { rows: [{ ledger_exists: true, local_relations: 22, local_functions: 61, bk01_runtime_role_exists: true }] };
+        if (sql.includes("AS member_of_other_role")) return { rows: [{ rolname: "bk01_runtime", rolsuper: false, rolinherit: false, rolcreaterole: false, rolcreatedb: false, rolcanlogin: false, rolreplication: false, rolbypassrls: false, rolconfig: ["statement_timeout=8s", "lock_timeout=8s"], member_of_other_role: false, has_members: true, has_dependencies: true }] };
         if (sql.includes("runtime_issuer_clients")) return { rows: [{ a: issuerApplied, b: issuerApplied, c: issuerApplied, d: issuerApplied }] };
         if (sql.includes("runtime_token_grants")) return { rows: [{ constraint_ready: false, function_ready: false }] };
         if (sql.includes("storage_upload_runtime_roles")) return { rows: [{ a: false, b: false, c: false, d: false, e: false }] };
@@ -105,26 +110,26 @@ test("non-manifest file rejects before client creation", async () => {
 test("SQL hash mismatch rejects before client creation", async () => {
   const ctx = setup();
   const manifest = structuredClone(MANIFEST);
-  const entry = manifest.entries[1]; entry.sha256 = "0".repeat(64);
+  const entry = manifest.entries.find(e => e.id === "house-runtime-issuer"); entry.sha256 = "0".repeat(64);
   await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest, repoRoot: ROOT }), "SQL_HASH_MISMATCH");
   assert.equal(ctx.clientCreates, 0);
 });
 
 test("confirmation hash mismatch rejects before client creation", async () => {
-  const ctx = setup(); const entry = MANIFEST.entries[1];
+  const ctx = setup(); const entry = ISSUER;
   await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", "0".repeat(64)], { env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT }), "CONFIRMATION_HASH_MISMATCH");
   assert.equal(ctx.clientCreates, 0);
 });
 
 test("booking source revision mismatch rejects bootstrap before client creation", async () => {
-  const ctx = setup(); const entry = MANIFEST.entries[0];
+  const ctx = setup(); const entry = BOOTSTRAP;
   await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT }), "BOOKING_SOURCE_SHA_MISMATCH");
   assert.equal(ctx.clientCreates, 0);
 });
 
 test("out-of-order apply rejects from the pinned plan before client creation", async () => {
-  const ctx = setup(); const entry = MANIFEST.entries[1];
-  withPlan(ctx, MANIFEST.entries[0]);
+  const ctx = setup(); const entry = ISSUER;
+  withPlan(ctx, BOOTSTRAP);
   await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], { env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT }), "PLAN_ORDER_OR_STALENESS_REJECTED");
   assert.equal(ctx.clientCreates, 0);
 });
@@ -134,15 +139,15 @@ test("plan inspects state in a read-only transaction and records the next approv
   await executePlatformSql(["plan"], { env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT, stdout: (value) => output.push(value) });
   assert.ok(ctx.calls.includes("BEGIN READ ONLY"));
   assert.ok(ctx.calls.includes("ROLLBACK"));
-  assert.equal(output[0].next.file, MANIFEST.entries[1].path);
+  assert.equal(output[0].next.file, ISSUER.path);
   assert.equal(output[0].rollback, null);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(ctx.evidence, "latest-plan.json"), "utf8")).next.sha256, MANIFEST.entries[1].sha256);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(ctx.evidence, "latest-plan.json"), "utf8")).next.sha256, ISSUER.sha256);
 });
 
 test("pinned H3C and storage source files satisfy self transaction structure", async () => {
   const { validateTransactionMode } = await import("./apply-platform-sql.mjs");
   assert.equal(typeof validateTransactionMode, "function", "self-transactional SQL needs a structural validator");
-  for (const entry of MANIFEST.entries.slice(2)) {
+  for (const entry of MANIFEST.entries.filter(e => e.tx === "self")) {
     assert.equal(entry.tx, "self");
     const sql = fs.readFileSync(path.join(ROOT, entry.path), "utf8");
     assert.doesNotThrow(() => validateTransactionMode(sql, "self"), entry.path);
@@ -162,7 +167,7 @@ test("House rollback files match their pinned hashes and declared transaction mo
 test("self mode executes pinned SQL literally without an outer wrapper", async () => {
   const ctx = setup({ issuerApplied: true });
   const manifest = structuredClone(MANIFEST);
-  const entry = manifest.entries[2];
+  const entry = manifest.entries.find(e => e.id === "h3c-runtime-role-allowlist-expansion");
   assert.equal(entry.tx, "self");
   withPlan(ctx, entry);
   let executedSql;
@@ -192,7 +197,7 @@ test("self mode executes pinned SQL literally without an outer wrapper", async (
 test("self mode rolls back a mid-file error and verifies idle transaction status", async () => {
   const ctx = setup({ issuerApplied: true });
   const manifest = structuredClone(MANIFEST);
-  const entry = manifest.entries[2];
+  const entry = manifest.entries.find(e => e.id === "h3c-runtime-role-allowlist-expansion");
   assert.equal(entry.tx, "self");
   withPlan(ctx, entry);
   const originalCreateClient = ctx.createClient;
@@ -225,7 +230,7 @@ test("self mode rolls back a mid-file error and verifies idle transaction status
 test("self mode fails closed when rollback does not report the idle protocol state", async () => {
   const ctx = setup({ issuerApplied: true });
   const manifest = structuredClone(MANIFEST);
-  const entry = manifest.entries[2];
+  const entry = manifest.entries.find(e => e.id === "h3c-runtime-role-allowlist-expansion");
   assert.equal(entry.tx, "self");
   withPlan(ctx, entry);
   const originalCreateClient = ctx.createClient;
@@ -259,7 +264,7 @@ test("production project ref rejects before client creation", async () => {
 
 test("failed file execution rolls its transaction back and emits redacted evidence", async () => {
   const ctx = setup();
-  const entry = MANIFEST.entries[1];
+  const entry = ISSUER;
   withPlan(ctx, entry);
   const originalCreateClient = ctx.createClient;
   ctx.createClient = async (...args) => {
@@ -285,7 +290,7 @@ test("failed file execution rolls its transaction back and emits redacted eviden
 });
 
 test("approved next file applies in one transaction and records external evidence", async () => {
-  const ctx = setup(); const entry = MANIFEST.entries[1]; const output = [];
+  const ctx = setup(); const entry = ISSUER; const output = [];
   withPlan(ctx, entry);
   await executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], {
     env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT, stdout: (value) => output.push(value),
@@ -309,12 +314,12 @@ test("capture diagnostic redacts URL credentials and host", () => {
 
 test("rollback uses the exact paired source, fresh plan, lock, and rollback evidence", async () => {
   const ctx = setup({ issuerApplied: true });
-  const entry = MANIFEST.entries[1];
+  const entry = ISSUER;
   const plan = {
     createdAt: new Date().toISOString(), projectRef, toolGitSha: requireGitHead(),
-    next: { file: MANIFEST.entries[2].path, sha256: MANIFEST.entries[2].sha256 },
+    next: { file: H3C.path, sha256: H3C.sha256 },
     rollback: { file: entry.rollback.path, sha256: entry.rollback.sha256, forwardFile: entry.path },
-    state: Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.id !== MANIFEST.entries[2].id && item.id !== MANIFEST.entries[3].id])),
+    state: Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.id !== H3C.id && item.id !== STORAGE.id])),
     baseline: { exists: true, rows: 0, entries: [] },
   };
   fs.writeFileSync(path.join(ctx.evidence, "latest-plan.json"), JSON.stringify(plan));
@@ -365,10 +370,10 @@ test("rollback paths outside the manifest reject before client construction and 
 
 test("rollback refuses a file that is not the last successful apply in evidence", async () => {
   const ctx = setup();
-  const earlier = MANIFEST.entries[1]; const latest = MANIFEST.entries[2];
+  const earlier = ISSUER; const latest = H3C;
   const plan = {
     createdAt: new Date().toISOString(), projectRef, toolGitSha: requireGitHead(),
-    next: { file: MANIFEST.entries[2].path, sha256: MANIFEST.entries[2].sha256 },
+    next: { file: H3C.path, sha256: H3C.sha256 },
     rollback: { file: latest.rollback.path, sha256: latest.rollback.sha256, forwardFile: latest.path },
     state: Object.fromEntries(MANIFEST.entries.map((entry) => [entry.id, entry.order <= latest.order])),
     baseline: { exists: true, rows: 0, entries: [] },
@@ -384,10 +389,10 @@ test("rollback refuses a file that is not the last successful apply in evidence"
 
 test("guarded rollback SQLSTATE is returned clearly and does not retry or rewrite the rollback", async () => {
   const ctx = setup({ issuerApplied: true });
-  const entry = MANIFEST.entries[1];
+  const entry = ISSUER;
   fs.writeFileSync(path.join(ctx.evidence, "latest-plan.json"), JSON.stringify({
     createdAt: new Date().toISOString(), projectRef, toolGitSha: requireGitHead(),
-    next: { file: MANIFEST.entries[2].path, sha256: MANIFEST.entries[2].sha256 },
+    next: { file: H3C.path, sha256: H3C.sha256 },
     rollback: { file: entry.rollback.path, sha256: entry.rollback.sha256, forwardFile: entry.path },
     state: Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.order <= entry.order])),
     baseline: { exists: true, rows: 0, entries: [] },
@@ -424,7 +429,7 @@ test("guarded rollback SQLSTATE is returned clearly and does not retry or rewrit
 });
 
 test("advisory lock contention prevents the apply transaction", async () => {
-  const ctx = setup(); const entry = MANIFEST.entries[1];
+  const ctx = setup(); const entry = ISSUER;
   withPlan(ctx, entry);
   const calls = [];
   const createClient = async () => ({
