@@ -30,6 +30,8 @@ node tools/shared-runtime/platform-sql/proofs/bk01-runtime-role-roundtrip.mjs --
 
 Proof สร้าง baseline จาก legacy migration จริง 30 ไฟล์ + H3C baseline, ยืนยัน 22 relation/61 function และไม่มี role BK01. เครื่องมือจริงยังทำ target validation กับ URL ปลอมของ test; injected pg client ทุก connection ต่อ `127.0.0.1` เท่านั้น ไม่อ่าน `.secrets` หรือรับ hosted credential. โหมด A11 ทิ้ง fixture state ไว้เฉพาะใน disposable local cluster; ห้ามนำ cluster/evidence ไปใช้กับ LAB.
 
+`manifest.json` field `accepted_bk01_ledger[].filename` ต้องตรงกับ basename ที่ `bk01_migrate` บันทึกใน `local_service_internal.schema_migrations`; runbook แสดง repository-relative path แยกไว้เพื่อให้อ่านไฟล์ rollback ได้ชัด.
+
 ## Acceptance
 
 - bootstrap frozen ล้มก่อน role prerequisite บน PostgreSQL จริง, แล้วผ่านเมื่อสร้าง role ผ่าน manifest/tool.

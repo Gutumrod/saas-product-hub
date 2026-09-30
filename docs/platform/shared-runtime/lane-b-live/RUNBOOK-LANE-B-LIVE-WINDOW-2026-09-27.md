@@ -104,6 +104,8 @@ Operator ยืนยัน project ref ด้วยช่องทางที�
 | 4 | `supabase/bk01-migrations/20260928120000_bk01_house_upload_grants.sql` | `5EFA7D4120C6E939C1C7C63D02FEC4E78A2955FB4392E58986112AB89021EE14` |
 | 5 | `supabase/bk01-migrations/20260930120000_bk01_link_token_no_extensions.sql` | `7ABD286B88679324C6D54DAD329C340C1D40C2ACF038D190FDAAF7E6414109EA` |
 
+In `manifest.json`, `accepted_bk01_ledger[].filename` is the basename recorded by the BK01 runner in `local_service_internal.schema_migrations`; this table shows full repository paths only to locate the SQL files.
+
 ### Pinned BK01 rollback files
 
 `tools/shared-runtime/platform-sql/manifest.json` binds each rollback path and SHA beside its accepted forward ledger entry. Check both pins before executing a rollback.

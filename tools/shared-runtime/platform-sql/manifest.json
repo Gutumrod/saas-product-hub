@@ -3,7 +3,7 @@
   "booking_repository_sha": "32df434e1057a83ecbf0c290a659be42f24bbc55",
   "accepted_bk01_ledger": [
     {
-      "filename": "supabase/bk01-migrations/20260926120000_bk01_entitlement_packs.sql",
+      "filename": "20260926120000_bk01_entitlement_packs.sql",
       "sha256": "db297ae07f1be3cfba5ec1d5a1fca6e194b4d3188082e533a0f976c8ed005998",
       "rollback": {
         "filename": "supabase/rollback/20260926120000_bk01_entitlement_packs.rollback.sql",
@@ -11,7 +11,7 @@
       }
     },
     {
-      "filename": "supabase/bk01-migrations/20260927120000_bk01_runtime_route_rpcs.sql",
+      "filename": "20260927120000_bk01_runtime_route_rpcs.sql",
       "sha256": "57e816c81009a2e0288ae1a8ee38d28d196e46f61b8568f146264c45e3961ad1",
       "rollback": {
         "filename": "supabase/rollback/20260927120000_bk01_runtime_route_rpcs.rollback.sql",
@@ -19,7 +19,7 @@
       }
     },
     {
-      "filename": "supabase/bk01-migrations/20260927130000_bk01_trial_line_bind.sql",
+      "filename": "20260927130000_bk01_trial_line_bind.sql",
       "sha256": "a050e4c8cccec51e4a5d4f2f7f3bd76ec69a12258a9cf9567747cc64cc2f9446",
       "rollback": {
         "filename": "supabase/rollback/20260927130000_bk01_trial_line_bind.rollback.sql",
@@ -27,7 +27,7 @@
       }
     },
     {
-      "filename": "supabase/bk01-migrations/20260928120000_bk01_house_upload_grants.sql",
+      "filename": "20260928120000_bk01_house_upload_grants.sql",
       "sha256": "5efa7d4120c6e939c1c7c63d02fec4e78a2955fb4392e58986112ab89021ee14",
       "rollback": {
         "filename": "supabase/rollback/20260928120000_bk01_house_upload_grants.rollback.sql",
@@ -35,7 +35,7 @@
       }
     },
     {
-      "filename": "supabase/bk01-migrations/20260930120000_bk01_link_token_no_extensions.sql",
+      "filename": "20260930120000_bk01_link_token_no_extensions.sql",
       "sha256": "7abd286b88679324c6d54dad329c340c1d40c2acf038d190fdaaf7e6414109ea",
       "rollback": {
         "filename": "supabase/rollback/20260930120000_bk01_link_token_no_extensions.rollback.sql",
