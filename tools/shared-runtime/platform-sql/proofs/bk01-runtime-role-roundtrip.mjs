@@ -337,7 +337,7 @@ try {
 
     // Exercise every pinned product rollback as the identity named in the live runbook.
     await applyProductRollback('20260930120000_bk01_link_token_no_extensions.sql', 'postgres');
-    await applyProductRollback('20260928120000_bk01_house_upload_grants.sql', 'bk01_migrator');
+    await applyProductRollback('20260928120000_bk01_house_upload_grants.sql', 'postgres');
     for (const id of ['house-storage-upload-grants', 'h3c-runtime-role-allowlist-expansion', 'house-runtime-issuer']) {
       const entry = manifest.entries.find(item => item.id === id);
       assert.ok(entry, `missing platform rollback prerequisite ${id}`);
