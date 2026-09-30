@@ -222,6 +222,9 @@ try {
         await admin.query(fs.readFileSync(path.join(PRODUCT, pin.rollback.filename), 'utf8'));
         rollbackActors.push({ filename, current_user: actor.current_user, session_user: actor.session_user,
           rollback_sha256: pin.rollback.sha256, result: 'COMMIT' });
+      } catch (error) {
+        try { await admin.query('ROLLBACK'); } catch {}
+        throw error;
       } finally {
         if (expectedCurrentUser === 'bk01_migrator') await admin.query('RESET ROLE');
       }
