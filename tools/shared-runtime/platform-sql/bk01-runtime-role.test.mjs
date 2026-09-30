@@ -41,7 +41,9 @@ function fixture({ role = null, bootstrap = false } = {}) {
 const roleState = overrides => ({ rolname: 'bk01_runtime', rolsuper: false, rolinherit: false,
   rolcreaterole: false, rolcreatedb: false, rolcanlogin: false, rolreplication: false, rolbypassrls: false,
   rolconfig: ['statement_timeout=8s', 'lock_timeout=8s'], member_of_other_role: false,
-  has_members: false, has_dependencies: false, ...overrides });
+  has_members: false, has_dependencies: false,
+  memberships: [{ granted_role:'bk01_runtime', member:'postgres', grantor:'supabase_admin',
+    admin_option:true, inherit_option:false, set_option:false }], ...overrides });
 
 test('manifest puts the reviewed runtime role prerequisite before frozen bootstrap', () => {
   const entry = MANIFEST.entries.find(e => e.id === 'bk01-runtime-role');
@@ -68,7 +70,7 @@ test('clean runtime role plans frozen bootstrap next', async () => {
 test('unsafe pre-existing runtime role stops rather than being accepted as a completed prerequisite', async () => {
   for (const override of [{ rolcanlogin: true }, { rolinherit: true }, { rolsuper: true },
     { rolcreaterole: true }, { rolcreatedb: true }, { rolreplication: true }, { rolbypassrls: true },
-    { rolconfig: [] }, { member_of_other_role: true }, { has_members: true }, { has_dependencies: true }]) {
+    { rolconfig: [] }, { member_of_other_role: true }, { memberships: [] }, { has_dependencies: true }]) {
     const ctx = fixture({ role: roleState(override) });
     await assert.rejects(() => executePlatformSql(['plan'], { ...ctx, repoRoot: ROOT, manifest: MANIFEST, stdout: () => {} }),
       { message: 'EXISTING_BK01_RUNTIME_ROLE_CONFLICT' });
@@ -76,7 +78,9 @@ test('unsafe pre-existing runtime role stops rather than being accepted as a com
 });
 
 test('bootstrap-owned inbound membership and ACLs do not invalidate the runtime role after bootstrap', async () => {
-  const ctx = fixture({ role: roleState({ has_members: true, has_dependencies: true }), bootstrap: true }); const outputs = [];
+  const memberships = [...roleState().memberships, { granted_role:'bk01_runtime', member:'authenticator',
+    grantor:'postgres',admin_option:false,inherit_option:false,set_option:true }];
+  const ctx = fixture({ role: roleState({ has_members: true, has_dependencies: true, memberships }), bootstrap: true }); const outputs = [];
   await executePlatformSql(['plan'], { ...ctx, repoRoot: ROOT, manifest: MANIFEST, stdout: x => outputs.push(x) });
   assert.equal(outputs[0].next?.file, 'docs/platform/shared-runtime/migrations/house_runtime_issuer.sql');
 });

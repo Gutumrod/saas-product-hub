@@ -1,6 +1,6 @@
 # Runbook — Lane B live window / BK01 source chain
 
-สถานะ: **A9 SOURCE CANDIDATE / WINDOW 1 HOLD จน independent review และ Owner GO ใหม่** · Window 1 จำกัดเฉพาะฐานข้อมูล LAB ตาม source chain ด้านล่างเท่านั้น. ห้ามเปิด Auth hook, สร้าง Auth user, เปลี่ยน Cloudflare Worker/secret หรือออก token; งานเหล่านี้เป็น Window 2 แยกต่างหาก. งาน source-only นี้ไม่ได้เชื่อม LAB, อ่าน secret, apply SQL, ตั้งค่า Dashboard หรือ deploy.
+สถานะ: **A10 SOURCE CANDIDATE / WINDOW 1 HOLD จน independent review และ Owner GO ใหม่** · Window 1 จำกัดเฉพาะฐานข้อมูล LAB ตาม source chain ด้านล่างเท่านั้น. ห้ามเปิด Auth hook, สร้าง Auth user, เปลี่ยน Cloudflare Worker/secret หรือออก token; งานเหล่านี้เป็น Window 2 แยกต่างหาก. งาน source-only นี้ไม่ได้เชื่อม LAB, อ่าน secret, apply SQL, ตั้งค่า Dashboard หรือ deploy.
 
 ## Source-of-Truth และฐานที่ pin
 
@@ -8,7 +8,7 @@
 |---|---|
 | BK01 runner source (use for both apply intervals) | `codex/bk01-runner-through-20260928` `53fa72dd6fe72f8ff176ce90028827ff96499837` (based on `42a9c3789f2d7a3be5d703b1b0009529c88bf05f`); `--through` is part of this exact source |
 | House live-window source | `codex/house-live-window-integration-20260928` `3713656dc56401895d4b2c99070fad75aa3ef4d8`; issuer and H3C source files below |
-| Platform SQL apply tool | `codex/bk01-runtime-role-20260930` (base `7695b62783d4e4be5092dd9c39f8ab9cdc793579`) (tool, ordered manifest, and offline tests in `tools/shared-runtime/platform-sql/`); uses the capture target validator, pinned CA, client factory, and redactor from House `0646a86a795e82a39a739fe08f8bd97f87bf3d9f` |
+| Platform SQL apply tool | `codex/bk01-runtime-role-admin-20260930` (base `4be457be6f17c6560fc771b822d29b723b9e5f21`) (tool, ordered manifest, and offline tests in `tools/shared-runtime/platform-sql/`); uses the capture target validator, pinned CA, client factory, and redactor from House `0646a86a795e82a39a739fe08f8bd97f87bf3d9f` |
 | House storage grant | same House source SHA; `docs/platform/shared-runtime/storage/house_storage_upload_grants.sql` and `_rollback.sql` |
 | H3D static checker | repo `saas-product-hub`, branch `work/house-h3d-h5-20260909`, pinned commit `53346383faa2a87fac483a7a3bf5233a200e295d`, path `tools/shared-runtime/h3d/sql-static-check.mjs` |
 | H3D stage contract | commit เดียวกัน: `docs/platform/shared-runtime/fixtures/lane-b-per-stage-allowlist.json` เป็นแหล่ง allowlist เดียว; generated role SQL อยู่ `docs/platform/shared-runtime/runbooks/` |
@@ -19,6 +19,10 @@
 | H3C runtime role allowlist | `docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion.sql` and rollback |
 
 A8 ที่ Owner อนุมัติยังมีผล: Window 1 ไม่สร้าง/หา PS01 session/token; (ข) = `UNMEASURED_APP_PATH (Owner waiver A8)` พร้อม PS01 zero-delta รวม definition/ACL/RLS/owner และ (ง) รันตัวเทียบซ้ำหลัง no-op apply. ห้ามอ้าง PS01 healthy.
+
+A10 (บรีฟ 18 vault `04ebb9e`): managed postgres เป็น non-superuser CREATEROLE. Role ที่มีอยู่ต้องมี creator ADMIN row หนึ่งแถวตรง member=postgres, ADMIN=true, INHERIT=false, SET=false, grantor=postgres หรือ supabase_admin; หลัง bootstrap ต้องมี authenticator อีกหนึ่งแถว ADMIN=false, INHERIT=false, SET=true, grantor=postgres. แถวอื่น/ค่าอื่นปฏิเสธ. Recovery หลัง GO ใหม่ใช้ evidence directory ใหม่และ plan สด: role ขั้น 5 อ่านเป็น apply แล้ว, next ต้องเป็น bootstrap; ไม่ต้อง DROP/recreate role. ยังคง pin booking source/runner/capture/SQL/manifest เดิมทั้งหมด.
+
+Role rollback A10 เป็น exception เฉพาะ `bk01-runtime-role` ใน tool: ตรวจ pinned file/checksum/confirm/order/plan/advisory lock ตามเดิม แต่ execute tool-owned guard + `DROP ROLE bk01_runtime` ใน transaction (`executionPolicy=A10_MANAGED_RUNTIME_ROLE_DROP`). **ไม่ execute rollback SQL เดิม** ที่ปฏิเสธ membership ทุกแถว และไม่แก้ bytes/hash ของไฟล์นั้น. Guard ยอมเพียง creator ADMIN row หนึ่งแถว, ต้องไม่มี ownership/direct privilege/dependency; ไม่มีการ REVOKE ADMIN ก่อน DROP. DROP ลบ membership เอง. SQL อื่นรัน frozen bytes ตามเดิม. AGY ต้องรีวิว exception นี้ใน exact tool SHA และรัน PG17 proof ด้วย non-superuser actor; PG16/superuser proof ไม่ทดแทน A10.
 
 ก่อน operator เริ่ม ต้องให้ reviewer อิสระจากผู้เขียนตรวจ SHA ของทุก branch, exact diff, tests/proof ภายนอก repo และ runbook นี้. หาก SHA เปลี่ยนหลัง review ให้หยุดและ review ใหม่.
 
@@ -127,7 +131,7 @@ Rollback operator run order:
 4. ใช้ `house_runtime_issuer_rollback.sql` ด้วย platform SQL rollback command หลัง client/rate/audit tables เป็น 0; มันปฏิเสธเมื่อยังมี state. เก็บ dedicated login role/shared schema ไว้ให้ platform owner ตัดสินแยก.
 5. รัน BK01 rollback ตามลำดับย้อน timestamp: `20260927130000_bk01_trial_line_bind.rollback.sql`, `20260927120000_bk01_runtime_route_rpcs.rollback.sql`, `20260926120000_bk01_entitlement_packs.rollback.sql`. แต่ละไฟล์ transaction เดียว; ถ้ามีข้อมูลที่ guard ปฏิเสธ **ห้ามฝืน/ลบข้อมูล**.
 6. รัน `supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql` ด้วย platform SQL rollback command เฉพาะหลัง product migration ledger กลับเป็น 0; script จะปฏิเสธถ้ายังมี applied migration.
-7. หลัง bootstrap rollback สำเร็จ ใช้ platform tool `plan` แล้ว `rollback --file docs/platform/shared-runtime/migrations/h3_bk01_runtime_role_rollback.sql --confirm <sha256 จาก plan>` เป็นไฟล์สุดท้ายของ platform chain. ต้องเป็น successful apply ของรอบนี้ใน evidence เท่านั้น. Role rollback ปฏิเสธ ownership, direct privileges/shared dependencies และ membership ทุกทิศทาง; ห้ามถอนสิทธิ์หรือ CASCADE เพื่อให้ผ่าน.
+7. หลัง bootstrap rollback สำเร็จ ใช้ platform tool `plan` แล้ว `rollback --file docs/platform/shared-runtime/migrations/h3_bk01_runtime_role_rollback.sql --confirm <sha256 จาก plan>` เป็นไฟล์สุดท้ายของ platform chain. ต้องเป็น successful apply ของรอบนี้ใน evidence เท่านั้น. Role rollback ปฏิเสธ ownership, direct privileges/shared dependencies และ membership ทุกทิศทางที่นอก exact creator ADMIN row ของ A10; ห้ามถอนสิทธิ์หรือ CASCADE เพื่อให้ผ่าน.
 8. Teardown role วัดชั่วคราวด้วย teardown SQL คู่ที่ pinned ไว้. ตรวจ `pg_stat_activity` ไม่มี session ของ role และยืนยัน role ถูก DROP.
 9. เก็บ post-rollback snapshot แบบเดียวกับ baseline. ต้องตรงทุก catalog/privilege row ยกเว้นความต่างที่ Owner อนุมัติและบันทึกไว้ก่อน window; mismatch = FAIL, ห้ามปิด PASS.
 

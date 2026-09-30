@@ -4,6 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { defaultCreateClient, safeCaptureDiagnostic, validateCaptureTarget } from "../inventory/lane-b-capture.mjs";
+import { validRuntimeMemberships, rollbackManagedRuntimeRole } from "./bk01-runtime-membership.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../..");
@@ -246,7 +247,16 @@ async function readState(client) {
     EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid) AS member_of_other_role,
     EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members WHERE roleid=r.oid OR grantor=r.oid) AS has_members,
     EXISTS (SELECT 1 FROM pg_catalog.pg_shdepend
-      WHERE refclassid='pg_catalog.pg_authid'::regclass AND refobjid=r.oid) AS has_dependencies
+      WHERE refclassid='pg_catalog.pg_authid'::regclass AND refobjid=r.oid) AS has_dependencies,
+    COALESCE((SELECT json_agg(json_build_object('granted_role',parent.rolname,
+      'member',member.rolname,'grantor',grantor.rolname,'admin_option',m.admin_option,
+      'inherit_option',m.inherit_option,'set_option',m.set_option)
+      ORDER BY parent.rolname,member.rolname,grantor.rolname)
+      FROM pg_catalog.pg_auth_members m
+      JOIN pg_catalog.pg_roles parent ON parent.oid=m.roleid
+      JOIN pg_catalog.pg_roles member ON member.oid=m.member
+      JOIN pg_catalog.pg_roles grantor ON grantor.oid=m.grantor
+      WHERE m.roleid=r.oid OR m.member=r.oid OR m.grantor=r.oid), '[]'::json) AS memberships
     FROM pg_catalog.pg_roles r WHERE r.rolname='bk01_runtime'`);
   const runtimeRoleExists = runtimeRole.rolname === "bk01_runtime";
   if (runtimeRoleExists) {
@@ -255,7 +265,8 @@ async function readState(client) {
       .some((attribute) => runtimeRole[attribute] !== false)
       || canonicalJson(settings) !== canonicalJson(["lock_timeout=8s", "statement_timeout=8s"])
       || runtimeRole.member_of_other_role
-      || (!baseline.ledger_exists && (runtimeRole.has_members || runtimeRole.has_dependencies))) {
+      || !validRuntimeMemberships(runtimeRole.memberships, Boolean(baseline.ledger_exists))
+      || (!baseline.ledger_exists && runtimeRole.has_dependencies)) {
       fail("EXISTING_BK01_RUNTIME_ROLE_CONFLICT");
     }
   }
@@ -527,7 +538,12 @@ async function executePlatformSqlInternal(argv, {
     } else {
       await client.query("BEGIN"); inTransaction = true;
       await client.query(`SET LOCAL statement_timeout = '${TIMEOUT_MS}ms'`);
-      await client.query(mode === "apply" ? operationSource.forward.sql : operationSource.rollback.sql);
+      if (mode === "rollback" && selected.id === "bk01-runtime-role") {
+        evidence.executionPolicy = "A10_MANAGED_RUNTIME_ROLE_DROP";
+        await rollbackManagedRuntimeRole(client);
+      } else {
+        await client.query(mode === "apply" ? operationSource.forward.sql : operationSource.rollback.sql);
+      }
       await client.query("COMMIT"); inTransaction = false;
     }
     evidence.result = mode === "apply" ? "applied" : "rolled_back";

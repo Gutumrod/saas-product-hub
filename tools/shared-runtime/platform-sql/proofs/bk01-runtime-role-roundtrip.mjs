@@ -1,4 +1,4 @@
-// Source-only A9 proof. Every real connection is hard-coded to loopback.
+// Source-only A10 proof. Every real connection is hard-coded to loopback.
 // A fresh cluster is required; this creates database lab and never drops a database.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { executePlatformSql } from '../apply-platform-sql.mjs';
 import { snapshot, diffLines } from './catalog-snapshot.mjs';
+import { rollbackManagedRuntimeRole } from '../bk01-runtime-membership.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../../..');
@@ -37,7 +38,7 @@ const forward = fs.readFileSync(path.join(ROOT, role.path), 'utf8');
 const rollback = fs.readFileSync(path.join(ROOT, role.rollback.path), 'utf8');
 assert.equal(hash(forward), role.sha256); assert.equal(hash(rollback), role.rollback.sha256);
 const createClient = async () => new pg.Client({ host: '127.0.0.1', port: PORT,
-  user: 'postgres', database: 'lab', statement_timeout: 25000, application_name: 'bk01-a9-local-proof' });
+  user: 'postgres', database: 'lab', statement_timeout: 25000, application_name: 'bk01-a10-local-proof' });
 const env = {
   LANE_B_PROJECT_REF: 'ykxlqnshaaxmzzocpjlj',
   // Validator-only fake URI; the client factory never connects to this host.
@@ -58,11 +59,17 @@ const rawSnapshot = async () => {
   try { process.env.SNAP_RAW = '1'; return await snapshot(PORT, 'lab'); }
   finally { if (previous === undefined) delete process.env.SNAP_RAW; else process.env.SNAP_RAW = previous; }
 };
-const postgres = new pg.Client({ host: '127.0.0.1', port: PORT, user: 'postgres', database: 'postgres' });
+const postgres = new pg.Client({ host: '127.0.0.1', port: PORT, user: 'supabase_admin', database: 'postgres' });
+const supervisor = new pg.Client({ host: '127.0.0.1', port: PORT, user: 'supabase_admin', database: 'lab' });
 let admin;
 try {
   await postgres.connect();
-  await postgres.query('CREATE DATABASE lab'); await postgres.end();
+  const version = Number((await postgres.query('SHOW server_version_num')).rows[0].server_version_num);
+  assert.ok(version >= 170000 && version < 180000, 'A10 requires PostgreSQL 17');
+  // Only fixture preparation uses a superuser. Every tool connection below
+  // authenticates as postgres after this role is demoted.
+  await postgres.query('CREATE ROLE postgres LOGIN SUPERUSER CREATEDB CREATEROLE BYPASSRLS');
+  await postgres.query('CREATE DATABASE lab OWNER postgres'); await postgres.end();
   admin = await createClient(); await admin.connect();
   await admin.query(fs.readFileSync(path.join(HERE, 'scaffold.sql'), 'utf8'));
   await admin.end(); admin = await createClient(); await admin.connect();
@@ -70,6 +77,12 @@ try {
   check('real frozen legacy chain has 30 migrations', migrations.length === 30);
   for (const file of migrations) await admin.query(fs.readFileSync(path.join(BOOKING, 'supabase/migrations', file), 'utf8'));
   await admin.query(fs.readFileSync(path.join(ROOT, 'docs/platform/shared-runtime/migrations/h3c_auth_runtime_token_support.sql'), 'utf8'));
+  await supervisor.connect();
+  await supervisor.query('ALTER ROLE postgres NOSUPERUSER');
+  await supervisor.query('GRANT anon TO postgres WITH INHERIT FALSE, SET TRUE');
+  const actor = (await admin.query("SELECT current_user,session_user,rolsuper,rolcreaterole FROM pg_roles WHERE rolname=current_user")).rows[0];
+  check('actual tool actor postgres is non-superuser with CREATEROLE on PostgreSQL 17',
+    actor.current_user === 'postgres' && actor.session_user === 'postgres' && actor.rolsuper === false && actor.rolcreaterole === true);
   const baseline = await snapshot(PORT, 'lab');
   const rawBaseline = await rawSnapshot();
   const baselineProbe = async () => (await admin.query("SELECT local_service.is_platform_admin() AS platform_admin, local_service.is_shop_member('00000000-0000-0000-0000-000000000001') AS shop_member")).rows[0];
@@ -88,30 +101,45 @@ try {
   check('new role has all seven non-privileged/NOLOGIN attributes', ['rolsuper','rolinherit','rolcreaterole','rolcreatedb','rolcanlogin','rolreplication','rolbypassrls'].every(key => attrs[key] === false));
   check('new role has 8s statement/lock timeout and boundary comment',
     JSON.stringify([...attrs.rolconfig].sort()) === JSON.stringify(['lock_timeout=8s','statement_timeout=8s']) && attrs.comment.includes('NOLOGIN BK01 Data API'));
-  check('new role has no direct ACL/ownership or memberships',
-    (await admin.query("SELECT (SELECT count(*) FROM pg_shdepend WHERE refclassid='pg_authid'::regclass AND refobjid=(SELECT oid FROM pg_roles WHERE rolname='bk01_runtime')) + (SELECT count(*) FROM pg_auth_members WHERE roleid=(SELECT oid FROM pg_roles WHERE rolname='bk01_runtime') OR member=(SELECT oid FROM pg_roles WHERE rolname='bk01_runtime')) AS n")).rows[0].n === '0');
+  check('new role has no direct ACL/ownership dependencies',
+    (await admin.query("SELECT count(*)::int AS n FROM pg_shdepend WHERE refclassid='pg_authid'::regclass AND refobjid=(SELECT oid FROM pg_roles WHERE rolname='bk01_runtime')")).rows[0].n === 0);
+  const memberships = (await admin.query("SELECT member.rolname AS member,grantor.rolname AS grantor,m.admin_option,m.inherit_option,m.set_option FROM pg_auth_members m JOIN pg_roles parent ON parent.oid=m.roleid JOIN pg_roles member ON member.oid=m.member JOIN pg_roles grantor ON grantor.oid=m.grantor WHERE parent.rolname='bk01_runtime' ORDER BY member.rolname,grantor.rolname")).rows;
+  assert.deepEqual(memberships,[{member:'postgres',grantor:'supabase_admin',admin_option:true,inherit_option:false,set_option:false}]);
+  check('PostgreSQL creates the exact creator ADMIN row automatically',true);
+  const recoveryOutput = [];
+  await executePlatformSql(['plan'], {env:{...env, PLATFORM_SQL_EVIDENCE_DIR:path.join(OUT,'recovery-platform-sql')},
+    createClient,stdout:value=>recoveryOutput.push(value)});
+  const recovery = recoveryOutput[0];
+  check('fresh recovery evidence recognizes managed role as applied and next is bootstrap without authorizing its rollback',
+    recovery.entries[0].applied && recovery.next.file === bootstrap.path && recovery.rollback === null);
   await admin.query('BEGIN');
   await assert.rejects(() => admin.query(forward), error => error.code === 'P0001' && error.message === 'bk01_runtime already exists');
   await admin.query('ROLLBACK'); checks++; console.log(`ok ${checks}: duplicate role creation refuses safely`);
   // Exercise the actual SQL guards using transaction-local synthetic fixtures.
   const guard = async (label, setupSql, source, message) => {
-    await admin.query('BEGIN');
+    await supervisor.query('BEGIN');
     try {
-      await admin.query(setupSql);
-      await assert.rejects(() => admin.query(source), error => error.code === 'P0001' && error.message.includes(message));
+      await supervisor.query(setupSql);
+      await supervisor.query('SET LOCAL ROLE postgres');
+      await assert.rejects(() => source === rollback ? rollbackManagedRuntimeRole(supervisor) : supervisor.query(source),
+        error => error.code === 'P0001' && error.message.includes(message));
       check(label, true);
-    } finally { await admin.query('ROLLBACK'); }
+    } finally { await supervisor.query('ROLLBACK'); }
   };
-  await guard('non-platform forward guard rejects', 'SET LOCAL ROLE anon', forward, 'requires platform postgres session');
-  await guard('non-platform rollback guard rejects', 'SET LOCAL ROLE anon', rollback, 'requires platform postgres session');
+  await admin.query('BEGIN'); await admin.query('SET LOCAL ROLE anon');
+  await assert.rejects(()=>admin.query(forward),error=>error.code==='P0001' && error.message.includes('requires platform postgres session'));
+  await admin.query('ROLLBACK'); check('non-platform forward guard rejects',true);
+  await admin.query('BEGIN'); await admin.query('SET LOCAL ROLE anon');
+  await assert.rejects(()=>rollbackManagedRuntimeRole(admin),error=>error.code==='P0001' && error.message.includes('requires platform postgres session'));
+  await admin.query('ROLLBACK'); check('non-platform tool rollback guard rejects',true);
   await guard('rollback refuses an owned schema', 'CREATE SCHEMA a9_owned AUTHORIZATION bk01_runtime', rollback, 'ownership or privileges/dependencies remain');
   await guard('rollback refuses an owned relation', 'CREATE TABLE public.a9_owned(id integer); ALTER TABLE public.a9_owned OWNER TO bk01_runtime', rollback, 'ownership or privileges/dependencies remain');
   await guard('rollback refuses a direct relation grant', 'GRANT SELECT ON ps01.runtime_boundary_probe TO bk01_runtime', rollback, 'ownership or privileges/dependencies remain');
   await guard('rollback refuses a schema grant', 'GRANT USAGE ON SCHEMA ps01 TO bk01_runtime', rollback, 'ownership or privileges/dependencies remain');
   await guard('rollback refuses direct database privileges', 'GRANT CREATE ON DATABASE lab TO bk01_runtime', rollback, 'ownership or privileges/dependencies remain');
   await guard('rollback refuses default privileges', 'ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT SELECT ON TABLES TO bk01_runtime', rollback, 'ownership or privileges/dependencies remain');
-  await guard('rollback refuses being a member of another role', 'GRANT anon TO bk01_runtime', rollback, 'role memberships remain');
-  await guard('rollback refuses inbound membership', 'GRANT bk01_runtime TO authenticator WITH INHERIT FALSE, SET TRUE', rollback, 'role memberships remain');
+  await guard('rollback refuses being a member of another role', 'GRANT anon TO bk01_runtime', rollback, 'unexpected role memberships');
+  await guard('rollback refuses inbound membership', 'GRANT bk01_runtime TO authenticator WITH INHERIT FALSE, SET TRUE', rollback, 'unexpected role memberships');
   check('plan after role creation selects unchanged bootstrap', (await run(['plan'])).next.file === bootstrap.path);
   await apply(bootstrap);
   check('frozen bootstrap commits after role prerequisite', (await admin.query("SELECT to_regclass('local_service_internal.schema_migrations') IS NOT NULL AS ready")).rows[0].ready);
@@ -133,6 +161,9 @@ try {
   check('final plan returns to prerequisite and no rollback history remains', end.next.file === role.path && end.rollback === null);
   const result = { result: 'LOCAL_POSTGRES_ROUNDTRIP_PASS', checks, at: new Date().toISOString(),
     server_version: (await admin.query('SHOW server_version')).rows[0].server_version,
+    actor, automatic_memberships: memberships,
+    recovery: {role_applied:recovery.entries[0].applied,next:recovery.next,rollback:recovery.rollback},
+    role_rollback_execution_policy: 'A10_MANAGED_RUNTIME_ROLE_DROP',
     tool_git_sha: execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     role_sha256: role.sha256, rollback_sha256: role.rollback.sha256,
     bootstrap_sha256: bootstrap.sha256, bootstrap_rollback_sha256: bootstrap.rollback.sha256,
@@ -149,5 +180,5 @@ try {
   fs.writeFileSync(path.join(OUT, 'snapshot-after-raw.txt'), rawFinal.join('\n') + '\n', { flag: 'wx' });
   console.log(JSON.stringify({ result: result.result, checks, delta: 0 }));
 } finally {
-  await Promise.allSettled([admin?.end(), postgres.end()]);
+  await Promise.allSettled([admin?.end(), supervisor.end(), postgres.end()]);
 }
