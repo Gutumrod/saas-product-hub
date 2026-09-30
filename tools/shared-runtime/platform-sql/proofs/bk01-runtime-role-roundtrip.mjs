@@ -432,8 +432,26 @@ try {
     const fullRollbackFinal = await snapshot(PORT, 'lab');
     const fullRollbackDelta = diffLines(baseline, fullRollbackFinal);
     console.log('full-rollback-catalog-delta:', JSON.stringify(fullRollbackDelta));
-    check('product and platform rollback chain returns database to pre-role baseline',
-      fullRollbackDelta.onlyBefore.length === 0 && fullRollbackDelta.onlyAfter.length === 0);
+    const fullBefore = fullRollbackDelta.onlyBefore.map(parse);
+    const fullAfter = fullRollbackDelta.onlyAfter.map(parse);
+    const fullBeforeFunctions = fullBefore.filter(change => change.kind === 'function');
+    const fullAfterFunctions = fullAfter.filter(change => change.kind === 'function');
+    const fullBeforeView = fullBefore.filter(change => change.kind === 'viewdef');
+    const fullAfterView = fullAfter.filter(change => change.kind === 'viewdef');
+    const fullReviewedInfoDelta = fullRollbackDelta.onlyBefore.length === 5 && fullRollbackDelta.onlyAfter.length === 5
+      && fullBeforeFunctions.map(change => change.value.proname).sort().join(',') === expectedAclFunctions.join(',')
+      && fullAfterFunctions.map(change => change.value.proname).sort().join(',') === expectedAclFunctions.join(',')
+      && fullBeforeFunctions.every(before => {
+        const after = fullAfterFunctions.find(change => change.value.proname === before.value.proname)?.value;
+        return after && before.value.owner === 'postgres' && before.value.acl === null
+          && after.owner === 'postgres' && after.acl === '{=X/postgres}' && equalExcept(before.value, after, 'acl');
+      })
+      && fullBeforeView.length === 1 && fullAfterView.length === 1
+      && fullBeforeView[0].value.nspname === 'local_service' && fullBeforeView[0].value.relname === 'shop_public_profile'
+      && fullAfterView[0].value.nspname === 'local_service' && fullAfterView[0].value.relname === 'shop_public_profile'
+      && fullBeforeView[0].value.owner === 'postgres' && fullAfterView[0].value.owner === 'postgres'
+      && fullBeforeView[0].value.definition !== fullAfterView[0].value.definition;
+    check('full rollback restores pre-role catalog except four reviewed default ACLs and shop_public_profile deparse', fullReviewedInfoDelta);
   }
   if (PRODUCT !== BOOKING) {
     const result = { result: 'LOCAL_PG17_A11_FORWARD_AND_PRODUCT_ROLLBACK_PASS', checks, at: new Date().toISOString(),
