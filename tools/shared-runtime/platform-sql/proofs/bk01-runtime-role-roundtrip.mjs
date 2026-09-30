@@ -370,6 +370,7 @@ try {
     const afterProductRollbackDiff = diffLines(baseline, afterProductRollback);
     fs.writeFileSync(path.join(OUT, 'product-rollback-catalog-diff.json'),
       JSON.stringify(afterProductRollbackDiff, null, 2) + '\n', { flag: 'wx' });
+    console.log('catalog-delta-after-product-rollback:', JSON.stringify(afterProductRollbackDiff));
     check('product/platform rollback restores post-bootstrap catalog baseline except reviewed INFO deparse/ACL changes',
       afterProductRollbackDiff.onlyBefore.length === 5 && afterProductRollbackDiff.onlyAfter.length === 5
         && [...afterProductRollbackDiff.onlyBefore, ...afterProductRollbackDiff.onlyAfter]
