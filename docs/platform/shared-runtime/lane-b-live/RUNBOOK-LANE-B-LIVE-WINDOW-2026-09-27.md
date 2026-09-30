@@ -8,7 +8,7 @@
 |---|---|
 | BK01 runner source (use for product migrations) | `codex/bk01-no-extensions-20260930` `fb455a6d3876dfcb9db31079700e1c0c1bffb4ac`; includes `--through`, five migrations, and per-file apply. `BK01_REPO_ROOT` for platform bootstrap remains the separate booking pin `32df434e1057a83ecbf0c290a659be42f24bbc55`. |
 | House live-window source | `codex/house-live-window-integration-20260928` `3713656dc56401895d4b2c99070fad75aa3ef4d8`; issuer and H3C source files below |
-| Platform SQL apply tool | `codex/bk01-runtime-role-admin-20260930` (base `4be457be6f17c6560fc771b822d29b723b9e5f21`) (tool, ordered manifest, and offline tests in `tools/shared-runtime/platform-sql/`); uses the capture target validator, pinned CA, client factory, and redactor from House `0646a86a795e82a39a739fe08f8bd97f87bf3d9f` |
+| Platform SQL apply tool + A11 manifest | `codex/bk01-no-extensions-platform-20260930` `d807649e1d31d16e0a15faeb03c5bc4376cae59e` (based on A10 tool `09034a362dca079b26023fa188171038a4e893a0`); apply code is unchanged, A11 accepted-ledger pin/proof are in this candidate; capture validator, pinned CA, client factory, and redactor remain House `0646a86a795e82a39a739fe08f8bd97f87bf3d9f` |
 | House storage grant | same House source SHA; `docs/platform/shared-runtime/storage/house_storage_upload_grants.sql` and `_rollback.sql` |
 | H3D static checker | repo `saas-product-hub`, branch `work/house-h3d-h5-20260909`, pinned commit `53346383faa2a87fac483a7a3bf5233a200e295d`, path `tools/shared-runtime/h3d/sql-static-check.mjs` |
 | H3D stage contract | commit เดียวกัน: `docs/platform/shared-runtime/fixtures/lane-b-per-stage-allowlist.json` เป็นแหล่ง allowlist เดียว; generated role SQL อยู่ `docs/platform/shared-runtime/runbooks/` |
