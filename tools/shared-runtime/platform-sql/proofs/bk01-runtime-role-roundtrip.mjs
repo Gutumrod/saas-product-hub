@@ -200,7 +200,7 @@ try {
       ORDER BY filename`)).rows;
     const ledgerPins = new Map(manifest.accepted_bk01_ledger.map(entry => [entry.filename, entry]));
     for (const filename of productMigrations) {
-      const pin = ledgerPins.get(`supabase/bk01-migrations/${filename}`);
+      const pin = ledgerPins.get(filename);
       assert.ok(pin?.rollback?.filename && /^[0-9a-f]{64}$/.test(pin.rollback.sha256),
         `manifest rollback pin missing for ${filename}`);
       assert.equal(hash(fs.readFileSync(path.join(PRODUCT, 'supabase/bk01-migrations', filename))), pin.sha256,
@@ -210,7 +210,7 @@ try {
     }
     const rollbackActors = [];
     const applyProductRollback = async (filename, expectedCurrentUser) => {
-      const pin = ledgerPins.get(`supabase/bk01-migrations/${filename}`);
+      const pin = ledgerPins.get(filename);
       assert.ok(pin, `forward pin missing for rollback of ${filename}`);
       const before = (await admin.query('SELECT current_user, session_user')).rows[0];
       assert.equal(before.session_user, 'postgres', 'product rollback must retain the platform postgres login');
@@ -380,7 +380,7 @@ try {
       assert.equal(ledgerActor.current_user, 'bk01_migrator');
       assert.equal(ledgerActor.session_user, 'postgres');
       const expectedLedger = productMigrations.map(filename => {
-        const entry = ledgerPins.get(`supabase/bk01-migrations/${filename}`);
+        const entry = ledgerPins.get(filename);
         return { filename, source_sha256: entry.sha256 };
       }).sort((a, b) => a.filename.localeCompare(b.filename));
       const currentLedger = (await admin.query(`SELECT filename, source_sha256 FROM local_service_internal.schema_migrations
