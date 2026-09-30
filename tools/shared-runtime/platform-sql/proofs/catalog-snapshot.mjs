@@ -11,7 +11,7 @@ export async function snapshot(port, db) {
   const q = async (sql) => (await c.query(sql)).rows;
   const lines = [];
   const NORM = { n: 0 };
-  const add = (kind, obj) => { if (!process.env.SNAP_RAW && obj && typeof obj.acl === "string" && obj.owner) { const o = obj.owner; const defaults = { database: `{=Tc/${o},${o}=CTc/${o}}`, schema: `{${o}=UC/${o}}`, relation: `{${o}=arwdDxt/${o}}` }; if (defaults[kind] === obj.acl) { obj = { ...obj, acl: null }; NORM.n++; } } lines.push(`${kind} ${JSON.stringify(obj)}`); };
+  const add = (kind, obj) => { if (!process.env.SNAP_RAW && obj && typeof obj.acl === "string" && obj.owner) { const o = obj.owner; const defaults = { database: `{=Tc/${o},${o}=CTc/${o}}`, schema: `{${o}=UC/${o}}`, relation: `{${o}=arwdDxtm/${o}}` }; if (defaults[kind] === obj.acl) { obj = { ...obj, acl: null }; NORM.n++; } } lines.push(`${kind} ${JSON.stringify(obj)}`); };
   const NS = `n.nspname NOT IN ('pg_catalog','information_schema','pg_toast') AND n.nspname !~ '^pg_(toast_)?temp_'`;
 
   for (const r of await q(`select rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin, rolreplication, rolbypassrls, rolconnlimit, rolvaliduntil::text v, (select array_agg(sc order by sc) from pg_db_role_setting s, unnest(s.setconfig) sc where s.setrole=r.oid) cfg from pg_roles r where rolname !~ '^pg_' and rolname <> 'postgres' order by 1`)) add("role", r);

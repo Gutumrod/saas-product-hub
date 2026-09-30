@@ -367,15 +367,6 @@ try {
         '20260927120000_bk01_runtime_route_rpcs.sql',
         '20260926120000_bk01_entitlement_packs.sql',
       ].join(','));
-    const afterProductRollback = await snapshot(PORT, 'lab');
-    const afterProductRollbackDiff = diffLines(postBootstrapBaseline, afterProductRollback);
-    fs.writeFileSync(path.join(OUT, 'product-rollback-catalog-diff.json'),
-      JSON.stringify(afterProductRollbackDiff, null, 2) + '\n', { flag: 'wx' });
-    console.log('catalog-delta-after-product-rollback:', JSON.stringify(afterProductRollbackDiff));
-    check('product/platform rollback restores post-bootstrap catalog baseline except reviewed INFO deparse/ACL changes',
-      afterProductRollbackDiff.onlyBefore.length === 5 && afterProductRollbackDiff.onlyAfter.length === 5
-        && [...afterProductRollbackDiff.onlyBefore, ...afterProductRollbackDiff.onlyAfter]
-          .every(line => line.startsWith('viewdef ') || line.startsWith('function ')));
     await admin.query('BEGIN');
     let removedLedgerRows;
     try {
@@ -400,6 +391,38 @@ try {
     }
     check('postgres SET ROLE bk01_migrator removes exactly five stale ledger rows before bootstrap rollback',
       (await admin.query('SELECT count(*)::int AS n FROM local_service_internal.schema_migrations')).rows[0].n === 0);
+    const afterProductRollback = await snapshot(PORT, 'lab');
+    const afterProductRollbackDiff = diffLines(postBootstrapBaseline, afterProductRollback);
+    fs.writeFileSync(path.join(OUT, 'product-rollback-catalog-diff.json'),
+      JSON.stringify(afterProductRollbackDiff, null, 2) + '\n', { flag: 'wx' });
+    const parse = line => ({ kind: line.slice(0, line.indexOf(' ')), value: JSON.parse(line.slice(line.indexOf(' ') + 1)) });
+    const beforeChanges = afterProductRollbackDiff.onlyBefore.map(parse);
+    const afterChanges = afterProductRollbackDiff.onlyAfter.map(parse);
+    const expectedAclFunctions = ['audit_platform_admin_update', 'enforce_ticket_owner_admin',
+      'enqueue_booking_notifications', 'suppress_new_overdue_line_reminder'].sort();
+    const beforeFunctions = beforeChanges.filter(change => change.kind === 'function');
+    const afterFunctions = afterChanges.filter(change => change.kind === 'function');
+    const beforeView = beforeChanges.filter(change => change.kind === 'viewdef');
+    const afterView = afterChanges.filter(change => change.kind === 'viewdef');
+    const equalExcept = (left, right, key) => {
+      const a = { ...left }, b = { ...right }; delete a[key]; delete b[key];
+      return JSON.stringify(a) === JSON.stringify(b);
+    };
+    const reviewedInfoDelta = afterProductRollbackDiff.onlyBefore.length === 5
+      && afterProductRollbackDiff.onlyAfter.length === 5
+      && beforeFunctions.map(change => change.value.proname).sort().join(',') === expectedAclFunctions.join(',')
+      && afterFunctions.map(change => change.value.proname).sort().join(',') === expectedAclFunctions.join(',')
+      && beforeFunctions.every(before => {
+        const after = afterFunctions.find(change => change.value.proname === before.value.proname)?.value;
+        return after && before.value.acl === null && after.acl === '{=X/bk01_migrator}'
+          && equalExcept(before.value, after, 'acl');
+      })
+      && beforeView.length === 1 && afterView.length === 1
+      && beforeView[0].value.nspname === 'local_service' && beforeView[0].value.relname === 'shop_public_profile'
+      && afterView[0].value.nspname === 'local_service' && afterView[0].value.relname === 'shop_public_profile'
+      && beforeView[0].value.owner === afterView[0].value.owner
+      && beforeView[0].value.definition !== afterView[0].value.definition;
+    check('product/platform rollback matches post-bootstrap catalog except four reviewed default ACLs and shop_public_profile deparse', reviewedInfoDelta);
     await run(['plan']);
     await reverse(bootstrap);
     const recoveredPlan = await run(['plan']);
