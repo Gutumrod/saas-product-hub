@@ -312,6 +312,12 @@ async function readState(client, manifest) {
       JOIN pg_catalog.pg_roles grantor ON grantor.oid=m.grantor
       WHERE m.roleid=r.oid OR m.member=r.oid OR m.grantor=r.oid), '[]'::json) AS memberships
     FROM pg_catalog.pg_roles r WHERE r.rolname='bk01_runtime'`);
+  const issuer = await queryOne(client, `SELECT
+    to_regclass('wstera_platform_internal.runtime_issuer_clients') IS NOT NULL AS a,
+    to_regclass('wstera_platform_internal.runtime_issuer_rate_limits') IS NOT NULL AS b,
+    to_regclass('wstera_platform_internal.runtime_issuer_audit') IS NOT NULL AS c,
+    to_regprocedure('wstera_platform_internal.consume_runtime_issuer_rate_limit(text,integer,integer,timestamptz)') IS NOT NULL AS d`);
+  const issuerComplete = [issuer.a, issuer.b, issuer.c, issuer.d].every(Boolean);
   const runtimeRoleExists = runtimeRole.rolname === "bk01_runtime";
   if (runtimeRoleExists) {
     const settings = [...(runtimeRole.rolconfig || [])].sort();
@@ -348,7 +354,7 @@ async function readState(client, manifest) {
       .some((attribute) => houseIssuerRole[attribute] !== false)
       || canonicalJson(settings) !== canonicalJson(["lock_timeout=8s", "statement_timeout=8s"])
       || !validHouseIssuerMemberships(houseIssuerRole.memberships)
-      || houseIssuerRole.has_dependencies) {
+      || (houseIssuerRole.has_dependencies && !issuerComplete)) {
       fail("EXISTING_HOUSE_ISSUER_ROLE_CONFLICT");
     }
   }
@@ -356,11 +362,6 @@ async function readState(client, manifest) {
   objects["house-runtime-issuer-role"] = { roleExists: houseIssuerRoleExists, attributes: houseIssuerRoleExists ? houseIssuerRole : null };
   state["bk01-platform-bootstrap"] = Boolean(baseline.ledger_exists);
   objects["bk01-platform-bootstrap"] = { schemaMigrationsTable: Boolean(baseline.ledger_exists) };
-  const issuer = await queryOne(client, `SELECT
-    to_regclass('wstera_platform_internal.runtime_issuer_clients') IS NOT NULL AS a,
-    to_regclass('wstera_platform_internal.runtime_issuer_rate_limits') IS NOT NULL AS b,
-    to_regclass('wstera_platform_internal.runtime_issuer_audit') IS NOT NULL AS c,
-    to_regprocedure('wstera_platform_internal.consume_runtime_issuer_rate_limit(text,integer,integer,timestamptz)') IS NOT NULL AS d`);
   objects["house-runtime-issuer"] = { clientsTable: Boolean(issuer.a), rateLimitsTable: Boolean(issuer.b), auditTable: Boolean(issuer.c), rateLimitFunction: Boolean(issuer.d) };
   state["house-runtime-issuer"] = Object.values(objects["house-runtime-issuer"]).every(Boolean);
   const h3c = await queryOne(client, `SELECT

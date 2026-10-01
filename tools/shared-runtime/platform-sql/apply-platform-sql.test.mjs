@@ -45,7 +45,7 @@ function setup({ issuerApplied = false, issuerRoleApplied = true, missingPreflig
           rolname: "wstera_runtime_issuer_login", rolsuper: false, rolinherit: false, rolcreaterole: false,
           rolcreatedb: false, rolcanlogin: false, rolreplication: false, rolbypassrls: false,
           rolconfig: ["statement_timeout=8s", "lock_timeout=8s"], member_of_other_role: false,
-          has_members: true, has_dependencies: false, memberships: [{ granted_role: "wstera_runtime_issuer_login",
+          has_members: true, has_dependencies: issuerApplied, memberships: [{ granted_role: "wstera_runtime_issuer_login",
             member: "postgres", grantor: "postgres", admin_option: true, inherit_option: false, set_option: false }],
         }] } : { rows: [] };
         if (sql.includes("AS member_of_other_role")) return { rows: [{ rolname: "bk01_runtime", rolsuper: false, rolinherit: false, rolcreaterole: false, rolcreatedb: false, rolcanlogin: false, rolreplication: false, rolbypassrls: false, rolconfig: ["statement_timeout=8s", "lock_timeout=8s"], member_of_other_role: false, has_members: true, has_dependencies: true, memberships: [{granted_role:"bk01_runtime",member:"postgres",grantor:"supabase_admin",admin_option:true,inherit_option:false,set_option:false},{granted_role:"bk01_runtime",member:"authenticator",grantor:"postgres",admin_option:false,inherit_option:false,set_option:true}] }] };
