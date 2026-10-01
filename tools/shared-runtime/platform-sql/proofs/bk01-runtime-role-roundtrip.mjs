@@ -174,9 +174,9 @@ try {
     check('bootstrap-only intermediate state resumes at manifest order 15 without rollback',
       resumePlan.next.file === issuerRole.path && resumePlan.rollback === null);
     check('bootstrap-only resume preflight reports complete baseline roles and layered H3C/storage prerequisites',
-      resumePlan.objectPresence.preflightPrerequisites.missingBaselineRoles.length === 0
-        && resumePlan.objectPresence.preflightPrerequisites.ps01RuntimeLoginRole
-        && resumePlan.objectPresence.preflightPrerequisites.runtimeTokenGrants);
+      resumePlan.preflightPrerequisites.missingBaselineRoles.length === 0
+        && resumePlan.preflightPrerequisites.ps01RuntimeLoginRole
+        && resumePlan.preflightPrerequisites.runtimeTokenGrants);
     for (const id of ['house-runtime-issuer-role', 'house-runtime-issuer', 'h3c-runtime-role-allowlist-expansion', 'house-storage-upload-grants']) {
       const entry = manifest.entries.find(item => item.id === id);
       assert.ok(entry, `missing manifest prerequisite ${id}`);
