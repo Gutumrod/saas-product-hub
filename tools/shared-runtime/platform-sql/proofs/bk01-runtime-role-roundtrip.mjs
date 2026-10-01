@@ -167,9 +167,16 @@ try {
     !(await admin.query("SELECT has_schema_privilege('bk01_migrator','extensions','USAGE') AS migrator, EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].migrator
     && !(await admin.query("SELECT EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].public);
   if (PRODUCT !== BOOKING) {
-    const resumePlan = await run(['plan']);
+    const resumeOutput = [];
+    const resumeEnv = { ...env, PLATFORM_SQL_EVIDENCE_DIR: path.join(OUT, 'bootstrap-only-resume') };
+    await executePlatformSql(['plan'], { env: resumeEnv, createClient, stdout: value => resumeOutput.push(value) });
+    const resumePlan = resumeOutput[0];
     check('bootstrap-only intermediate state resumes at manifest order 15 without rollback',
       resumePlan.next.file === issuerRole.path && resumePlan.rollback === null);
+    check('bootstrap-only resume preflight reports complete baseline roles and layered H3C/storage prerequisites',
+      resumePlan.objectPresence.preflightPrerequisites.missingBaselineRoles.length === 0
+        && resumePlan.objectPresence.preflightPrerequisites.ps01RuntimeLoginRole
+        && resumePlan.objectPresence.preflightPrerequisites.runtimeTokenGrants);
     for (const id of ['house-runtime-issuer-role', 'house-runtime-issuer', 'h3c-runtime-role-allowlist-expansion', 'house-storage-upload-grants']) {
       const entry = manifest.entries.find(item => item.id === id);
       assert.ok(entry, `missing manifest prerequisite ${id}`);
