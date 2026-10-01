@@ -191,15 +191,18 @@ try {
         check('House issuer managed role is NOLOGIN, NOINHERIT, and has no elevated role flags',
           issuerAttrs && ['rolsuper','rolinherit','rolcreaterole','rolcreatedb','rolcanlogin','rolreplication','rolbypassrls']
             .every(key => issuerAttrs[key] === false));
-        check('House issuer role has only the exact automatic postgres creator ADMIN row',
-          JSON.stringify((await admin.query(`SELECT member.rolname AS member,grantor.rolname AS grantor,
+        const issuerMemberships = (await admin.query(`SELECT member.rolname AS member,grantor.rolname AS grantor,
               m.admin_option,m.inherit_option,m.set_option FROM pg_catalog.pg_auth_members m
               JOIN pg_catalog.pg_roles parent ON parent.oid=m.roleid
               JOIN pg_catalog.pg_roles member ON member.oid=m.member
               JOIN pg_catalog.pg_roles grantor ON grantor.oid=m.grantor
               WHERE parent.rolname='wstera_runtime_issuer_login'
-              ORDER BY member.rolname,grantor.rolname`)).rows) === JSON.stringify([
-                {member:'postgres',grantor:'postgres',admin_option:true,inherit_option:false,set_option:false}]));
+              ORDER BY member.rolname,grantor.rolname`)).rows;
+        check('House issuer role has only the exact automatic creator ADMIN row accepted by A10',
+          issuerMemberships.length === 1 && issuerMemberships[0].member === 'postgres'
+            && ['postgres','supabase_admin'].includes(issuerMemberships[0].grantor)
+            && issuerMemberships[0].admin_option === true
+            && issuerMemberships[0].inherit_option === false && issuerMemberships[0].set_option === false);
       }
     }
     const runnerEnv = { ...process.env,
