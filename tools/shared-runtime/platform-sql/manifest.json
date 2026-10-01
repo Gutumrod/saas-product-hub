@@ -47,6 +47,7 @@
     {
       "id": "bk01-runtime-role",
       "order": 5,
+      "creates_roles": ["bk01_runtime"],
       "tx": "wrap",
       "repository": "house",
       "path": "docs/platform/shared-runtime/migrations/h3_bk01_runtime_role.sql",
@@ -60,6 +61,7 @@
     {
       "id": "bk01-platform-bootstrap",
       "order": 10,
+      "creates_roles": ["bk01_migrator", "bk01_migrator_login"],
       "tx": "wrap",
       "repository": "booking",
       "path": "supabase/shared-runtime/bk01-platform-bootstrap.sql",
@@ -68,6 +70,20 @@
         "tx": "wrap",
         "path": "supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql",
         "sha256": "199681eec523212a658f2aabc0c6076bca087737f57174d82583b1a3d7908457"
+      }
+    },
+    {
+      "id": "house-runtime-issuer-role",
+      "order": 15,
+      "creates_roles": ["wstera_runtime_issuer_login"],
+      "tx": "wrap",
+      "repository": "house",
+      "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_role.sql",
+      "sha256": "6e0069156c51e5c2d43414da91a629cfbc0b7080ccbae2785059129403c81169",
+      "rollback": {
+        "tx": "wrap",
+        "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_role_rollback.sql",
+        "sha256": "29d77ea9433eda458bb10ab0800246b2c37e17dee4083832e7db090c3b72cf93"
       }
     },
     {

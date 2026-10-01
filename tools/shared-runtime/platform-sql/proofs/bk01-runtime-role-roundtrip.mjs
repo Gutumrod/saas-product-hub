@@ -42,8 +42,10 @@ fs.mkdirSync(OUT, { recursive: true });
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/shared-runtime/platform-sql/manifest.json')));
 const role = manifest.entries.find(e => e.id === 'bk01-runtime-role');
+const issuerRole = manifest.entries.find(e => e.id === 'house-runtime-issuer-role');
 const bootstrap = manifest.entries.find(e => e.id === 'bk01-platform-bootstrap');
-assert.ok(role && bootstrap && role.order < bootstrap.order);
+assert.ok(role && bootstrap && issuerRole && role.order < bootstrap.order
+  && issuerRole.order === 15 && manifest.entries.find(e => e.id === 'house-runtime-issuer').order === 20);
 const forward = fs.readFileSync(path.join(ROOT, role.path), 'utf8');
 const rollback = fs.readFileSync(path.join(ROOT, role.rollback.path), 'utf8');
 assert.equal(hash(forward), role.sha256); assert.equal(hash(rollback), role.rollback.sha256);
@@ -103,7 +105,8 @@ try {
   const rawBaseline = await rawSnapshot();
   const baselineProbe = async () => (await admin.query("SELECT local_service.is_platform_admin() AS platform_admin, local_service.is_shop_member('00000000-0000-0000-0000-000000000001') AS shop_member")).rows[0];
   const beforeProbe = await baselineProbe();
-  check('baseline has no BK01 role', (await admin.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname LIKE 'bk01_%'")).rows[0].n === 0);
+  check('baseline has no BK01 role and no House issuer login role',
+    (await admin.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname LIKE 'bk01_%' OR rolname='wstera_runtime_issuer_login'")).rows[0].n === 0);
   // The former failure is reproduced with the immutable bootstrap on local PG.
   await admin.query('BEGIN');
   await assert.rejects(() => admin.query(fs.readFileSync(path.join(BOOKING, bootstrap.path), 'utf8')),
@@ -164,13 +167,33 @@ try {
     !(await admin.query("SELECT has_schema_privilege('bk01_migrator','extensions','USAGE') AS migrator, EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].migrator
     && !(await admin.query("SELECT EXISTS (SELECT 1 FROM aclexplode(n.nspacl) acl WHERE acl.grantee=0 AND acl.privilege_type='USAGE') AS public FROM pg_namespace n WHERE n.nspname='extensions'")).rows[0].public);
   if (PRODUCT !== BOOKING) {
-    for (const id of ['house-runtime-issuer', 'h3c-runtime-role-allowlist-expansion', 'house-storage-upload-grants']) {
+    const resumePlan = await run(['plan']);
+    check('bootstrap-only intermediate state resumes at manifest order 15 without rollback',
+      resumePlan.next.file === issuerRole.path && resumePlan.rollback === null);
+    for (const id of ['house-runtime-issuer-role', 'house-runtime-issuer', 'h3c-runtime-role-allowlist-expansion', 'house-storage-upload-grants']) {
       const entry = manifest.entries.find(item => item.id === id);
       assert.ok(entry, `missing manifest prerequisite ${id}`);
       const current = await run(['plan']);
       assert.equal(current.next.file, entry.path, `platform plan must select ${id}`);
       await apply(entry);
       check(`platform prerequisite ${id} applies before BK01 upload integration`, true);
+      if (id === 'house-runtime-issuer-role') {
+        const issuerAttrs = (await admin.query(`SELECT rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,
+          rolreplication,rolbypassrls,rolconfig FROM pg_catalog.pg_roles
+          WHERE rolname='wstera_runtime_issuer_login'`)).rows[0];
+        check('House issuer managed role is NOLOGIN, NOINHERIT, and has no elevated role flags',
+          issuerAttrs && ['rolsuper','rolinherit','rolcreaterole','rolcreatedb','rolcanlogin','rolreplication','rolbypassrls']
+            .every(key => issuerAttrs[key] === false));
+        check('House issuer role has only the exact automatic postgres creator ADMIN row',
+          JSON.stringify((await admin.query(`SELECT member.rolname AS member,grantor.rolname AS grantor,
+              m.admin_option,m.inherit_option,m.set_option FROM pg_catalog.pg_auth_members m
+              JOIN pg_catalog.pg_roles parent ON parent.oid=m.roleid
+              JOIN pg_catalog.pg_roles member ON member.oid=m.member
+              JOIN pg_catalog.pg_roles grantor ON grantor.oid=m.grantor
+              WHERE parent.rolname='wstera_runtime_issuer_login'
+              ORDER BY member.rolname,grantor.rolname`)).rows) === JSON.stringify([
+                {member:'postgres',grantor:'postgres',admin_option:true,inherit_option:false,set_option:false}]));
+      }
     }
     const runnerEnv = { ...process.env,
       BK01_PLATFORM_DATABASE_URL: `postgresql://postgres@127.0.0.1:${PORT}/lab`,
@@ -344,7 +367,7 @@ try {
     // Exercise every pinned product rollback as the identity named in the live runbook.
     await applyProductRollback('20260930120000_bk01_link_token_no_extensions.sql', 'postgres');
     await applyProductRollback('20260928120000_bk01_house_upload_grants.sql', 'postgres');
-    for (const id of ['house-storage-upload-grants', 'h3c-runtime-role-allowlist-expansion', 'house-runtime-issuer']) {
+    for (const id of ['house-storage-upload-grants', 'h3c-runtime-role-allowlist-expansion', 'house-runtime-issuer', 'house-runtime-issuer-role']) {
       const entry = manifest.entries.find(item => item.id === id);
       assert.ok(entry, `missing platform rollback prerequisite ${id}`);
       await run(['plan']);
@@ -501,7 +524,7 @@ try {
     server_version: (await admin.query('SHOW server_version')).rows[0].server_version,
     actor, automatic_memberships: memberships,
     recovery: {role_applied:recovery.entries[0].applied,next:recovery.next,rollback:recovery.rollback},
-    role_rollback_execution_policy: 'A10_MANAGED_RUNTIME_ROLE_DROP',
+    role_rollback_execution_policy: 'A10_MANAGED_RUNTIME_ROLE_DROP; GO6 issuer role uses GO6_MANAGED_HOUSE_ISSUER_ROLE_DROP',
     tool_git_sha: execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     role_sha256: role.sha256, rollback_sha256: role.rollback.sha256,
     bootstrap_sha256: bootstrap.sha256, bootstrap_rollback_sha256: bootstrap.rollback.sha256,

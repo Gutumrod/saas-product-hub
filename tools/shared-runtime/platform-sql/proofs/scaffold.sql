@@ -11,7 +11,6 @@ create role ps01_migrator nologin;
 create role ps01_runtime nologin;
 create role ps01_runtime_login nologin;
 create role ps01_line_runtime nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
-create role wstera_runtime_issuer_login login noinherit nosuperuser nocreatedb nocreaterole nobypassrls;
 -- A9: bk01_runtime is deliberately absent; the real platform SQL must create it.
 
 create schema extensions;

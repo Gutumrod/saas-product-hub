@@ -4,13 +4,15 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { defaultCreateClient, safeCaptureDiagnostic, validateCaptureTarget } from "../inventory/lane-b-capture.mjs";
-import { validRuntimeMemberships, rollbackManagedRuntimeRole } from "./bk01-runtime-membership.mjs";
+import { validRuntimeMemberships, rollbackManagedRuntimeRole, validHouseIssuerMemberships, rollbackHouseRuntimeIssuerRole } from "./bk01-runtime-membership.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../..");
 const MANIFEST_PATH = path.join(HERE, "manifest.json");
 const CAPTURE_CONFIG = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "tools/shared-runtime/inventory/lane-b-capture-config.json"), "utf8"));
 const TIMEOUT_MS = 25_000;
+const REQUIRED_PREFLIGHT_ROLES = ["anon", "authenticated", "service_role", "authenticator",
+  "supabase_auth_admin", "supabase_admin", "postgres", "ps01_line_runtime", "ps01_runtime", "ps01_runtime_login", "ps01_migrator"];
 // Stable signed-int key pair shared by every platform SQL operator on this database.
 const ADVISORY_LOCK_KEY = [1_347_245_890, 2_026_092_929];
 
@@ -51,6 +53,23 @@ function assertManifest(manifest) {
     const key = `${entry.repository}:${entry.path}`;
     if (paths.has(key)) fail("MANIFEST_INVALID");
     ids.add(entry.id); paths.add(key); rollbackPaths.add(`${entry.repository}:${entry.rollback.path}`); previousOrder = entry.order;
+  }
+  const issuerRole = manifest.entries.find((entry) => entry.id === "house-runtime-issuer-role");
+  const issuer = manifest.entries.find((entry) => entry.id === "house-runtime-issuer");
+  if (!issuerRole || !issuer || issuerRole.order !== 15 || issuer.order !== 20
+    || issuerRole.repository !== "house" || issuer.repository !== "house"
+    || issuerRole.path !== "docs/platform/shared-runtime/migrations/house_runtime_issuer_role.sql"
+    || issuer.path !== "docs/platform/shared-runtime/migrations/house_runtime_issuer.sql"
+    || issuerRole.order >= issuer.order) fail("MANIFEST_HOUSE_ISSUER_ROLE_STAGE_REQUIRED");
+  const createdRoleOwners = new Map();
+  for (const entry of manifest.entries) for (const role of entry.creates_roles || []) {
+    if (!/^[a-z_][a-z0-9_]*$/.test(role) || createdRoleOwners.has(role)) fail("MANIFEST_ROLE_OWNER_INVALID");
+    createdRoleOwners.set(role, entry);
+  }
+  if (createdRoleOwners.get("bk01_runtime")?.id !== "bk01-runtime-role"
+    || createdRoleOwners.get("bk01_migrator")?.id !== "bk01-platform-bootstrap"
+    || createdRoleOwners.get("wstera_runtime_issuer_login")?.id !== "house-runtime-issuer-role") {
+    fail("MANIFEST_ROLE_OWNER_INVALID");
   }
 }
 function gitHead(root) {
@@ -200,13 +219,41 @@ function entryForRollbackFile(manifest, requested) {
   return entry;
 }
 
+export function assertRoleReferencesOwned(sql, manifest) {
+  const roleOwners = new Map(manifest.entries.flatMap((entry) =>
+    (entry.creates_roles || []).map((role) => [role, entry])));
+  const baselineRoles = new Set(REQUIRED_PREFLIGHT_ROLES);
+  const ignored = new Set(["public", "if", "exists", "select", "where", "group", "order"]);
+  const source = String(sql).replace(/--[^\r\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const references = new Set();
+  for (const match of source.matchAll(/\brolname\s*=\s*'([^']+)'/gi)) references.add(match[1].toLowerCase());
+  const code = source.replace(/'(?:''|[^'])*'/g, "''").replace(/\$([a-z_][a-z0-9_]*)?\$[\s\S]*?\$\1?\$/gi, "");
+  for (const match of code.matchAll(/\bTO\s+([a-z_][a-z0-9_]*(?:\s*,\s*[a-z_][a-z0-9_]*)*)/gi)) {
+    for (const role of match[1].split(",").map((item) => item.trim().toLowerCase())) if (!ignored.has(role)) references.add(role);
+  }
+  for (const match of code.matchAll(/\bREVOKE\b(?:(?!;)[\s\S])*?\bFROM\s+([a-z_][a-z0-9_]*(?:\s*,\s*[a-z_][a-z0-9_]*)*)/gi)) {
+    for (const role of match[1].split(",").map((item) => item.trim().toLowerCase())) if (!ignored.has(role)) references.add(role);
+  }
+  for (const match of code.matchAll(/\b(?:CREATE|ALTER|DROP)\s+ROLE\s+([a-z_][a-z0-9_]*)/gi)) references.add(match[1].toLowerCase());
+  const unowned = [...references].filter((role) => !ignored.has(role) && !baselineRoles.has(role) && !roleOwners.has(role));
+  for (const role of ignored) references.delete(role);
+  if (unowned.length) throw Object.assign(new Error("MANIFEST_ROLE_REFERENCE_UNOWNED"),
+    { code: "MANIFEST_ROLE_REFERENCE_UNOWNED", roles: unowned });
+  return { references: [...references].sort(), owners: Object.fromEntries([...references].filter((role) => roleOwners.has(role))
+    .map((role) => [role, roleOwners.get(role).id])), allowlisted: [...references].filter((role) => baselineRoles.has(role)).sort() };
+}
+
 function validateAllPinnedSources(manifest, env, repoRoot, selected) {
   const forward = readPinnedFile(selected, env, repoRoot, manifest);
   const rollback = { ...selected, path: selected.rollback.path, sha256: selected.rollback.sha256 };
   const rollbackSource = readPinnedFile(rollback, env, repoRoot, manifest);
+  const roleOwnership = {
+    forward: assertRoleReferencesOwned(forward.sql, manifest),
+    rollback: assertRoleReferencesOwned(rollbackSource.sql, manifest),
+  };
   validateTransactionMode(forward.sql, selected.tx);
   validateTransactionMode(rollbackSource.sql, selected.rollback.tx);
-  return { forward, rollback: rollbackSource };
+  return { forward, rollback: rollbackSource, roleOwnership };
 }
 
 async function queryOne(client, sql, values = []) {
@@ -214,7 +261,7 @@ async function queryOne(client, sql, values = []) {
   return result.rows?.[0] || {};
 }
 
-async function readState(client) {
+async function readState(client, manifest) {
   const baseline = await queryOne(client, `
     SELECT to_regclass('local_service_internal.schema_migrations') IS NOT NULL AS ledger_exists,
       to_regclass('local_service_internal.migration_baseline') IS NOT NULL AS migration_baseline_exists,
@@ -222,6 +269,9 @@ async function readState(client) {
       to_regprocedure('local_service_internal.request_user_id()') IS NOT NULL AS request_user_id_exists,
       EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_migrator') AS bk01_migrator_role_exists,
       EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_runtime') AS bk01_runtime_role_exists,
+      EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='ps01_runtime_login') AS ps01_runtime_login_role_exists,
+      EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='wstera_runtime_issuer_login') AS house_issuer_role_exists,
+      to_regclass('wstera_platform_internal.runtime_token_grants') IS NOT NULL AS runtime_token_grants_exists,
       to_regprocedure('local_service.authorize_booking_recovery_attempt(uuid,text)') IS NOT NULL AS recovery_function_exists,
       to_regprocedure('local_service.claim_due_line_notifications(integer)') IS NOT NULL AS notification_function_exists,
       to_regprocedure('local_service.claim_stripe_webhook_event(text,text,timestamptz)') IS NOT NULL AS stripe_claim_function_exists,
@@ -231,6 +281,10 @@ async function readState(client) {
        WHERE n.nspname='local_service' AND c.relkind IN ('r','p','v','m','f')) AS local_relations,
       (SELECT count(*)::int FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
        WHERE n.nspname='local_service' AND p.prokind IN ('f','p')) AS local_functions`);
+  const preflightRoleRows = await client.query(`SELECT rolname FROM pg_catalog.pg_roles WHERE rolname = ANY($1::text[])`,
+    [REQUIRED_PREFLIGHT_ROLES]);
+  const presentPreflightRoles = new Set((preflightRoleRows.rows || []).map((row) => row.rolname));
+  const missingPreflightRoles = REQUIRED_PREFLIGHT_ROLES.filter((role) => !presentPreflightRoles.has(role));
   let ledgerRows = 0;
   let ledgerEntries = [];
   if (baseline.ledger_exists) {
@@ -272,6 +326,34 @@ async function readState(client) {
   }
   state["bk01-runtime-role"] = runtimeRoleExists;
   objects["bk01-runtime-role"] = { roleExists: runtimeRoleExists, attributes: runtimeRoleExists ? runtimeRole : null };
+  const houseIssuerRole = await queryOne(client, `SELECT r.rolname, r.rolsuper, r.rolinherit,
+    r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolbypassrls, r.rolconfig,
+    EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid) AS member_of_other_role,
+    EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members WHERE roleid=r.oid OR grantor=r.oid) AS has_members,
+    EXISTS (SELECT 1 FROM pg_catalog.pg_shdepend
+      WHERE refclassid='pg_catalog.pg_authid'::regclass AND refobjid=r.oid) AS has_dependencies,
+    COALESCE((SELECT json_agg(json_build_object('granted_role',parent.rolname,
+      'member',member.rolname,'grantor',grantor.rolname,'admin_option',m.admin_option,
+      'inherit_option',m.inherit_option,'set_option',m.set_option))
+      FROM pg_catalog.pg_auth_members m
+      JOIN pg_catalog.pg_roles parent ON parent.oid=m.roleid
+      JOIN pg_catalog.pg_roles member ON member.oid=m.member
+      JOIN pg_catalog.pg_roles grantor ON grantor.oid=m.grantor
+      WHERE m.roleid=r.oid OR m.member=r.oid OR m.grantor=r.oid), '[]'::json) AS memberships
+    FROM pg_catalog.pg_roles r WHERE r.rolname='wstera_runtime_issuer_login'`);
+  const houseIssuerRoleExists = houseIssuerRole.rolname === "wstera_runtime_issuer_login";
+  if (houseIssuerRoleExists) {
+    const settings = [...(houseIssuerRole.rolconfig || [])].sort();
+    if (["rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolbypassrls"]
+      .some((attribute) => houseIssuerRole[attribute] !== false)
+      || canonicalJson(settings) !== canonicalJson(["lock_timeout=8s", "statement_timeout=8s"])
+      || !validHouseIssuerMemberships(houseIssuerRole.memberships)
+      || houseIssuerRole.has_dependencies) {
+      fail("EXISTING_HOUSE_ISSUER_ROLE_CONFLICT");
+    }
+  }
+  state["house-runtime-issuer-role"] = houseIssuerRoleExists;
+  objects["house-runtime-issuer-role"] = { roleExists: houseIssuerRoleExists, attributes: houseIssuerRoleExists ? houseIssuerRole : null };
   state["bk01-platform-bootstrap"] = Boolean(baseline.ledger_exists);
   objects["bk01-platform-bootstrap"] = { schemaMigrationsTable: Boolean(baseline.ledger_exists) };
   const issuer = await queryOne(client, `SELECT
@@ -288,7 +370,17 @@ async function readState(client) {
       AND pg_catalog.pg_get_constraintdef(c.oid) ILIKE '%bk01_runtime%') AS constraint_ready,
     COALESCE((SELECT p.prosrc ILIKE '%bk01_runtime%' FROM pg_catalog.pg_proc p
       JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='wstera_platform_internal'
-      AND p.proname='custom_access_token_hook' LIMIT 1), false) AS function_ready`);
+      AND p.proname='custom_access_token_hook' LIMIT 1), false) AS function_ready,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='supabase_auth_admin')
+      AND to_regnamespace('wstera_platform_internal') IS NOT NULL
+      THEN has_schema_privilege('supabase_auth_admin','wstera_platform_internal','USAGE') ELSE false END AS auth_schema_usage,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='supabase_auth_admin')
+      AND to_regclass('wstera_platform_internal.runtime_token_grants') IS NOT NULL
+      THEN has_table_privilege('supabase_auth_admin','wstera_platform_internal.runtime_token_grants','SELECT') ELSE false END AS auth_token_grants_select,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='supabase_auth_admin')
+      AND to_regprocedure('wstera_platform_internal.custom_access_token_hook(jsonb)') IS NOT NULL
+      THEN has_function_privilege('supabase_auth_admin',
+        to_regprocedure('wstera_platform_internal.custom_access_token_hook(jsonb)'),'EXECUTE') ELSE false END AS auth_hook_execute`);
   objects["h3c-runtime-role-allowlist-expansion"] = { roleConstraint: Boolean(h3c.constraint_ready), hookFunction: Boolean(h3c.function_ready) };
   state["h3c-runtime-role-allowlist-expansion"] = Object.values(objects["h3c-runtime-role-allowlist-expansion"]).every(Boolean);
   const storage = await queryOne(client, `SELECT
@@ -298,9 +390,40 @@ async function readState(client) {
     to_regprocedure('wstera_platform_internal.consume_storage_upload()') IS NOT NULL AS d,
     EXISTS (SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_class c ON c.oid=t.tgrelid
       JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='storage'
-      AND c.relname='objects' AND t.tgname='wstera_consume_product_storage_upload_grant' AND NOT t.tgisinternal) AS e`);
+      AND c.relname='objects' AND t.tgname='wstera_consume_product_storage_upload_grant' AND NOT t.tgisinternal) AS e,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_runtime')
+      AND to_regnamespace('storage') IS NOT NULL
+      THEN has_schema_privilege('bk01_runtime','storage','USAGE') ELSE false END AS f,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_runtime')
+      AND to_regclass('storage.objects') IS NOT NULL
+      THEN has_table_privilege('bk01_runtime','storage.objects','INSERT') ELSE false END AS g,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_runtime') THEN
+      to_regprocedure('wstera_platform_internal.can_create_storage_upload(text,text)') IS NOT NULL
+      AND has_function_privilege('bk01_runtime',
+        to_regprocedure('wstera_platform_internal.can_create_storage_upload(text,text)'),'EXECUTE') ELSE false END AS h,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_migrator')
+      AND to_regnamespace('wstera_platform_internal') IS NOT NULL
+      THEN has_schema_privilege('bk01_migrator','wstera_platform_internal','USAGE') ELSE false END AS i,
+    CASE WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='bk01_migrator') THEN
+      to_regprocedure('wstera_platform_internal.register_storage_upload_grant(text,text,text,text,bigint,timestamptz)') IS NOT NULL
+      AND has_function_privilege('bk01_migrator',
+        to_regprocedure('wstera_platform_internal.register_storage_upload_grant(text,text,text,text,bigint,timestamptz)'),'EXECUTE') ELSE false END AS j`);
   objects["house-storage-upload-grants"] = { runtimeRoles: Boolean(storage.a), bucketAllowlist: Boolean(storage.b), grants: Boolean(storage.c), consumeFunction: Boolean(storage.d), storageTrigger: Boolean(storage.e) };
   state["house-storage-upload-grants"] = Object.values(objects["house-storage-upload-grants"]).every(Boolean);
+  objects.preflightPrerequisites = {
+    requiredBaselineRoles: REQUIRED_PREFLIGHT_ROLES,
+    missingBaselineRoles: missingPreflightRoles,
+    manifestRoleOwners: Object.fromEntries(manifest.entries.flatMap((entry) =>
+      (entry.creates_roles || []).map((role) => [role, { id: entry.id, order: entry.order }]))),
+    ps01RuntimeLoginRole: Boolean(baseline.ps01_runtime_login_role_exists),
+    houseRuntimeIssuerRole: houseIssuerRoleExists,
+    runtimeTokenGrants: Boolean(baseline.runtime_token_grants_exists),
+    authSchemaUsage: Boolean(h3c.auth_schema_usage), authTokenGrantsSelect: Boolean(h3c.auth_token_grants_select),
+    authHookExecute: Boolean(h3c.auth_hook_execute),
+    runtimeStorageUsage: Boolean(storage.f), runtimeObjectsInsert: Boolean(storage.g),
+    runtimeCanCreateExecute: Boolean(storage.h), migratorInternalUsage: Boolean(storage.i),
+    migratorRegisterGrantExecute: Boolean(storage.j),
+  };
   return { state, objects, baseline: {
     ...baseline,
     key_objects: {
@@ -309,6 +432,9 @@ async function readState(client) {
       requestUserIdFunction: Boolean(baseline.request_user_id_exists),
       bk01MigratorRole: Boolean(baseline.bk01_migrator_role_exists),
       bk01RuntimeRole: Boolean(baseline.bk01_runtime_role_exists),
+      ps01RuntimeLoginRole: Boolean(baseline.ps01_runtime_login_role_exists),
+      houseRuntimeIssuerRole: Boolean(baseline.house_issuer_role_exists),
+      runtimeTokenGrants: Boolean(baseline.runtime_token_grants_exists),
       recoveryFunction: Boolean(baseline.recovery_function_exists),
       notificationClaimFunction: Boolean(baseline.notification_function_exists),
       stripeClaimFunction: Boolean(baseline.stripe_claim_function_exists),
@@ -506,8 +632,11 @@ async function executePlatformSqlInternal(argv, {
       lockAcquired = true;
     }
     if (mode === "plan") await client.query("BEGIN READ ONLY");
-    const { state, objects, baseline } = await readState(client);
+    const { state, objects, baseline } = await readState(client, manifest);
     state.objectPresence = objects;
+    if (mode === "apply" && objects.preflightPrerequisites.missingBaselineRoles.length) {
+      fail("PREFLIGHT_REQUIRED_ROLES_MISSING");
+    }
     const next = determineNext(manifest, state, baseline);
     if (mode === "plan") {
       await client.query("ROLLBACK");
@@ -541,6 +670,9 @@ async function executePlatformSqlInternal(argv, {
       if (mode === "rollback" && selected.id === "bk01-runtime-role") {
         evidence.executionPolicy = "A10_MANAGED_RUNTIME_ROLE_DROP";
         await rollbackManagedRuntimeRole(client);
+      } else if (mode === "rollback" && selected.id === "house-runtime-issuer-role") {
+        evidence.executionPolicy = "GO6_MANAGED_HOUSE_ISSUER_ROLE_DROP";
+        await rollbackHouseRuntimeIssuerRole(client);
       } else {
         await client.query(mode === "apply" ? operationSource.forward.sql : operationSource.rollback.sql);
       }

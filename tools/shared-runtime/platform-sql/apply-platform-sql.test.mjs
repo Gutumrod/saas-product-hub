@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { executePlatformSql, containsTopLevelTransactionControl } from "./apply-platform-sql.mjs";
+import { executePlatformSql, containsTopLevelTransactionControl, assertRoleReferencesOwned } from "./apply-platform-sql.mjs";
 import { safeCaptureDiagnostic } from "../inventory/lane-b-capture.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +15,7 @@ const ROOT = path.resolve(HERE, "../../..");
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(HERE, "manifest.json"), "utf8"));
 const BOOTSTRAP = MANIFEST.entries.find(e => e.id === "bk01-platform-bootstrap");
 const ISSUER = MANIFEST.entries.find(e => e.id === "house-runtime-issuer");
+const ISSUER_ROLE = MANIFEST.entries.find(e => e.id === "house-runtime-issuer-role");
 const H3C = MANIFEST.entries.find(e => e.id === "h3c-runtime-role-allowlist-expansion");
 const STORAGE = MANIFEST.entries.find(e => e.id === "house-storage-upload-grants");
 const projectRef = "ykxlqnshaaxmzzocpjlj";
@@ -22,7 +23,7 @@ const databaseUrl = "postgresql://postgres.ykxlqnshaaxmzzocpjlj:offline-test-pas
 const temporaryDirectories = new Set();
 process.on("exit", () => { for (const directory of temporaryDirectories) fs.rmSync(directory, { recursive: true, force: true }); });
 
-function setup({ issuerApplied = false } = {}) {
+function setup({ issuerApplied = false, issuerRoleApplied = true, missingPreflightRoles = [] } = {}) {
   const evidence = fs.mkdtempSync(path.join(os.tmpdir(), "platform-sql-test-"));
   temporaryDirectories.add(evidence);
   const env = { LANE_B_PROJECT_REF: projectRef, LANE_B_DATABASE_URL: databaseUrl,
@@ -34,11 +35,19 @@ function setup({ issuerApplied = false } = {}) {
     return {
       async connect() { calls.push("CONNECT"); },
       async end() { calls.push("END"); },
-      async query(sql) {
+      async query(sql, args = []) {
         calls.push(sql);
         if (String(sql).includes("pg_try_advisory_lock")) return { rows: [{ acquired: true }] };
         if (String(sql).includes("pg_advisory_unlock")) return { rows: [{ unlocked: true }] };
-        if (sql.includes("SELECT to_regclass('local_service_internal.schema_migrations')")) return { rows: [{ ledger_exists: true, local_relations: 22, local_functions: 61, bk01_runtime_role_exists: true }] };
+        if (sql.includes("SELECT to_regclass('local_service_internal.schema_migrations')")) return { rows: [{ ledger_exists: true, local_relations: 22, local_functions: 61, bk01_runtime_role_exists: true, ps01_runtime_login_role_exists: true, house_issuer_role_exists: issuerRoleApplied, runtime_token_grants_exists: true }] };
+        if (sql.includes("WHERE rolname = ANY($1::text[])")) return { rows: args[0].filter(role => !missingPreflightRoles.includes(role)).map(rolname => ({ rolname })) };
+        if (sql.includes("wstera_runtime_issuer_login")) return issuerRoleApplied ? { rows: [{
+          rolname: "wstera_runtime_issuer_login", rolsuper: false, rolinherit: false, rolcreaterole: false,
+          rolcreatedb: false, rolcanlogin: false, rolreplication: false, rolbypassrls: false,
+          rolconfig: ["statement_timeout=8s", "lock_timeout=8s"], member_of_other_role: false,
+          has_members: true, has_dependencies: false, memberships: [{ granted_role: "wstera_runtime_issuer_login",
+            member: "postgres", grantor: "postgres", admin_option: true, inherit_option: false, set_option: false }],
+        }] } : { rows: [] };
         if (sql.includes("AS member_of_other_role")) return { rows: [{ rolname: "bk01_runtime", rolsuper: false, rolinherit: false, rolcreaterole: false, rolcreatedb: false, rolcanlogin: false, rolreplication: false, rolbypassrls: false, rolconfig: ["statement_timeout=8s", "lock_timeout=8s"], member_of_other_role: false, has_members: true, has_dependencies: true, memberships: [{granted_role:"bk01_runtime",member:"postgres",grantor:"supabase_admin",admin_option:true,inherit_option:false,set_option:false},{granted_role:"bk01_runtime",member:"authenticator",grantor:"postgres",admin_option:false,inherit_option:false,set_option:true}] }] };
         if (sql.includes("runtime_issuer_clients")) return { rows: [{ a: issuerApplied, b: issuerApplied, c: issuerApplied, d: issuerApplied }] };
         if (sql.includes("runtime_token_grants")) return { rows: [{ constraint_ready: false, function_ready: false }] };
@@ -76,6 +85,55 @@ test("top-level transaction statements are rejected without flagging DO bodies o
   assert.equal(containsTopLevelTransactionControl("-- BEGIN;\nDO $body$ BEGIN NULL; END; $body$; SELECT 'COMMIT;';"), false);
   assert.equal(containsTopLevelTransactionControl("BEGIN; SELECT 1; COMMIT;"), true);
   assert.equal(containsTopLevelTransactionControl("DO $bk01$ BEGIN NULL; END $bk01$;"), false);
+});
+
+test("manifest requires the issuer role stage at order 15 ahead of the issuer migration", async () => {
+  const { evidence, env, createClient } = setup();
+  const manifest = structuredClone(MANIFEST);
+  manifest.entries = manifest.entries.filter(entry => entry.id !== "house-runtime-issuer-role");
+  try {
+    await assert.rejects(() => executePlatformSql(["plan"], { manifest, env, createClient }),
+      { message: "MANIFEST_HOUSE_ISSUER_ROLE_STAGE_REQUIRED" });
+  } finally { fs.rmSync(evidence, { recursive: true, force: true }); }
+});
+
+test("manifest declares managed role owners and the issuer role step cannot be removed", async () => {
+  const { evidence, env, createClient } = setup();
+  const manifest = structuredClone(MANIFEST);
+  manifest.entries.find(entry => entry.id === "house-runtime-issuer-role").creates_roles = [];
+  try {
+    await assert.rejects(() => executePlatformSql(["plan"], { manifest, env, createClient }),
+      { message: "MANIFEST_ROLE_OWNER_INVALID" });
+  } finally { fs.rmSync(evidence, { recursive: true, force: true }); }
+});
+
+test("pinned SQL role references require a manifest creator or verified baseline allowlist", () => {
+  const ownership = assertRoleReferencesOwned(`GRANT USAGE ON SCHEMA x TO wstera_runtime_issuer_login;
+    REVOKE EXECUTE ON FUNCTION x.f() FROM ps01_runtime_login;
+    SELECT 1 FROM pg_roles WHERE rolname='bk01_runtime';`, MANIFEST);
+  assert.equal(ownership.owners.wstera_runtime_issuer_login, "house-runtime-issuer-role");
+  assert.equal(ownership.owners.bk01_runtime, "bk01-runtime-role");
+  assert.deepEqual(ownership.allowlisted, ["ps01_runtime_login"]);
+  assert.throws(() => assertRoleReferencesOwned("GRANT USAGE ON SCHEMA x TO rogue_runtime;", MANIFEST),
+    { message: "MANIFEST_ROLE_REFERENCE_UNOWNED" });
+});
+
+test("apply stops when a required preflight role is absent", async () => {
+  const ctx = setup({ missingPreflightRoles: ["ps01_runtime_login"] });
+  const entry = ISSUER;
+  withPlan(ctx, entry);
+  await expectCode(() => executePlatformSql(["apply", "--file", entry.path, "--confirm", entry.sha256], {
+    env: ctx.env, createClient: ctx.createClient, manifest: MANIFEST, repoRoot: ROOT,
+  }), "PREFLIGHT_REQUIRED_ROLES_MISSING");
+});
+
+test("issuer role SQL is NOLOGIN and scaffold does not pre-create it", () => {
+  const roleSql = fs.readFileSync(path.resolve(ROOT, ISSUER_ROLE.path), "utf8");
+  const scaffold = fs.readFileSync(path.join(HERE, "proofs/scaffold.sql"), "utf8");
+  assert.match(roleSql, /CREATE ROLE wstera_runtime_issuer_login NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS/i);
+  assert.doesNotMatch(roleSql, /CREATE\s+ROLE\s+wstera_runtime_issuer_login\s+LOGIN\b/i);
+  assert.doesNotMatch(roleSql, /PASSWORD/i);
+  assert.doesNotMatch(scaffold, /CREATE ROLE\s+wstera_runtime_issuer_login/i);
 });
 
 test("self transaction validator accepts one outer BEGIN and final COMMIT while ignoring quoted text", async () => {

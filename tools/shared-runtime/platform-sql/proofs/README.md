@@ -1,5 +1,19 @@
 # A10/A11 — BK01 managed runtime role and no-extension proof (source-only)
 
+## GO6 Window 1 — issuer role prerequisite (2026-10-01)
+
+`manifest.json` order 15 creates `wstera_runtime_issuer_login` as `NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`, with no password clause. Order 20 remains the existing House issuer migration. The scaffold must not create this role. Every manifest entry declares roles it creates; the runner scans the selected pinned forward and rollback SQL and rejects role references without either a declared earlier manifest creator or the explicit preflight role allowlist. The allowlist is checked against `pg_roles` before apply. Read-only preflight `objectPresence.preflightPrerequisites` records the complete Supabase/PS01 baseline-role inventory, `ps01_runtime_login`, `runtime_token_grants`, issuer-role attributes, H3C auth grants, and storage role/schema/table/function grants separately from migration-applied state. The runner fails before mutation when any required baseline role is absent.
+
+Reuse Gate: **N/A — pure remediation of the already-approved central WSTERA House issuer path**. MT01 is a versioned starter product and does not own this shared platform identity or its manifest runner; no MT01 or Module Hub runtime dependency is introduced. The only role membership accepted is the exact automatic creator ADMIN row for `postgres`; the rollback guard requires actor `postgres` and refuses any other membership, role attributes, or shared dependency. Role rollback is tool-owned and does not execute its immutable manifest marker SQL.
+
+The A11 proof runs the complete sequence from a clean scaffold, then explicitly resumes from the bootstrap-only intermediate state: issuer role → issuer → H3C allowlist → storage → five migrations through the pinned BK01 runner. It includes the actual migration 1–5 rollback rehearsal after ledger cleanup, followed by platform reverse order; the booking product source, W-1 hashes, `extensions` ACL, and `bk01_migrator` privileges remain pinned and unchanged. Mutation test removes order 15 from the manifest and must reject before a database client is created.
+
+```powershell
+node tools/shared-runtime/platform-sql/proofs/bk01-runtime-role-roundtrip.mjs --booking-root <absolute-booking-worktree-at-32df434> --product-root <absolute-booking-worktree-at-c5e6650> --port <fresh-loopback-port> --evidence <fresh-absolute-external-directory>
+```
+
+Only a disposable local PostgreSQL 17 cluster is permitted. This proof does not use LAB or production and does not establish Lane B PASS. Window 2 login enablement/password provisioning remains a separate owner-authorized action outside this migration.
+
 บรีฟ: Second Brain `06-Agent-Logs/WSTERA-House/briefs/codex-parallel-20260927/18-LIVE-WINDOW-1-OPERATOR.md` ส่วน A9 ที่ vault `7281e93`. เป้าหมายคือซ่อม prerequisite ที่ขาดของ boundary เดิม ไม่เพิ่ม runtime identity แบบ LOGIN หรือสิทธิ์ใหม่. **Reuse Gate: N/A — pure remediation ของ NOLOGIN boundary ที่ล็อกแล้ว** ตาม `docs/platform/MODULE-REUSE-POLICY.md`; ไม่ได้ bootstrap สินค้าใหม่หรือเพิ่ม service. การสร้าง role เป็นของแพลตฟอร์ม; booking bootstrap/runner ยังคง frozen source เดิม.
 
 ## Provenance / adaptation

@@ -25,6 +25,8 @@ function fixture({ role = null, bootstrap = false } = {}) {
     async connect() {}, async end() {},
     async query(sql) {
       calls.push(sql);
+      if (sql.includes('WHERE rolname = ANY($1::text[])')) return { rows: ['anon','authenticated','service_role','authenticator',
+        'supabase_auth_admin','supabase_admin','postgres','ps01_line_runtime','ps01_runtime','ps01_runtime_login','ps01_migrator'].map(rolname => ({rolname})) };
       if (sql.includes("SELECT to_regclass('local_service_internal.schema_migrations')")) {
         return { rows: [{ ledger_exists: bootstrap, local_relations: 22, local_functions: 61,
           bk01_runtime_role_exists: Boolean(role) }] };
@@ -82,5 +84,5 @@ test('bootstrap-owned inbound membership and ACLs do not invalidate the runtime 
     grantor:'postgres',admin_option:false,inherit_option:false,set_option:true }];
   const ctx = fixture({ role: roleState({ has_members: true, has_dependencies: true, memberships }), bootstrap: true }); const outputs = [];
   await executePlatformSql(['plan'], { ...ctx, repoRoot: ROOT, manifest: MANIFEST, stdout: x => outputs.push(x) });
-  assert.equal(outputs[0].next?.file, 'docs/platform/shared-runtime/migrations/house_runtime_issuer.sql');
+  assert.equal(outputs[0].next?.file, 'docs/platform/shared-runtime/migrations/house_runtime_issuer_role.sql');
 });
