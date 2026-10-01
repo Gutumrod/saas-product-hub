@@ -424,6 +424,7 @@ async function readState(client, manifest) {
     runtimeCanCreateExecute: Boolean(storage.h), migratorInternalUsage: Boolean(storage.i),
     migratorRegisterGrantExecute: Boolean(storage.j),
   };
+  state.preflightPrerequisites = objects.preflightPrerequisites;
   return { state, objects, baseline: {
     ...baseline,
     key_objects: {
@@ -555,6 +556,7 @@ function renderPlan(entries, state, objects, next, baseline, rollbackEntry) {
     localServiceBaseline: { relations: Number(baseline.local_relations), functions: Number(baseline.local_functions) },
     existingMigrationLedger: { exists: Boolean(baseline.ledger_exists), rows: Number(baseline.ledger_rows), entries: baseline.ledger_entries },
     bootstrapKeyObjects: baseline.key_objects,
+    preflightPrerequisites: objects.preflightPrerequisites,
     entries: entries.map((entry) => ({ file: entry.path, sha256: entry.sha256, applied: Boolean(state[entry.id]), keyObjects: objects[entry.id] })),
     next: next ? { file: next.path, sha256: next.sha256 } : null,
     rollback: rollbackEntry ? { file: rollbackEntry.rollback.path, sha256: rollbackEntry.rollback.sha256, forwardFile: rollbackEntry.path } : null,

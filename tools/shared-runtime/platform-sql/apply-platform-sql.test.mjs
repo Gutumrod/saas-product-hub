@@ -67,6 +67,7 @@ async function expectCode(action, code) {
 function withPlan(ctx, nextEntry) {
   const nextIndex = MANIFEST.entries.findIndex((entry) => entry.id === nextEntry?.id);
   const state = Object.fromEntries(MANIFEST.entries.map((entry, index) => [entry.id, index < nextIndex]));
+  state.preflightPrerequisites = expectedPreflightState();
   fs.writeFileSync(path.join(ctx.evidence, "latest-plan.json"), JSON.stringify({
     createdAt: new Date().toISOString(), projectRef, toolGitSha: "", next: nextEntry && { file: nextEntry.path, sha256: nextEntry.sha256 },
     state,
@@ -76,6 +77,17 @@ function withPlan(ctx, nextEntry) {
   const plan = JSON.parse(fs.readFileSync(path.join(ctx.evidence, "latest-plan.json"), "utf8"));
   plan.toolGitSha = git;
   fs.writeFileSync(path.join(ctx.evidence, "latest-plan.json"), JSON.stringify(plan));
+}
+function expectedPreflightState() {
+  return {
+    requiredBaselineRoles: ["anon", "authenticated", "service_role", "authenticator", "supabase_auth_admin", "supabase_admin", "postgres", "ps01_line_runtime", "ps01_runtime", "ps01_runtime_login", "ps01_migrator"],
+    missingBaselineRoles: [],
+    manifestRoleOwners: Object.fromEntries(MANIFEST.entries.flatMap(entry => (entry.creates_roles || []).map(role => [role, { id: entry.id, order: entry.order }]))),
+    ps01RuntimeLoginRole: true, houseRuntimeIssuerRole: true, runtimeTokenGrants: true,
+    authSchemaUsage: false, authTokenGrantsSelect: false, authHookExecute: false,
+    runtimeStorageUsage: false, runtimeObjectsInsert: false, runtimeCanCreateExecute: false,
+    migratorInternalUsage: false, migratorRegisterGrantExecute: false,
+  };
 }
 function requireGitHead() {
   return execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
@@ -377,7 +389,7 @@ test("rollback uses the exact paired source, fresh plan, lock, and rollback evid
     createdAt: new Date().toISOString(), projectRef, toolGitSha: requireGitHead(),
     next: { file: H3C.path, sha256: H3C.sha256 },
     rollback: { file: entry.rollback.path, sha256: entry.rollback.sha256, forwardFile: entry.path },
-    state: Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.id !== H3C.id && item.id !== STORAGE.id])),
+    state: { ...Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.id !== H3C.id && item.id !== STORAGE.id])), preflightPrerequisites: expectedPreflightState() },
     baseline: { exists: true, rows: 0, entries: [] },
   };
   fs.writeFileSync(path.join(ctx.evidence, "latest-plan.json"), JSON.stringify(plan));
@@ -452,7 +464,7 @@ test("guarded rollback SQLSTATE is returned clearly and does not retry or rewrit
     createdAt: new Date().toISOString(), projectRef, toolGitSha: requireGitHead(),
     next: { file: H3C.path, sha256: H3C.sha256 },
     rollback: { file: entry.rollback.path, sha256: entry.rollback.sha256, forwardFile: entry.path },
-    state: Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.order <= entry.order])),
+    state: { ...Object.fromEntries(MANIFEST.entries.map((item) => [item.id, item.order <= entry.order])), preflightPrerequisites: expectedPreflightState() },
     baseline: { exists: true, rows: 0, entries: [] },
   }));
   fs.writeFileSync(path.join(ctx.evidence, "apply-prior.json"), JSON.stringify({
