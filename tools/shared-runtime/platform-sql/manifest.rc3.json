@@ -139,14 +139,14 @@
       "source": "commit",
       "rollback": {
         "filename": "supabase/rollback/20261002170000_bk01_g10_line_binding_audit_truncate.rollback.sql",
-        "sha256": "db4bfa6864c75e20f00657a36ccdbaf9ca1554a625d850b2a79ae16fe7d6625b"
+        "sha256": "6317047f450d37c85b0b53845ba15a255992f218c1203cef4821e2b4cd481d98"
       }
     },
     {
       "filename": "20261002180000_bk01_platform_admin_return_types.sql",
       "sha256": "a8c16641335b809008f68c6d19db7251ad4a836eba687a482b031c26715bbaca",
       "file_sha256": "a8c16641335b809008f68c6d19db7251ad4a836eba687a482b031c26715bbaca",
-      "source": "uncommitted-candidate",
+      "source": "commit",
       "rollback": {
         "filename": "supabase/rollback/20261002180000_bk01_platform_admin_return_types.rollback.sql",
         "sha256": "2fd044f0b6209cdba520d6155c01251f696f62245d82e0cfdb9a998231285b52"
@@ -244,8 +244,8 @@
     }
   ],
   "bk01_release": {
-    "repository_sha": "c750d4a83ccfa57356dd64334418fe98d3e01bc1",
-    "status": "LOCAL_ONLY",
+    "repository_sha": "d23f6b49771265323a13ff6cf123f715cfc54ec4",
+    "status": "PINNED",
     "migration_count": 15,
     "last_filename": "20261002180000_bk01_platform_admin_return_types.sql",
     "allowlist_source_sha256": "7c6ce25d64980f7209cac9f06baebf45c3fe012f04e41ecdf8f4e393a83a48ba",
