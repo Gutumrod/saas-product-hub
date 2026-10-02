@@ -1,0 +1,276 @@
+{
+  "version": 2,
+  "booking_repository_sha": "32df434e1057a83ecbf0c290a659be42f24bbc55",
+  "accepted_bk01_ledger": [
+    {
+      "filename": "20260926120000_bk01_entitlement_packs.sql",
+      "sha256": "db297ae07f1be3cfba5ec1d5a1fca6e194b4d3188082e533a0f976c8ed005998",
+      "file_sha256": "db297ae07f1be3cfba5ec1d5a1fca6e194b4d3188082e533a0f976c8ed005998",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20260926120000_bk01_entitlement_packs.rollback.sql",
+        "sha256": "7076d21264d0a019981bbfe68f94e61b281f2a8c82625900946e61f9e5756f4a"
+      }
+    },
+    {
+      "filename": "20260927120000_bk01_runtime_route_rpcs.sql",
+      "sha256": "57e816c81009a2e0288ae1a8ee38d28d196e46f61b8568f146264c45e3961ad1",
+      "file_sha256": "57e816c81009a2e0288ae1a8ee38d28d196e46f61b8568f146264c45e3961ad1",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20260927120000_bk01_runtime_route_rpcs.rollback.sql",
+        "sha256": "eb18f010cc4627f3285143d7100a2341a2942c09810bc66ef73bdd451593f3d9"
+      }
+    },
+    {
+      "filename": "20260927130000_bk01_trial_line_bind.sql",
+      "sha256": "a050e4c8cccec51e4a5d4f2f7f3bd76ec69a12258a9cf9567747cc64cc2f9446",
+      "file_sha256": "a050e4c8cccec51e4a5d4f2f7f3bd76ec69a12258a9cf9567747cc64cc2f9446",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20260927130000_bk01_trial_line_bind.rollback.sql",
+        "sha256": "9f5aa0da67673628178108a4328bafa2ae5d1f78c9b6ea6431b7aa873d9bf134"
+      }
+    },
+    {
+      "filename": "20260928120000_bk01_house_upload_grants.sql",
+      "sha256": "5efa7d4120c6e939c1c7c63d02fec4e78a2955fb4392e58986112ab89021ee14",
+      "file_sha256": "5efa7d4120c6e939c1c7c63d02fec4e78a2955fb4392e58986112ab89021ee14",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20260928120000_bk01_house_upload_grants.rollback.sql",
+        "sha256": "51f53a881d0e2578e84291c6508ba41f0e7025c8dd409d1e3415ddfdd1344e56"
+      }
+    },
+    {
+      "filename": "20260930120000_bk01_link_token_no_extensions.sql",
+      "sha256": "7abd286b88679324c6d54dad329c340c1d40c2acf038d190fdaaf7e6414109ea",
+      "file_sha256": "7abd286b88679324c6d54dad329c340c1d40c2acf038d190fdaaf7e6414109ea",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20260930120000_bk01_link_token_no_extensions.rollback.sql",
+        "sha256": "98527f0d9b2a0ae820427d80a81b8de419a038d2b6523795e61cec9257ceb941"
+      }
+    },
+    {
+      "filename": "20261001023000_bk01_queue_release.sql",
+      "sha256": "789ea2983a12feb76b992da15ace2ba5f4b8a3b869100e898eaa657ea7e7a5c8",
+      "file_sha256": "789ea2983a12feb76b992da15ace2ba5f4b8a3b869100e898eaa657ea7e7a5c8",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261001023000_bk01_queue_release.rollback.sql",
+        "sha256": "7e6d5e584705ed84ac067c407fa67f86dfdbc7abcfb36b21bde5141aa92b687b"
+      }
+    },
+    {
+      "filename": "20261001130000_bk01_sql_consolidate.sql",
+      "sha256": "7f88127c0462fa956202316df78903f2375abb7444096243b4fc7c409b5e0c83",
+      "file_sha256": "7f88127c0462fa956202316df78903f2375abb7444096243b4fc7c409b5e0c83",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261001130000_bk01_sql_consolidate.rollback.sql",
+        "sha256": "981bc1ca17c53b1ab5d8a6b8ef40fc33b1b7892d9f1de0e34385f57a2402e47d"
+      }
+    },
+    {
+      "filename": "20261001140000_bk01_pack_notify_group67.sql",
+      "sha256": "a1eb6580b47ad54417f73dbe6bc9a04adb37d3d4096e11a7afc274f7552e62ae",
+      "file_sha256": "a1eb6580b47ad54417f73dbe6bc9a04adb37d3d4096e11a7afc274f7552e62ae",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261001140000_bk01_pack_notify_group67.rollback.sql",
+        "sha256": "cbe6c7c70023ae234523d3778e6c94c72d81f44936d71bc22bce908d23e1aee0"
+      }
+    },
+    {
+      "filename": "20261002120000_bk01_council_p0.sql",
+      "sha256": "631dc2ca79f3ab508cc2378272af242268ee0e52510bebfc2a601fc690b1de9a",
+      "file_sha256": "631dc2ca79f3ab508cc2378272af242268ee0e52510bebfc2a601fc690b1de9a",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261002120000_bk01_council_p0.rollback.sql",
+        "sha256": "1775be6f1bb54adb4e301aff63051e00366fd5b4cca7522d681478bfaf6747df"
+      }
+    },
+    {
+      "filename": "20261002130000_bk01_p0_alert_context.sql",
+      "sha256": "5a7aaa653d339ee05e7d13648d2d53212ab37a9909bd63c50f449c85e03d75b9",
+      "file_sha256": "5a7aaa653d339ee05e7d13648d2d53212ab37a9909bd63c50f449c85e03d75b9",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261002130000_bk01_p0_alert_context.rollback.sql",
+        "sha256": "c4c2df09dc002eeb68500d19eb425c6b5cf150bdbb0c572cd4b987901cc413a1"
+      }
+    },
+    {
+      "filename": "20261002140000_bk01_review_f1_f2.sql",
+      "sha256": "c1f382c5a069c1195ba0778ab49c7561f488648c193c69d6cc3dabddd4eca3cc",
+      "file_sha256": "c1f382c5a069c1195ba0778ab49c7561f488648c193c69d6cc3dabddd4eca3cc",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261002140000_bk01_review_f1_f2.rollback.sql",
+        "sha256": "f6dee48993dd00d3abdc97552a28580427c202c207f5625249f9a4289044a51b"
+      }
+    },
+    {
+      "filename": "20261002150000_bk01_p1_g09_g10.sql",
+      "sha256": "a4d93f781a0f72827d3218d927501165dab1af20a0c19956d7a3a60a861371df",
+      "file_sha256": "a4d93f781a0f72827d3218d927501165dab1af20a0c19956d7a3a60a861371df",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261002150000_bk01_p1_g09_g10.rollback.sql",
+        "sha256": "291fc8081544808564884fc6378c4241479d51e829380bb131bfdaffd0407d05"
+      }
+    },
+    {
+      "filename": "20261002160000_bk01_g10_line_binding_audit.sql",
+      "sha256": "40bd81913bcf1d96543542fdb8e5aedd7acc39ad98c03372880b4c7b4b552704",
+      "file_sha256": "40bd81913bcf1d96543542fdb8e5aedd7acc39ad98c03372880b4c7b4b552704",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261002160000_bk01_g10_line_binding_audit.rollback.sql",
+        "sha256": "bb1ac0278eab53ae53bb330bb0ccc7d2a45aee2c09c40b94cbb487c0e43a8d99"
+      }
+    },
+    {
+      "filename": "20261002170000_bk01_g10_line_binding_audit_truncate.sql",
+      "sha256": "04c2be732353a7ac5c6abed2051770220057fba0f15f7ff8259c317e5b5c1b7b",
+      "file_sha256": "04c2be732353a7ac5c6abed2051770220057fba0f15f7ff8259c317e5b5c1b7b",
+      "source": "commit",
+      "rollback": {
+        "filename": "supabase/rollback/20261002170000_bk01_g10_line_binding_audit_truncate.rollback.sql",
+        "sha256": "db4bfa6864c75e20f00657a36ccdbaf9ca1554a625d850b2a79ae16fe7d6625b"
+      }
+    },
+    {
+      "filename": "20261002180000_bk01_platform_admin_return_types.sql",
+      "sha256": "a8c16641335b809008f68c6d19db7251ad4a836eba687a482b031c26715bbaca",
+      "file_sha256": "a8c16641335b809008f68c6d19db7251ad4a836eba687a482b031c26715bbaca",
+      "source": "uncommitted-candidate",
+      "rollback": {
+        "filename": "supabase/rollback/20261002180000_bk01_platform_admin_return_types.rollback.sql",
+        "sha256": "2fd044f0b6209cdba520d6155c01251f696f62245d82e0cfdb9a998231285b52"
+      }
+    }
+  ],
+  "entries": [
+    {
+      "id": "bk01-runtime-role",
+      "order": 5,
+      "creates_roles": [
+        "bk01_runtime"
+      ],
+      "tx": "wrap",
+      "repository": "house",
+      "path": "docs/platform/shared-runtime/migrations/h3_bk01_runtime_role.sql",
+      "sha256": "edac9e0c67df3ffe8570bdfa2a84f365af172c055eedd90ee3bfef5a5166648d",
+      "rollback": {
+        "tx": "wrap",
+        "path": "docs/platform/shared-runtime/migrations/h3_bk01_runtime_role_rollback.sql",
+        "sha256": "2cbce5cbeb4890d037d994fe7681207be5b14340b77f1b7bbe2bbe66148a9b9d"
+      }
+    },
+    {
+      "id": "bk01-platform-bootstrap",
+      "order": 10,
+      "creates_roles": [
+        "bk01_migrator",
+        "bk01_migrator_login"
+      ],
+      "tx": "wrap",
+      "repository": "booking",
+      "path": "supabase/shared-runtime/bk01-platform-bootstrap.sql",
+      "sha256": "c5feb034a775446efd6aaaac409de78fa159e491e32c98d3a714e95be62bf989",
+      "rollback": {
+        "tx": "wrap",
+        "path": "supabase/shared-runtime/bk01-platform-bootstrap-rollback.sql",
+        "sha256": "199681eec523212a658f2aabc0c6076bca087737f57174d82583b1a3d7908457"
+      }
+    },
+    {
+      "id": "house-runtime-issuer-role",
+      "order": 15,
+      "creates_roles": [
+        "wstera_runtime_issuer_login"
+      ],
+      "tx": "wrap",
+      "repository": "house",
+      "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_role.sql",
+      "sha256": "6e0069156c51e5c2d43414da91a629cfbc0b7080ccbae2785059129403c81169",
+      "rollback": {
+        "tx": "wrap",
+        "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_role_rollback.sql",
+        "sha256": "29d77ea9433eda458bb10ab0800246b2c37e17dee4083832e7db090c3b72cf93"
+      }
+    },
+    {
+      "id": "house-runtime-issuer",
+      "order": 20,
+      "tx": "wrap",
+      "repository": "house",
+      "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer.sql",
+      "sha256": "a56443b43b81ce2587599df7ef7c8f5db7ef58cc2a43fc583b37d317a2aaf1dd",
+      "rollback": {
+        "tx": "self",
+        "path": "docs/platform/shared-runtime/migrations/house_runtime_issuer_rollback.sql",
+        "sha256": "43e01989d42559ddcc1342eb381988e6f79137b59613d01d1925e709272267b5"
+      }
+    },
+    {
+      "id": "h3c-runtime-role-allowlist-expansion",
+      "order": 30,
+      "tx": "self",
+      "repository": "house",
+      "path": "docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion.sql",
+      "sha256": "e17e8cbc3c0b4de063510e9d29ca3e1d77c0a9da2b1013549421480176700d78",
+      "rollback": {
+        "tx": "self",
+        "path": "docs/platform/shared-runtime/migrations/h3c_runtime_role_allowlist_expansion_rollback.sql",
+        "sha256": "ea2170d6239e713b487640030544bf7e09308aadc92a3261dfc3bb4e50eef960"
+      }
+    },
+    {
+      "id": "house-storage-upload-grants",
+      "order": 40,
+      "tx": "self",
+      "repository": "house",
+      "path": "docs/platform/shared-runtime/storage/house_storage_upload_grants.sql",
+      "sha256": "a14dceefeed6da3911504a522924393d36979d4181b36361149c1106b3b5c4d3",
+      "rollback": {
+        "tx": "self",
+        "path": "docs/platform/shared-runtime/storage/house_storage_upload_grants_rollback.sql",
+        "sha256": "6b88ddf116e889be788f30819c4fa1b6988009aeaa48a53396c0f17e117b6c30"
+      }
+    }
+  ],
+  "bk01_release": {
+    "repository_sha": "c750d4a83ccfa57356dd64334418fe98d3e01bc1",
+    "status": "LOCAL_ONLY",
+    "migration_count": 15,
+    "last_filename": "20261002180000_bk01_platform_admin_return_types.sql",
+    "allowlist_source_sha256": "7c6ce25d64980f7209cac9f06baebf45c3fe012f04e41ecdf8f4e393a83a48ba",
+    "effective_execute_identities": [
+      "local_service.audit_platform_admin_update()",
+      "local_service.authorize_booking_recovery_attempt(uuid,text)",
+      "local_service.authorize_deposit_slip_upload(uuid,text,text,bigint)",
+      "local_service.bk01_finish_line_webhook_delivery(text,uuid,text,text)",
+      "local_service.bk01_line_bind_booking(text,text,text,uuid,text)",
+      "local_service.bk01_line_bind_booking_trial(text,text,text,text)",
+      "local_service.claim_due_line_notifications(integer)",
+      "local_service.claim_due_shop_email_notifications(integer,local_service.bk01_ops_alert_kind,text,boolean)",
+      "local_service.claim_stripe_webhook_event(text,text,timestamp with time zone)",
+      "local_service.complete_line_notification(uuid,integer,text,timestamp with time zone,timestamp with time zone,text)",
+      "local_service.create_booking_hold(uuid,uuid,uuid,character varying,character varying,character varying,date,time without time zone,text)",
+      "local_service.enforce_booking_status_transition()",
+      "local_service.enforce_ticket_owner_admin()",
+      "local_service.enqueue_booking_notifications()",
+      "local_service.finish_stripe_webhook_event(text,text,text)",
+      "local_service.generate_booking_code()",
+      "local_service.generate_link_token()",
+      "local_service.get_line_notification_delivery_context(uuid,integer)",
+      "local_service.is_shop_member(uuid)",
+      "local_service.suppress_new_overdue_line_reminder()",
+      "local_service.sync_subscription_state_bk_a(text,bigint,uuid,text,text,text,text,bigint,boolean)"
+    ]
+  }
+}
