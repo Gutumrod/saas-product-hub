@@ -126,6 +126,7 @@ plan; the demand-based reasoning does not.
   `docs/platform/PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md`. DC01 target is
   `doccraft.wstera.com`, LIVE since the 2026-09-25 migration PASS (DocCraft `c519075`); `dc01.wstera.com` stays
   LIVE as legacy compatibility (dual-serve) until an explicit redirect/sunset decision.
+  **Slug decisions 2026-10-03 (Owner):** BK01 `wstbooking`, LK01 `wstlink`, WS01 `wstsupply`, PS01 `pawstia` (not locked: attorney trademark search pending), DC01 `doccraft`, RM01 `rentmatrix`, OD01 `omnidesk`; source products CM01 `wstclaim`, MT01 `wstaikit`, HC01 `wstcommerce` (no app host); Money Leak Buddy held. Detail: `PRODUCT_PUBLIC_NAMING_AND_HOSTNAME_POLICY.md` section 7a.
 - **D2 Hub event trust.** Per-product HMAC keys, one secret bound server-side to one product. The
   shared secret does not survive P1. Asymmetric signing stays a later option, not required now.
 - **D3 billing-core database.** `billing_core` is a dedicated schema inside the Hub project

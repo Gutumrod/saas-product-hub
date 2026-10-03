@@ -217,11 +217,12 @@ could not be fully attributed and are marked `UNVERIFIED` above rather than gues
 
   | Product | Public slug | Canonical public target | Legacy/code-host disposition |
   |---|---|---|---|
-  | BK01 `booking` | `service-booking` | `service-booking.wstera.com` | Former `bk01.wstera.com` reservation superseded before launch; registry records it was not live. |
-  | LK01 `wstera_link` | `wstera-link` | `wstera-link.wstera.com` | Former `lk01.wstera.com` reservation superseded; registry records no DNS record was created. |
+  | BK01 `booking` | `wstbooking` | `wstbooking.wstera.com` | Owner decision 2026-10-03 (was `service-booking`, never published). Former `bk01.wstera.com` reservation superseded before launch; registry records it was not live. |
+  | LK01 `wstera_link` | `wstlink` | `wstlink.wstera.com` | Owner decision 2026-10-03 (was `wstera-link`, never published). Former `lk01.wstera.com` reservation superseded; registry records no DNS record was created. |
   | PS01 `pawspace` | `pawstia` | `pawstia.wstera.com` | Former `ps01.wstera.com` reservation superseded; registry records no DNS record was created. |
+  | WS01 `WSM` | `wstsupply` | `wstsupply.wstera.com` | Owner decision 2026-10-03. Hosting placement still pending; no DNS record exists. |
   | DC01 `doccraft` | `doccraft` | `doccraft.wstera.com` | Canonical LIVE since 2026-09-25 migration PASS (DocCraft `c519075`); `dc01.wstera.com` remains LIVE as legacy compatibility host (dual-serve) until an explicit redirect/sunset decision. |
-  | One-time/source products | as declared when/if hosted | none required by default | No WSTERA app host is required unless a hosted product surface is introduced. |
+  | One-time/source products: CM01 `wstclaim`, MT01 `wstaikit`, HC01 `wstcommerce` | slugs reserved 2026-10-03 for the Hub product page | none required by default | No WSTERA app host is required unless a hosted product surface is introduced. |
 
 - **Live-resolution rule:** repository declarations are not a substitute for DNS/TLS/runtime proof.
   Before launch or migration, verify the actual Cloudflare route, certificate, HTTPS behavior,

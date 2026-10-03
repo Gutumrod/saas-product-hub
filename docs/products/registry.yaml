@@ -71,10 +71,10 @@ products:
     product_code: "BK01"
     delivery_model: "subscription_saas"
     # BK family reserved for the booking product line — see booking_ticket_module
-    # (BK02) below. Public slug `service-booking` reserves canonical target
-    # service-booking.wstera.com. Former bk01.wstera.com code-host reservation is superseded and was not live.
+    # (BK02) below. Public slug `wstbooking` reserves canonical target
+    # wstbooking.wstera.com (Owner decision 2026-10-03; former slug service-booking was never published). Former bk01.wstera.com code-host reservation is superseded and was not live.
     name: "Local Service Booking"
-    slug: "service-booking"
+    slug: "wstbooking"
     category: "Operations & Scheduling"
     tagline: "ระบบจองคิว ช่าง และจัดการนัดหมายสำหรับธุรกิจบริการ"
     description: "Multi-tenant booking platform with staff allocation, hold-gating, Stripe billing, and customer-facing booking portal."
@@ -182,7 +182,8 @@ products:
     product_code: "HC01"
     delivery_model: "one_time_source_product"
     name: "Headless Commerce API"
-    slug: "headless-commerce"
+    # Owner decision 2026-10-03 (commander named): was headless-commerce (never published). one_time_source_product, no WSTERA app host required; slug reserved for the Hub product page.
+    slug: "wstcommerce"
     category: "E-Commerce"
     tagline: "API แคตตาล็อกสินค้า สต็อก และหมวดหมู่สำหรับร้านค้าออนไลน์"
     description: "One-time self-hosted source-product target. The default branch currently contains four modules only; open PR #1 adds a local reference server but not production auth, tenant isolation, persistent database, installer, or release artifact."
@@ -246,7 +247,8 @@ products:
     product_code: "MT01"
     delivery_model: "one_time_source_product"
     name: "Multi-Tenant AI Starter Kit"
-    slug: "multi-tenant-ai-starter"
+    # Owner decision 2026-10-03 (commander named): was multi-tenant-ai-starter (never published). one_time_source_product, no WSTERA app host required; slug reserved for the Hub product page.
+    slug: "wstaikit"
     category: "Developer Starter Kit"
     tagline: "Boilerplate สำหรับสร้างเว็บแอป AI รองรับหลาย Tenant และจำกัด Quota"
     description: "One-time starter-kit target built from reusable modules plus an Express reference server. The current server proves composition with in-memory repositories and demo integrations; it is not yet a production deployment, licensed buyer artifact, or clean-install release."
@@ -443,7 +445,8 @@ products:
     # ticket-domain.ts was ported from this module's domain code, then diverged).
     # Full comparison: docs/platform/TICKET_SYSTEMS_DISAMBIGUATION.md
     name: "Booking Claim & Case Management Module"
-    slug: "booking-ticket-module"
+    # Owner decision 2026-10-03 (commander named): was booking-ticket-module (never published). one_time_source_product, so no WSTERA app host is required; slug reserved for the Hub product page.
+    slug: "wstclaim"
     category: "Operations & Scheduling"
     tagline: "โมดูลรับเรื่อง ค้นประวัติ และจัดการเคสแบบ standalone พร้อม theme ปรับได้"
     description: "Local-first React case-management template (intake, ticket detail, history/retention) with a host-configurable theme system and Thai/English i18n. No backend yet — repository/adapter boundary designed for a future Supabase/REST swap."
@@ -465,7 +468,7 @@ products:
     product_id: "prd_f4be6d1a9b544632a527e0e15e485622"
     product_code: "LK01"
     delivery_model: "subscription_saas"
-    # Public slug `wstera-link` reserves canonical target wstera-link.wstera.com.
+    # Public slug `wstlink` reserves canonical target wstlink.wstera.com (Owner decision 2026-10-03; former slug wstera-link was never published).
     # Former lk01.wstera.com code-host reservation is superseded; no DNS record was created.
     # Supersedes and replaces the retired "short_url_analytics" entry (product_code
     # SU01, retired 2026-08-26 — owner decision: merge into one product, WSTERA Link
@@ -473,7 +476,7 @@ products:
     # product. The old Python/FastAPI/SQLite prototype is kept as behavior reference
     # only at wstera-link's own references/prototype-v2/ (not run/deployed).
     name: "WSTERA Link"
-    slug: "wstera-link"
+    slug: "wstlink"
     category: "Marketing & Analytics"
     tagline: "ลิงก์แคมเปญแบรนด์ WSTERA พร้อมวิเคราะห์คลิกสำหรับผู้ขายออนไลน์ไทย"
     description: "Branded campaign-link and click-analytics multi-tenant SaaS for Thai online sellers, creators, affiliate operators, and agencies — not a generic URL shortener; the product promise is a stable branded link with changeable destination and channel attribution. Cloudflare-first TypeScript, Supabase Auth/RLS, Free/Pro (฿199)/Business (฿590) plans with full billing lifecycle (Stripe, grace period, downgrade rules). Vendors 10 modules from modules-hub (auth-supabase, tenant-context, subscription, payment, webhook-receiver, rate-limit, audit-log, config-runtime, health-check, import-export). Docs-only intake as of 2026-08-26 — repo has a LOCKED pre-build spec baseline (9 numbered spec docs + provenance/decisions docs) but zero application code written yet."
@@ -512,6 +515,7 @@ products:
     # Former ps01.wstera.com code-host reservation is superseded; no DNS record was created.
     name: "Pawstia — Pet Management System by WSTERA"
     short_name: "Pawstia PMS"
+    # 2026-10-03: Owner ran free preliminary Thai trademark searches for "pawstia" (Marcaria: 0 results, Thailand, all classes/statuses, contained mode; DIP page inconclusive). NOT a clearance: formal attorney search is still required before this name is treated as locked.
     slug: "pawstia"
     category: "Vertical SaaS — Pet Hospitality"
     tagline: "Pet Hotel OS จัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE โดยร้านเป็นเจ้าของข้อมูลเอง"
@@ -554,6 +558,7 @@ products:
     delivery_model: "subscription_saas"
     name: "WSM — WSTERA Supply Management"
     short_name: "WSM"
+    slug: "wstsupply"  # Owner decision 2026-10-03; reserves wstsupply.wstera.com; hosting placement still pending
     category: "Multi-tenant B2B supply planning and dealer allocation SaaS"
     description: "Traceable supply-planning and dealer-allocation SaaS for importers/distributors: Demand → Supply → Gap → Allocation → Fulfillment."
     deployment_model: "TBD - placement decision pending"
@@ -613,6 +618,7 @@ products:
   - key: "money_leak_buddy"
     # Identity status: IDENTITY_PENDING — no Owner-approved permanent product_id/product_code yet.
     # Do not ingest as a canonical Control/Hermes product until Owner declaration is recorded here.
+    # Owner decision 2026-10-03: removed from the WSTERA public hostname plan for now (may not belong under the WSTERA brand). No public host is approved until the Owner decides.
     name: "Money Leak Buddy"
     slug: "money-leak-buddy"
     category: "Personal Finance & Consumer AI"

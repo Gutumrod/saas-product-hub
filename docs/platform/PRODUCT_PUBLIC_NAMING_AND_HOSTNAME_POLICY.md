@@ -108,6 +108,30 @@ Migration status 2026-09-25: **PASS** at DocCraft `c5190757645c9e7619967820c7f77
 (evidence `docs/HOSTNAME_MIGRATION_DOCCRAFT_2026-09-25.md` in the DocCraft repo). `doccraft.wstera.com`
 is LIVE; `dc01.wstera.com` remains LIVE in dual-serve compatibility mode with no redirect/sunset yet.
 
+## 7a. Slug decisions of 2026-10-03 (Owner)
+
+All public slugs are lowercase. Owner named the subscription products; the commander named the
+three one-time source products in the same `wst` + function pattern (a convention, not a mandate).
+
+| Product code | Public slug | Public host | Notes |
+|---|---|---|---|
+| DC01 | `doccraft` | `doccraft.wstera.com` | LIVE (see section 7). |
+| PS01 | `pawstia` | `pawstia.wstera.com` | **Not locked.** Formal attorney trademark search still required; free preliminary search 2026-10-03 (Marcaria, Thailand, all classes/statuses) returned 0 results and is not a clearance. |
+| RM01 | `rentmatrix` | `rentmatrix.wstera.com` | |
+| OD01 | `omnidesk` | `omnidesk.wstera.com` | |
+| LK01 | `wstlink` | `wstlink.wstera.com` | Was `wstera-link`; never published. |
+| WS01 | `wstsupply` | `wstsupply.wstera.com` | Hosting placement still pending. |
+| BK01 | `wstbooking` | `wstbooking.wstera.com` | Was `service-booking`; never published. Resolves the near-collision with CM01's former `booking-ticket-module`. |
+| CM01 | `wstclaim` | none (source product) | Was `booking-ticket-module`; never published. Slug reserved for the Hub product page. |
+| MT01 | `wstaikit` | none (source product) | Was `multi-tenant-ai-starter`; never published. |
+| HC01 | `wstcommerce` | none (source product) | Was `headless-commerce`; never published. |
+| Money Leak Buddy | held | none approved | Removed from the hostname plan for now; Owner is unsure it belongs under the WSTERA brand. |
+
+Renames above are permitted because none of the former slugs was ever published or had DNS. From
+now on a published slug follows section 2 rule 5. Project-level Supabase settings (Site URL,
+Redirect URLs, email templates, Auth hook) must use these public hosts only and are governed by the
+project-global registry (vault `06-Agent-Logs/WSTERA-House/PROJECT-GLOBAL-REGISTRY-DRAFT-2026-10-03.md`).
+
 ## 8. Authority
 
 When hostname/naming documents conflict, a later explicit Owner decision wins. For public product
