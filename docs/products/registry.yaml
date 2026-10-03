@@ -515,7 +515,7 @@ products:
     # Former ps01.wstera.com code-host reservation is superseded; no DNS record was created.
     name: "Pawstia — Pet Management System by WSTERA"
     short_name: "Pawstia PMS"
-    # 2026-10-03: Owner ran free preliminary Thai trademark searches for "pawstia" (Marcaria: 0 results, Thailand, all classes/statuses, contained mode; DIP page inconclusive). NOT a clearance: formal attorney search is still required before this name is treated as locked.
+    # 2026-10-03: Owner ran free preliminary Thai trademark searches for "pawstia" (Marcaria: 0 results, Thailand, all classes/statuses, contained mode; DIP page inconclusive). NOT a clearance. An attorney search is optional risk reduction (not legally required), deferred until brand spend or revenue; recheck the official DIP search before launch.
     slug: "pawstia"
     category: "Vertical SaaS — Pet Hospitality"
     tagline: "Pet Hotel OS จัดการห้อง การเข้าพัก และ Daily Care Report ผ่าน LINE โดยร้านเป็นเจ้าของข้อมูลเอง"

@@ -116,7 +116,7 @@ three one-time source products in the same `wst` + function pattern (a conventio
 | Product code | Public slug | Public host | Notes |
 |---|---|---|---|
 | DC01 | `doccraft` | `doccraft.wstera.com` | LIVE (see section 7). |
-| PS01 | `pawstia` | `pawstia.wstera.com` | **Not locked.** Formal attorney trademark search still required; free preliminary search 2026-10-03 (Marcaria, Thailand, all classes/statuses) returned 0 results and is not a clearance. |
+| PS01 | `pawstia` | `pawstia.wstera.com` | Provisional. Free preliminary search 2026-10-03 (Marcaria, Thailand, all classes/statuses) returned 0 results; not a clearance. An attorney search is optional risk reduction (not legally required) and is deferred until brand spend or revenue; recheck DIP search (tmsearch.ipthailand.go.th) before launch. |
 | RM01 | `rentmatrix` | `rentmatrix.wstera.com` | |
 | OD01 | `omnidesk` | `omnidesk.wstera.com` | |
 | LK01 | `wstlink` | `wstlink.wstera.com` | Was `wstera-link`; never published. |
